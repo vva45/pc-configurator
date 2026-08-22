@@ -183,4 +183,24 @@ ADD("AMD","Athlon 320GE",0,{socket:"AM4",family:"Zen APU (Picasso)",cores:2,thre
 ADD("AMD","Athlon Gold 3150G",0,{socket:"AM4",family:"Zen APU (Picasso)",cores:4,threads:4,base:3.5,boost:3.9,l2:2,l3:4,tdp:65,ppt:88,mem:["DDR4"],memMax:2933,igpu:"Radeon Vega 3",lith:"GF 12nm",pcie:"3.0 ×8",unlocked:false,cooler:false,apu:true,year:2020,legacy:true});
 ADD("AMD","Athlon Gold 3150GE",0,{socket:"AM4",family:"Zen APU (Picasso)",cores:4,threads:4,base:3.3,boost:3.8,l2:2,l3:4,tdp:35,ppt:35,mem:["DDR4"],memMax:2933,igpu:"Radeon Vega 3",lith:"GF 12nm",pcie:"3.0 ×8",unlocked:false,cooler:false,apu:true,year:2020,legacy:true});
 
+/* ── AM5 · los que faltaban (petición del usuario, ago 2026) ───────
+   Caché de las tablas del usuario = L2 + L3; aquí va repartida como en
+   el resto del catálogo. PPT según TDP: 65→88, 105→142, 120→162, 170→230. */
+// Zen 4 (Raphael, 2022-2023)
+ADD("AMD","Ryzen 5 7500F",149,{socket:"AM5",family:"Zen 4 (Raphael)",cores:6,threads:12,base:3.7,boost:5.0,l2:6,l3:32,tdp:65,ppt:88,mem:["DDR5"],memMax:5200,igpu:null,lith:"TSMC N5",pcie:"5.0 ×24",unlocked:true,cooler:false,year:2023});
+ADD("AMD","Ryzen 5 7600X",189,{socket:"AM5",family:"Zen 4 (Raphael)",cores:6,threads:12,base:4.7,boost:5.3,l2:6,l3:32,tdp:105,ppt:142,mem:["DDR5"],memMax:5200,igpu:"Radeon 2CU",lith:"TSMC N5",pcie:"5.0 ×24",unlocked:true,cooler:false,year:2022});
+ADD("AMD","Ryzen 7 7700",259,{socket:"AM5",family:"Zen 4 (Raphael)",cores:8,threads:16,base:3.8,boost:5.3,l2:8,l3:32,tdp:65,ppt:88,mem:["DDR5"],memMax:5200,igpu:"Radeon 2CU",lith:"TSMC N5",pcie:"5.0 ×24",unlocked:true,cooler:true,year:2023});
+ADD("AMD","Ryzen 9 7900",359,{socket:"AM5",family:"Zen 4 (Raphael)",cores:12,threads:24,base:3.7,boost:5.4,l2:12,l3:64,tdp:65,ppt:88,mem:["DDR5"],memMax:5200,igpu:"Radeon 2CU",lith:"TSMC N5",pcie:"5.0 ×24",unlocked:true,cooler:true,year:2023});
+ADD("AMD","Ryzen 9 7900X3D",439,{socket:"AM5",family:"Zen 4 (Raphael X3D)",cores:12,threads:24,base:4.4,boost:5.6,l2:12,l3:128,tdp:120,ppt:162,mem:["DDR5"],memMax:5200,igpu:"Radeon 2CU",lith:"TSMC N5",pcie:"5.0 ×24",unlocked:false,cooler:false,x3d:true,year:2023});
+// Zen 4 APU y F (Hawk Point / Phoenix, 2024)
+ADD("AMD","Ryzen 5 8500G",139,{socket:"AM5",family:"Zen 4 APU (Hawk Point)",cores:6,threads:12,base:3.5,boost:5.0,l2:6,l3:16,tdp:65,ppt:88,mem:["DDR5"],memMax:5200,igpu:"Radeon 740M (4CU)",lith:"TSMC N4",pcie:"4.0 ×14",unlocked:true,cooler:true,apu:true,year:2024});
+ADD("AMD","Ryzen 3 8300G",119,{socket:"AM5",family:"Zen 4 APU (Hawk Point)",cores:4,threads:8,base:3.4,boost:4.9,l2:4,l3:8,tdp:65,ppt:88,mem:["DDR5"],memMax:5200,igpu:"Radeon 740M (4CU)",lith:"TSMC N4",pcie:"4.0 ×14",unlocked:true,cooler:true,apu:true,year:2024});
+ADD("AMD","Ryzen 7 8700F",229,{socket:"AM5",family:"Zen 4 (Hawk Point)",cores:8,threads:16,base:4.1,boost:5.0,l2:8,l3:16,tdp:65,ppt:88,mem:["DDR5"],memMax:5200,igpu:null,lith:"TSMC N4",pcie:"4.0 ×16",unlocked:true,cooler:true,year:2024});
+ADD("AMD","Ryzen 5 8400F",149,{socket:"AM5",family:"Zen 4 (Hawk Point)",cores:6,threads:12,base:4.2,boost:4.7,l2:6,l3:16,tdp:65,ppt:88,mem:["DDR5"],memMax:5200,igpu:null,lith:"TSMC N4",pcie:"4.0 ×16",unlocked:true,cooler:true,year:2024});
+// Zen 5 (Granite Ridge, 2024-2025)
+ADD("AMD","Ryzen 5 9600",209,{socket:"AM5",family:"Zen 5 (Granite Ridge)",cores:6,threads:12,base:3.8,boost:5.2,l2:6,l3:32,tdp:65,ppt:88,mem:["DDR5"],memMax:5600,igpu:"Radeon 2CU",lith:"TSMC N4P",pcie:"5.0 ×24",unlocked:true,cooler:false,year:2025});
+ADD("AMD","Ryzen 9 9900X",419,{socket:"AM5",family:"Zen 5 (Granite Ridge)",cores:12,threads:24,base:4.4,boost:5.6,l2:12,l3:64,tdp:120,ppt:162,mem:["DDR5"],memMax:5600,igpu:"Radeon 2CU",lith:"TSMC N4P",pcie:"5.0 ×24",unlocked:true,cooler:false,year:2024});
+ADD("AMD","Ryzen 9 9900X3D",599,{socket:"AM5",family:"Zen 5 (Granite Ridge X3D)",cores:12,threads:24,base:4.4,boost:5.5,l2:12,l3:128,tdp:120,ppt:162,mem:["DDR5"],memMax:5600,igpu:"Radeon 2CU",lith:"TSMC N4P",pcie:"5.0 ×24",unlocked:true,cooler:false,x3d:true,year:2025});
+ADD("AMD","Ryzen 7 9850X3D",549,{socket:"AM5",family:"Zen 5 (Granite Ridge X3D)",cores:8,threads:16,base:4.7,boost:5.6,l2:8,l3:96,tdp:120,ppt:162,mem:["DDR5"],memMax:5600,igpu:"Radeon 2CU",lith:"TSMC N4P",pcie:"5.0 ×24",unlocked:true,cooler:false,x3d:true,year:2025});
+
 export const CPU_ROWS = rows;
