@@ -1,26 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,300..900&family=IBM+Plex+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ═══ FORGE — CSS del monolito, movido tal cual (fase 1) ═══ */
+:root{
+  --board:#08120D;      /* FR-4 oscuro */
+  --board-2:#0E1F17;    /* superficie elevada */
+  --board-3:#152D22;    /* superficie hover */
+  --trace:#1E4534;      /* pistas / bordes */
+  --silk:#E6EFE8;       /* serigrafía */
+  --silk-dim:#7E9A8A;
+  --gold:#D8AE52;       /* contactos ENIG */
+  --gold-dim:#8A6E2F;
+  --copper:#C1703A;
+  --red:#E05A48;
+  --amber:#E3A83C;
+  --cyan:#4FB9A5;
 }
+*{box-sizing:border-box}
+body{background:var(--board)}
+.fg{
+  background:var(--board); color:var(--silk);
+  font-family:'Inter Tight',system-ui,sans-serif;
+  min-height:100vh; font-size:14px; line-height:1.45;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(216,174,82,.055) 1px, transparent 0);
+  background-size:22px 22px;
+}
+.fg *::-webkit-scrollbar{width:9px;height:9px}
+.fg *::-webkit-scrollbar-track{background:var(--board)}
+.fg *::-webkit-scrollbar-thumb{background:var(--trace);border-radius:0}
+.fg *::-webkit-scrollbar-thumb:hover{background:var(--gold-dim)}
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+.dsp{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 118,'wght' 800;
+  text-transform:uppercase;letter-spacing:-.01em;line-height:.95}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-ligatures:none}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--silk-dim)}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+.panel{background:var(--board-2);border:1px solid var(--trace)}
+.hair{border-color:var(--trace)}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* contactos dorados: la firma visual */
+.fingers{display:flex;gap:2px;height:100%;width:9px;flex-shrink:0}
+.fingers i{flex:1;background:var(--trace);transition:background .25s}
+.fingers.on i{background:var(--gold);box-shadow:0 0 7px rgba(216,174,82,.45)}
+.fingers.warn.on i{background:var(--amber);box-shadow:0 0 7px rgba(227,168,60,.4)}
+.fingers.bad.on i{background:var(--red);box-shadow:0 0 7px rgba(224,90,72,.4)}
+
+.btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;border:1px solid var(--trace);background:transparent;
+  color:var(--silk);padding:7px 12px;cursor:pointer;transition:all .16s}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn-gold{background:var(--gold);color:#0A1610;border-color:var(--gold);font-weight:600}
+.btn-gold:hover{background:#EFC468;color:#0A1610}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible,
+.slot:focus-visible,.card:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.chip{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:4px 8px;
+  border:1px solid var(--trace);background:transparent;color:var(--silk-dim);
+  cursor:pointer;transition:all .14s;white-space:nowrap}
+.chip:hover{border-color:var(--gold-dim);color:var(--silk)}
+.chip.sel{background:var(--gold);color:#0A1610;border-color:var(--gold);font-weight:600}
+
+.card{background:var(--board-2);border:1px solid var(--trace);transition:all .18s;
+  cursor:pointer;position:relative;overflow:hidden}
+.card:hover{border-color:var(--gold-dim);transform:translateY(-2px)}
+.card.blocked{opacity:.34}
+.card.blocked:hover{transform:none;border-color:var(--red)}
+
+.slot{display:flex;gap:10px;padding:9px 10px;border:1px solid var(--trace);
+  background:var(--board-2);cursor:pointer;transition:all .16s;width:100%;text-align:left}
+.slot:hover{border-color:var(--gold-dim);background:var(--board-3)}
+.slot.active{border-color:var(--gold)}
+
+input[type=text],input[type=number],select{background:var(--board);border:1px solid var(--trace);
+  color:var(--silk);padding:7px 9px;font-family:'IBM Plex Mono',monospace;font-size:12px;width:100%}
+input[type=range]{accent-color:var(--gold);width:100%}
+
+.log-ok{color:var(--cyan)} .log-warn{color:var(--amber)} .log-fail{color:var(--red)}
+.log-row{display:grid;grid-template-columns:52px 42px 84px 1fr;gap:8px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 0;
+  border-bottom:1px solid rgba(30,69,52,.4)}
+
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
+.gauge-sweep{animation:sweep 2.6s ease-in-out infinite}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade{animation:fadeUp .22s ease-out both}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
 }
+.scroll{overflow-y:auto}
+.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ═══ CSS que iba inline en el <style> del App ═══ */
+.layout{display:grid;grid-template-columns:288px 1fr 320px;height:calc(100vh - 58px)}
+.mtabs{display:none}
+.filt-col{display:block}
+@media(max-width:1180px){ .layout{grid-template-columns:264px 1fr} .col-status{display:none} }
+@media(max-width:900px){
+  .layout{display:block;height:auto}
+  .col-build,.col-catalog,.col-status{display:none;height:auto}
+  .col-build.on,.col-catalog.on,.col-status.on{display:block}
+  .mtabs{display:flex;position:sticky;top:57px;z-index:25;background:var(--board-2);
+    border-bottom:1px solid var(--trace)}
+  .mtabs button{flex:1;padding:10px 4px}
+  .filt-col{display:none;width:100%!important;border-right:none!important;
+    border-bottom:1px solid var(--trace)}
+  .filt-col.open{display:block}
+}
+@media(min-width:901px){ .filt-toggle{display:none} }

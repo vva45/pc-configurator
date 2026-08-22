@@ -1,0 +1,31 @@
+/* Arte generativo de PCB, distinto por pieza (sin fotos de terceros) */
+import { CAT } from "@/data/categories";
+import type { Part } from "@/data/parts/types";
+import { hash } from "./format";
+
+export default function PartArt({ part, h = 88 }: { part: Part; h?: number }) {
+  const Icon = CAT[part.cat].icon;
+  const s = hash(part.brand + part.name);
+  const traces = Array.from({ length: 6 }, (_, i) => {
+    const y = 8 + ((s >> (i * 3)) % 9) * 10;
+    const x = 6 + ((s >> (i * 2)) % 5) * 14;
+    const w = 20 + ((s >> i) % 6) * 12;
+    return (
+      <g key={i}>
+        <path d={`M${x} ${y} h${w} l10 10 h${16 + ((s >> i) % 20)}`} fill="none"
+          stroke="#1E4534" strokeWidth="1.4" />
+        <circle cx={x} cy={y} r="2.1" fill="#1E4534" />
+      </g>
+    );
+  });
+  return (
+    <div style={{ height: h, position: "relative", background: "#0B1A13", overflow: "hidden" }}>
+      <svg width="100%" height="100%" viewBox="0 0 220 100" preserveAspectRatio="xMidYMid slice">{traces}</svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Icon size={h > 70 ? 30 : 22} color="var(--gold)" strokeWidth={1.3} opacity={0.9} />
+      </div>
+      <div className="mono" style={{ position: "absolute", left: 8, top: 7, fontSize: 9.5,
+        letterSpacing: ".13em", color: "var(--gold-dim)", textTransform: "uppercase" }}>{part.brand}</div>
+    </div>
+  );
+}
