@@ -5,9 +5,11 @@
    monolito, partido en un componente por fichero (fase 1).
    ═══════════════════════════════════════════════════════════════════ */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
 } from "lucide-react";
+import { buildFromParams, buildToParams } from "@/lib/share";
 import { P } from "@/data/parts";
 import type { CatId, Part } from "@/data/parts/types";
 import { CAT, CATS, GROUPS } from "@/data/categories";
@@ -31,7 +33,14 @@ type Shown = { p: Part; blocked: boolean; reason?: string };
 
 export default function Configurator() {
   const [region, setRegion] = useState<RegionId>("ES");
-  const [build, setBuild] = useState<AppBuild>({});
+  /* ── Montaje en la URL (?cpu=…&mbo=…) ─────────────────────────────
+     Al abrir un enlace compartido, el estado inicial sale de los query
+     params (useSearchParams); el POST se revalida solo porque runPost
+     deriva del estado. buildFromParams es determinista, así que el HTML
+     del servidor y el primer render del cliente coinciden. */
+  const searchParams = useSearchParams();
+  const [build, setBuild] = useState<AppBuild>(() =>
+    buildFromParams(new URLSearchParams(searchParams.toString())));
   const [cat, setCat] = useState<CatId>("cpu");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("rel");
@@ -46,6 +55,13 @@ export default function Configurator() {
 
   const pending = useRef<ActiveFilters | null>(null);
   useEffect(() => { setFilters(pending.current || {}); pending.current = null; setQ(""); }, [cat]);
+
+  /* Cada cambio del montaje queda reflejado en la URL con replaceState
+     (sin recargas), lista para copiar y mandar por WhatsApp. */
+  useEffect(() => {
+    const qs = buildToParams(build).toString();
+    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+  }, [build]);
 
   const cur = REGIONS[region].cur;
   const power = useMemo(() => calcPower(build), [build]);

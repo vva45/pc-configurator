@@ -2,12 +2,13 @@
 /* Resumen de la torre: solo las piezas que forman la máquina, con consumo y
    POST recalculados sin periféricos. Casilla opcional para los auxiliares. */
 import { useRef, useState } from "react";
-import { Store, X } from "lucide-react";
+import { Link2, Store, X } from "lucide-react";
 import { CAT, CATS, type Category } from "@/data/categories";
 import { list, one, runPost, type AppBuild, type Picked } from "@/lib/compat";
 import { calcPower } from "@/lib/power";
 import { keyspecsFor } from "@/lib/filters";
 import { REGIONS, type RegionId } from "@/lib/regions";
+import { buildToParams } from "@/lib/share";
 import { eur, oneLiner } from "./format";
 import Fingers from "./Fingers";
 import type { CatId } from "@/data/parts/types";
@@ -61,6 +62,20 @@ export default function BuildSummary({ build, region, onClose, onShop }: {
     try { await navigator.clipboard.writeText(text); }
     catch { ta.current?.select(); document.execCommand?.("copy"); }
     setCopied(true); setTimeout(() => setCopied(false), 1800);
+  };
+
+  /* Enlace con el montaje serializado (?cpu=…&mbo=…), para compartir. */
+  const [copiedLink, setCopiedLink] = useState(false);
+  const copyLink = async () => {
+    const qs = buildToParams(build).toString();
+    const url = `${window.location.origin}${window.location.pathname}${qs ? `?${qs}` : ""}`;
+    try { await navigator.clipboard.writeText(url); }
+    catch {
+      const el = document.createElement("textarea");
+      el.value = url; document.body.appendChild(el); el.select();
+      document.execCommand?.("copy"); el.remove();
+    }
+    setCopiedLink(true); setTimeout(() => setCopiedLink(false), 1800);
   };
 
   return (
@@ -162,6 +177,10 @@ export default function BuildSummary({ build, region, onClose, onShop }: {
 
           <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
             <button className="btn" style={{ flex: 1 }} onClick={copy}>{copied ? "Copiado" : "Copiar resumen"}</button>
+            <button className="btn" style={{ flex: 1, display: "flex", alignItems: "center",
+              justifyContent: "center", gap: 6 }} onClick={copyLink}>
+              <Link2 size={12} /> {copiedLink ? "Enlace copiado" : "Copiar enlace"}
+            </button>
             <button className="btn btn-gold" style={{ flex: 1, display: "flex", alignItems: "center",
               justifyContent: "center", gap: 6 }} onClick={() => { onClose(); onShop(); }}>
               <Store size={12} /> Dónde comprar
