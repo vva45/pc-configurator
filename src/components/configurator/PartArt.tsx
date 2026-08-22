@@ -22,7 +22,9 @@ export default function PartArt({ part, h = 88 }: { part: Part; h?: number }) {
     <div style={{ height: h, position: "relative", background: "#0B1A13", overflow: "hidden" }}>
       <svg width="100%" height="100%" viewBox="0 0 220 100" preserveAspectRatio="xMidYMid slice">{traces}</svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={h > 70 ? 30 : 22} color="var(--gold)" strokeWidth={1.3} opacity={0.9} />
+        {/* Tamaño calibrado sobre captura del usuario: ~44px en la tarjeta
+            estándar (antes 30) para que los iconos con detalle se lean. */}
+        <Icon size={h > 70 ? 44 : 30} color="var(--gold)" strokeWidth={1.3} opacity={0.9} />
       </div>
       <div className="mono" style={{ position: "absolute", left: 8, top: 7, fontSize: 9.5,
         letterSpacing: ".13em", color: "var(--gold-dim)", textTransform: "uppercase" }}>{part.brand}</div>
