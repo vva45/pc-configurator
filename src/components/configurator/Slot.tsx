@@ -36,17 +36,17 @@ export default function Slot({ cat, items, active, onOpen, onRemove, onQty, cur,
         </span>}
       </button>
       {filled && cat.multi && items.map((i) => (
-        <div key={i._uid} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 8px 3px 32px" }}>
+        <div key={i._uid} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px 4px 32px" }}>
           <span className="mono trunc" style={{ fontSize: 10, color: "var(--silk-dim)", flex: 1 }}>{i.brand} {i.name}</span>
-          <button className="btn" style={{ padding: "1px 6px", fontSize: 11 }} onClick={() => onQty(cat.id, i._uid, -1)} aria-label="Menos">–</button>
-          <span className="mono" style={{ fontSize: 11, minWidth: 14, textAlign: "center" }}>{i.qty || 1}</span>
-          <button className="btn" style={{ padding: "1px 6px", fontSize: 11 }} onClick={() => onQty(cat.id, i._uid, 1)} aria-label="Más">+</button>
-          <button className="btn" style={{ padding: "1px 5px" }} onClick={() => onRemove(cat.id, i._uid)} aria-label="Quitar"><Trash2 size={10} /></button>
+          <button className="btn" style={{ padding: "3px 9px", fontSize: 12.5 }} onClick={() => onQty(cat.id, i._uid, -1)} aria-label="Menos">–</button>
+          <span className="mono" style={{ fontSize: 12.5, minWidth: 16, textAlign: "center" }}>{i.qty || 1}</span>
+          <button className="btn" style={{ padding: "3px 9px", fontSize: 12.5 }} onClick={() => onQty(cat.id, i._uid, 1)} aria-label="Más">+</button>
+          <button className="btn" style={{ padding: "3px 8px" }} onClick={() => onRemove(cat.id, i._uid)} aria-label="Quitar"><Trash2 size={13} /></button>
         </div>
       ))}
       {filled && !cat.multi && (
-        <div style={{ display: "flex", justifyContent: "flex-end", padding: "2px 8px 0" }}>
-          <button className="btn" style={{ padding: "1px 6px", fontSize: 9.5 }}
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "3px 8px 0" }}>
+          <button className="btn" style={{ padding: "3px 10px", fontSize: 11 }}
             onClick={() => onRemove(cat.id, items[0]._uid)}>Quitar</button>
         </div>
       )}
