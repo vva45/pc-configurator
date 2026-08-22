@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(git -C \"C:\\\\VVA - LENOVO PC\\\\Proyectos Sparky\\\\Configurador PC\" branch --show-current)",
+      "PowerShell(git -C \"C:\\\\VVA - LENOVO PC\\\\Proyectos Sparky\\\\Configurador PC\" log --oneline -3)"
+    ]
+  }
+}
