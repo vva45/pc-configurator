@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Suites de test heredadas del monolito: son scripts CJS de Node y no se
+    // reescriben para contentar al lint (regla del proyecto: los tests no se
+    // tocan para que pasen).
+    "test-motor.cjs",
+    "audit-catalogo.cjs",
+    ".test-build/**",
   ]),
 ]);
 

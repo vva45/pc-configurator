@@ -1,0 +1,33 @@
+# CI: en cada push a main (y en PRs, si algún día los hay) se comprueba
+# tipado, lint, motor, catálogo y build. Si algo falla, el push queda en rojo
+# y el gate de Vercel (vercel-build en package.json) impide desplegarlo.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Dependencias
+        run: npm ci
+      - name: Tipado (tsc --noEmit)
+        run: npx tsc --noEmit
+      - name: Lint (eslint)
+        run: npm run lint
+      - name: Bundle de tests (esbuild)
+        run: node scripts/build-test-bundle.mjs
+      - name: Motor (4.421 aserciones)
+        run: node test-motor.cjs
+      - name: Auditoría del catálogo
+        run: node audit-catalogo.cjs
+      - name: Build de producción
+        run: npm run build
