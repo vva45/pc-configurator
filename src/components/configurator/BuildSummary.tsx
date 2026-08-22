@@ -22,7 +22,9 @@ export default function BuildSummary({ build, region, onClose, onShop }: {
 }) {
   const [aux, setAux] = useState(false);
   const R = REGIONS[region];
-  const groups: GroupId[] = aux ? ["core", "aux"] : ["core"];
+  /* Las tarjetas de expansión van físicamente dentro de la torre: entran
+     con la misma casilla que los auxiliares del interior. */
+  const groups: GroupId[] = aux ? ["core", "aux", "expansion"] : ["core"];
   const cats = CATS.filter((c) => groups.includes(c.group));
   const tower = Object.fromEntries(Object.entries(build)
     .filter(([k]) => groups.includes(CAT[k as CatId].group))) as AppBuild;
@@ -152,7 +154,7 @@ export default function BuildSummary({ build, region, onClose, onShop }: {
             <input type="checkbox" checked={aux} onChange={(e) => setAux(e.target.checked)}
               style={{ accentColor: "var(--gold)", width: "auto" }} />
             <span className="mono" style={{ fontSize: 11, color: "var(--silk-dim)" }}>
-              Incluir auxiliares del interior (ventiladores, RGB, pasta, cables)
+              Incluir auxiliares del interior (ventiladores, RGB, pasta, cables, tarjetas de expansión)
             </span>
           </label>
 

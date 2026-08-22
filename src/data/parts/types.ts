@@ -5,6 +5,7 @@
 export const CAT_IDS = [
   "cpu", "cooler", "mbo", "ram", "gpu", "storage", "psu", "case",
   "fan", "hub", "paste", "rgb", "cable",
+  "soundcard", "netwired", "netwireless",
   "monitor", "keyboard", "mouse", "pad", "headset", "mic", "webcam", "speaker",
 ] as const;
 export type CatId = (typeof CAT_IDS)[number];
@@ -92,6 +93,17 @@ export interface RgbSpec {
 export interface CableSpec {
   kind: string; pieces: number; len: number; combs: boolean; color: string;
 }
+export interface SoundcardSpec {
+  chip: string; channels: string; snr: number; iface: string; outs: string;
+  watt: number; year: number;
+}
+export interface NetwiredSpec {
+  chip: string; speed: string; ports: number; iface: string; watt: number; year: number;
+}
+export interface NetwirelessSpec {
+  wifi: string; bt: string | null; speed: string; antennas: number; iface: string;
+  watt: number; year: number;
+}
 export interface MonitorSpec {
   size: number; res: string; panel: string; hz: number; gtg: number; sync: string;
   hdr: string; nits: number; ports: string; curve: string | null; ratio: string;
@@ -126,7 +138,9 @@ export interface SpeakerSpec {
 export interface SpecMap {
   cpu: CpuSpec; cooler: CoolerSpec; mbo: MboSpec; ram: RamSpec; gpu: GpuSpec;
   storage: StorageSpec; psu: PsuSpec; case: CaseSpec; fan: FanSpec; hub: HubSpec;
-  paste: PasteSpec; rgb: RgbSpec; cable: CableSpec; monitor: MonitorSpec;
+  paste: PasteSpec; rgb: RgbSpec; cable: CableSpec;
+  soundcard: SoundcardSpec; netwired: NetwiredSpec; netwireless: NetwirelessSpec;
+  monitor: MonitorSpec;
   keyboard: KeyboardSpec; mouse: MouseSpec; pad: PadSpec; headset: HeadsetSpec;
   mic: MicSpec; webcam: WebcamSpec; speaker: SpeakerSpec;
 }

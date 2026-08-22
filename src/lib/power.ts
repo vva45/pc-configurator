@@ -18,6 +18,7 @@ export interface PowerReport {
 }
 
 const USB_CATS: CatId[] = ["keyboard", "mouse", "headset", "mic", "webcam"];
+const EXPANSION_CATS = ["soundcard", "netwired", "netwireless"] as const;
 
 export function calcPower(b: Build): PowerReport {
   const cpu = one(b, "cpu"), gpu = one(b, "gpu"), mbo = one(b, "mbo"), cool = one(b, "cooler");
@@ -30,6 +31,8 @@ export function calcPower(b: Build): PowerReport {
   d.Discos = st.reduce((a, s) => a + s.watt * (s.qty || 1), 0);
   d.Refrigeración = (cool?.watt || 0) + fans.reduce((a, f) => a + f.watt * (f.qty || 1), 0);
   d.Iluminación = rgbs.reduce((a, r) => a + r.watt * (r.qty || 1), 0) + (one(b, "hub")?.watt || 0);
+  d.Expansión = EXPANSION_CATS.reduce((a, c) =>
+    a + list(b, c).reduce((s, p) => s + (p.watt || 0) * (p.qty || 1), 0), 0);
   d.USB = USB_CATS.reduce((a, c) => a + (list(b, c).length ? 2.5 : 0), 0);
   // total = todo a su límite a la vez (peor caso sostenido, no consumo típico)
   const total = Math.round(Object.values(d).reduce((a, v) => a + v, 0));

@@ -46,8 +46,12 @@ export default function FilterPanel({ cat, facets, filters, setFilters, onClear 
 
         if (facet.kind === "enum") {
           const sel = (filters[d.k] as EnumValue[] | undefined) || [];
+          /* Lo ya seleccionado siempre se pinta, aunque el encadenado de
+             facetas lo haya dejado fuera: si no, no se podría desmarcar. */
+          const values = [...new Set([...facet.values, ...sel])].sort((a, b) =>
+            typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b)));
           body = <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {facet.values.map((v) => <button key={String(v)} className={`chip ${sel.includes(v) ? "sel" : ""}`}
+            {values.map((v) => <button key={String(v)} className={`chip ${sel.includes(v) ? "sel" : ""}`}
               onClick={() => set(d.k, sel.includes(v) ? sel.filter((x) => x !== v) : [...sel, v])}>{String(v)}</button>)}
           </div>;
         }

@@ -292,17 +292,11 @@ export default function Configurator() {
   const shownBlocked = catalog ? catalog.nBlocked : 0;
   const CatalogPane = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* barra de categoría */}
+      {/* La categoría se elige en el panel de montaje de la izquierda;
+          aquí solo buscador, orden y conmutadores. */}
       <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--trace)" }}>
-        <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 7, marginBottom: 9 }}>
-          {CATS.map((c) => {
-            const n = ((build[c.id] || []) as Picked[]).length;
-            return <button key={c.id} className={`chip ${cat === c.id ? "sel" : ""}`} onClick={() => setCat(c.id)}>
-              {c.label}{n > 0 && ` ·${n}`}
-            </button>;
-          })}
-        </div>
         <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
+          <span className="eyebrow" style={{ whiteSpace: "nowrap" }}>{CAT[cat].label}</span>
           <div style={{ position: "relative", flex: "1 1 180px", minWidth: 150 }}>
             <Search size={13} color="var(--silk-dim)"
               style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)" }} />

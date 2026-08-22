@@ -18,6 +18,9 @@ import { HUB_ROWS } from "./hub";
 import { PASTE_ROWS } from "./paste";
 import { RGB_ROWS } from "./rgb";
 import { CABLE_ROWS } from "./cable";
+import { SOUNDCARD_ROWS } from "./soundcard";
+import { NETWIRED_ROWS } from "./netwired";
+import { NETWIRELESS_ROWS } from "./netwireless";
 import { MONITOR_ROWS } from "./monitor";
 import { KEYBOARD_ROWS } from "./keyboard";
 import { MOUSE_ROWS } from "./mouse";
@@ -46,6 +49,9 @@ export const P: Part[] = [
   ...withIds("paste", PASTE_ROWS),
   ...withIds("rgb", RGB_ROWS),
   ...withIds("cable", CABLE_ROWS),
+  ...withIds("soundcard", SOUNDCARD_ROWS),
+  ...withIds("netwired", NETWIRED_ROWS),
+  ...withIds("netwireless", NETWIRELESS_ROWS),
   ...withIds("monitor", MONITOR_ROWS),
   ...withIds("keyboard", KEYBOARD_ROWS),
   ...withIds("mouse", MOUSE_ROWS),

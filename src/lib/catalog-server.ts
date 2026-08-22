@@ -34,10 +34,17 @@ export type Facet =
   | { k: string; kind: "range"; lo: number; hi: number }
   | { k: string; kind: "flag" };
 
-function facetsFor(cat: CatId, pool: Part[]): Facet[] {
+/* Facetas encadenadas: las opciones de cada filtro se calculan sobre el
+   catálogo con TODOS los demás filtros aplicados (el propio no, para poder
+   ampliar o deshacer la selección). Eligiendo AMD desaparecen los sockets
+   y generaciones de Intel, y al revés. */
+function facetsFor(cat: CatId, pool: Part[], filters: ActiveFilters): Facet[] {
   const out: Facet[] = [];
   for (const d of FILTERS[cat] || []) {
-    const vals = pool
+    const others: ActiveFilters = Object.fromEntries(
+      Object.entries(filters).filter(([k]) => k !== d.k));
+    const base = Object.keys(others).length ? pool.filter((p) => matches(p, others, cat)) : pool;
+    const vals = base
       .map((p) => (p as unknown as Record<string, unknown>)[d.k])
       .filter((v) => v !== undefined);
     if (!vals.length) continue;
@@ -118,7 +125,7 @@ export function queryCatalog(sp: URLSearchParams): CatalogResponse {
     nBlocked,
     poolSize: pool.length,
     hasLegacy: P.some((p) => p.cat === cat && (p.legacy || p.museum)),
-    facets: facetsFor(cat, pool),
+    facets: facetsFor(cat, pool, filters),
     page,
     pageSize,
   };
