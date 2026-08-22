@@ -34,7 +34,7 @@ export default function PowerGauge({ power, psu, compact }: {
             background: "linear-gradient(90deg,transparent,rgba(216,174,82,.22),transparent)" }} />}
       </div>
       {!compact && (
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, flexWrap: "wrap", gap: 4 }}>
           <span className="mono" style={{ fontSize: 10, color: "var(--silk-dim)" }}>
             En juego ≈ {power.gaming} W · pico {power.spike} W
           </span>

@@ -93,7 +93,12 @@ input[type=range]{accent-color:var(--gold);width:100%}
 .trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ═══ CSS que iba inline en el <style> del App ═══ */
-.layout{display:grid;grid-template-columns:288px 1fr 320px;height:calc(100vh - 58px)}
+.layout{display:grid;grid-template-columns:288px minmax(0,1fr) 320px;height:calc(100vh - 58px)}
+/* Sin esto, el min-width:auto de los items de grid deja que la fila de chips
+   de categorías (21 chips en una línea con scroll propio) ensanche la columna
+   central hasta ~1.700px y la página entera desborde en horizontal: el panel
+   de consumo quedaba cortado salvo bajando el zoom al 80 %. */
+.layout>div{min-width:0}
 .mtabs{display:none}
 .filt-col{display:block}
 @media(max-width:1180px){ .layout{grid-template-columns:264px 1fr} .col-status{display:none} }
