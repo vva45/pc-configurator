@@ -1,13 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════
-   MONTAJE EN LA URL
-   Serializa el build en query params (?cpu=0&ram=2x2,5&case=3…) para
-   compartir una configuración por enlace. El valor de cada parámetro es
-   el índice de la pieza dentro de su categoría (el id es `cat-índice`),
-   con `xN` si hay más de una unidad, y comas entre piezas.
+   MONTAJE EN LA URL — parte compartida cliente/servidor
+   Serializa el build en query params (?cpu=0&ram=2x2,5&case=3…): el valor
+   es el índice de la pieza dentro de su categoría (el id es `cat-índice`),
+   con `xN` si hay más de una unidad y comas entre piezas.
+   Este módulo NO importa el catálogo: el cliente lo usa sin cargar las
+   piezas. La resolución de índices a piezas vive en catalog-server.ts.
    ═══════════════════════════════════════════════════════════════════ */
-import { CAT_IDS, type CatId, type Part } from "@/data/parts/types";
-import { P } from "@/data/parts";
-import { CAT } from "@/data/categories";
+import { CAT_IDS, type CatId } from "@/data/parts/types";
 import type { AppBuild, Picked } from "./compat";
 
 /** build -> query params, en el orden estable de CAT_IDS */
@@ -30,26 +29,24 @@ export function buildToParams(build: AppBuild): URLSearchParams {
   return sp;
 }
 
-/** query params -> build. Ignora piezas desconocidas o mal formadas.
-    En categorías sin multi solo cuenta la primera pieza. */
-export function buildFromParams(sp: URLSearchParams): AppBuild {
-  const build: Record<string, Picked[]> = {};
-  let n = 0;
+export interface BuildToken { cat: CatId; idx: number; qty: number; }
+
+/** query params -> tokens {cat, idx, qty}. Ignora lo mal formado. */
+export function parseBuildTokens(sp: URLSearchParams): BuildToken[] {
+  const out: BuildToken[] = [];
   for (const cat of CAT_IDS) {
     const raw = sp.get(cat);
     if (!raw) continue;
-    const items: Picked[] = [];
     for (const token of raw.split(",")) {
       const m = token.trim().match(/^(\d+)(?:x(\d+))?$/);
       if (!m) continue;
-      const part = P.find((p) => p.id === `${cat}-${m[1]}`) as Part | undefined;
-      if (!part) continue;
-      if (items.some((x) => x.id === part.id)) continue;
       const qty = Math.max(1, Math.min(99, m[2] ? parseInt(m[2], 10) : 1));
-      items.push({ ...part, qty, _uid: `${part.id}-url-${n++}` });
-      if (!CAT[cat as CatId].multi) break;
+      out.push({ cat, idx: parseInt(m[1], 10), qty });
     }
-    if (items.length) build[cat] = items;
   }
-  return build as AppBuild;
+  return out;
 }
+
+/** ¿Llevan estos params un montaje serializado? */
+export const hasBuildParams = (sp: URLSearchParams): boolean =>
+  CAT_IDS.some((c) => sp.has(c));

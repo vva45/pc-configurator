@@ -135,8 +135,12 @@ export interface SpecMap {
    o de museo, ocultas por defecto en el catálogo). */
 export type SpecOf<K extends CatId> = SpecMap[K] & { museum?: boolean; legacy?: boolean };
 
+/* ean: código de barras del producto. Hoy va vacío; es la clave para casar
+   la misma pieza entre tiendas cuando lleguen los datafeeds (ver README §3).
+   Retrofitearlo con miles de SKU sería un infierno: por eso ya está en el
+   esquema. */
 export type Row<K extends CatId> = {
-  brand: string; name: string; price: number;
+  brand: string; name: string; price: number; ean?: string;
 } & SpecOf<K>;
 
 export type PartOf<K extends CatId> = { id: string; cat: K } & Row<K>;

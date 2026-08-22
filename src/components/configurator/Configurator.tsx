@@ -1,21 +1,22 @@
 "use client";
 /* ═══════════════════════════════════════════════════════════════════
    UI — FORGE, Configurador de PC
-   Estado del montaje, catálogo filtrable y paneles. Antiguo App del
-   monolito, partido en un componente por fichero (fase 1).
+   Estado del montaje y paneles. Desde la fase 4 el catálogo no viaja al
+   cliente: /api/parts sirve páginas filtradas, ordenadas y con el gate
+   calculado, y /api/build resuelve los enlaces compartidos.
    ═══════════════════════════════════════════════════════════════════ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
 } from "lucide-react";
-import { buildFromParams, buildToParams } from "@/lib/share";
-import { P } from "@/data/parts";
+import { buildToParams, hasBuildParams } from "@/lib/share";
+import type { CatalogResponse } from "@/lib/catalog-server";
 import type { CatId, Part } from "@/data/parts/types";
 import { CAT, CATS, GROUPS } from "@/data/categories";
 import { gate, one, runPost, type AppBuild, type Build, type Picked } from "@/lib/compat";
 import { calcPower } from "@/lib/power";
-import { matches, type ActiveFilters } from "@/lib/filters";
+import { type ActiveFilters } from "@/lib/filters";
 import { REGIONS, type RegionId } from "@/lib/regions";
 import { eur } from "./format";
 import FilterPanel from "./FilterPanel";
@@ -29,18 +30,12 @@ import BuildSummary from "./BuildSummary";
 
 type SortKey = "rel" | "price" | "priceDesc" | "name";
 type Tab = "build" | "catalog" | "status";
-type Shown = { p: Part; blocked: boolean; reason?: string };
+
+const PAGE_SIZE = 48;
 
 export default function Configurator() {
   const [region, setRegion] = useState<RegionId>("ES");
-  /* ── Montaje en la URL (?cpu=…&mbo=…) ─────────────────────────────
-     Al abrir un enlace compartido, el estado inicial sale de los query
-     params (useSearchParams); el POST se revalida solo porque runPost
-     deriva del estado. buildFromParams es determinista, así que el HTML
-     del servidor y el primer render del cliente coinciden. */
-  const searchParams = useSearchParams();
-  const [build, setBuild] = useState<AppBuild>(() =>
-    buildFromParams(new URLSearchParams(searchParams.toString())));
+  const [build, setBuild] = useState<AppBuild>({});
   const [cat, setCat] = useState<CatId>("cpu");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("rel");
@@ -56,9 +51,33 @@ export default function Configurator() {
   const pending = useRef<ActiveFilters | null>(null);
   useEffect(() => { setFilters(pending.current || {}); pending.current = null; setQ(""); }, [cat]);
 
-  /* Cada cambio del montaje queda reflejado en la URL con replaceState
-     (sin recargas), lista para copiar y mandar por WhatsApp. */
+  /* ── Montaje en la URL (?cpu=…&mbo=…) ─────────────────────────────
+     Al abrir un enlace compartido, /api/build resuelve los índices a
+     piezas completas (el catálogo ya no está en el cliente); el POST se
+     revalida solo porque runPost deriva del estado. Después, cada cambio
+     del montaje se refleja en la URL con replaceState, sin recargas. */
+  const searchParams = useSearchParams();
+  const booted = useRef(false);
+  const restoreStarted = useRef(false);
   useEffect(() => {
+    if (restoreStarted.current) return;
+    restoreStarted.current = true;
+    const sp = new URLSearchParams(searchParams.toString());
+    if (!hasBuildParams(sp)) { booted.current = true; return; }
+    let alive = true;
+    fetch(`/api/build?${sp.toString()}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((restored: AppBuild) => {
+        if (!alive) return;
+        if (Object.keys(restored).length)
+          setBuild((prev) => (Object.keys(prev).length ? prev : restored));
+      })
+      .catch(() => { /* enlace irrecuperable: se parte de cero */ })
+      .finally(() => { if (alive) booted.current = true; });
+    return () => { alive = false; };
+  }, [searchParams]);
+  useEffect(() => {
+    if (!booted.current) return;
     const qs = buildToParams(build).toString();
     window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
   }, [build]);
@@ -71,26 +90,40 @@ export default function Configurator() {
   const total = useMemo(() => (Object.values(build) as Picked[][]).flat()
     .reduce((a, p) => a + (p.price || 0) * (p.qty || 1), 0), [build]);
 
-  const pool = useMemo(() => P.filter((p) => p.cat === cat && (museum || !(p.museum || p.legacy))), [cat, museum]);
-  const shown = useMemo(() => {
-    let r: Shown[];
-    let base = pool.filter((p) => matches(p, filters, cat));
-    if (q.trim()) {
-      const t = q.toLowerCase();
-      base = base.filter((p) => (p.brand + " " + p.name).toLowerCase().includes(t));
-    }
-    r = base.map((p) => ({ p, ...gate(p, build) }));
-    if (!showBlocked) r = r.filter((x) => !x.blocked);
-    const key: Record<SortKey, (x: Shown) => number | string> = {
-      price: (x) => x.p.price || 1e9, priceDesc: (x) => -(x.p.price || 0),
-      name: (x) => x.p.brand + x.p.name, rel: (x) => (x.blocked ? 1 : 0),
-    };
-    r.sort((a, b) => {
-      const k = key[sort] || key.rel; const A = k(a), B = k(b);
-      return typeof A === "string" ? A.localeCompare(B as string) : A - (B as number);
+  /* ── Catálogo servido por /api/parts, paginado ──────────────────── */
+  const buildQs = useMemo(() => buildToParams(build).toString(), [build]);
+  const queryKey = useMemo(
+    () => JSON.stringify([cat, museum, q, sort, showBlocked, filters, buildQs]),
+    [cat, museum, q, sort, showBlocked, filters, buildQs]);
+  const [page, setPage] = useState(0);
+  const [prevKey, setPrevKey] = useState(queryKey);
+  if (prevKey !== queryKey) { setPrevKey(queryKey); setPage(0); }
+  const [catalog, setCatalog] = useState<CatalogResponse | null>(null);
+  const [items, setItems] = useState<CatalogResponse["items"]>([]);
+  const reqId = useRef(0);
+  useEffect(() => {
+    const id = ++reqId.current;
+    const sp = new URLSearchParams({
+      cat, museum: museum ? "1" : "0", q, sort,
+      showBlocked: showBlocked ? "1" : "0",
+      page: String(page), size: String(PAGE_SIZE),
     });
-    return r;
-  }, [pool, filters, q, build, showBlocked, sort, cat]);
+    const clean = Object.fromEntries(Object.entries(filters)
+      .filter(([, v]) => v !== undefined && v !== null && !(Array.isArray(v) && !v.length)));
+    if (Object.keys(clean).length) sp.set("filters", JSON.stringify(clean));
+    const url = `/api/parts?${sp.toString()}${buildQs ? "&" + buildQs : ""}`;
+    const t = setTimeout(() => {
+      fetch(url)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: CatalogResponse | null) => {
+          if (!data || reqId.current !== id) return;
+          setCatalog(data);
+          setItems((prev) => (data.page === 0 ? data.items : [...prev, ...data.items]));
+        })
+        .catch(() => { /* red caída: se mantiene la última página */ });
+    }, q ? 150 : 0); // pequeña espera solo al teclear en el buscador
+    return () => clearTimeout(t);
+  }, [queryKey, page, cat, museum, q, sort, showBlocked, filters, buildQs]);
 
   function pick(part: Part) {
     const c = CAT[part.cat];
@@ -256,6 +289,7 @@ export default function Configurator() {
     </div>
   );
 
+  const shownBlocked = catalog ? catalog.nBlocked : 0;
   const CatalogPane = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* barra de categoría */}
@@ -286,7 +320,7 @@ export default function Configurator() {
           <button className={`chip ${showBlocked ? "" : "sel"}`} onClick={() => setShowBlocked((v) => !v)}>
             {showBlocked ? "Ocultar incompatibles" : "Mostrando solo compatibles"}
           </button>
-          {pool.some((p) => p.legacy || p.museum) || P.some((p) => p.cat === cat && (p.legacy || p.museum)) ? (
+          {catalog?.hasLegacy ? (
             <button className={`chip ${museum ? "sel" : ""}`} onClick={() => setMuseum((v) => !v)}>
               {museum ? "Ocultar descatalogadas" : "Mostrar descatalogadas"}
             </button>
@@ -300,16 +334,18 @@ export default function Configurator() {
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <div className={`filt-col ${showFilters ? "open" : ""}`}
           style={{ width: 224, flexShrink: 0, borderRight: "1px solid var(--trace)" }}>
-          <FilterPanel cat={cat} pool={pool} filters={filters} setFilters={setFilters}
+          <FilterPanel cat={cat} facets={catalog?.facets || []} filters={filters} setFilters={setFilters}
             onClear={() => setFilters({})} />
         </div>
         <div className="scroll" style={{ flex: 1, padding: 12 }}>
           <div className="mono" style={{ fontSize: 10.5, color: "var(--silk-dim)", marginBottom: 9 }}>
-            {shown.filter((x) => !x.blocked).length} compatibles
-            {shown.filter((x) => x.blocked).length > 0 && ` · ${shown.filter((x) => x.blocked).length} descartadas`}
-            {" · "}{pool.length} en catálogo
+            {catalog ? <>
+              {catalog.nCompat} compatibles
+              {shownBlocked > 0 && ` · ${shownBlocked} descartadas`}
+              {" · "}{catalog.poolSize} en catálogo
+            </> : "Cargando catálogo…"}
           </div>
-          {shown.length === 0 ? (
+          {catalog && catalog.total === 0 ? (
             <div className="panel" style={{ padding: 24, textAlign: "center" }}>
               <div className="dsp" style={{ fontSize: 15, marginBottom: 6 }}>Nada encaja</div>
               <div style={{ fontSize: 12.5, color: "var(--silk-dim)", marginBottom: 12 }}>
@@ -318,13 +354,21 @@ export default function Configurator() {
               <button className="btn btn-gold" onClick={() => { setFilters({}); setQ(""); }}>Quitar filtros</button>
             </div>
           ) : (
-            <div style={{ display: "grid", gap: 9,
-              gridTemplateColumns: "repeat(auto-fill,minmax(196px,1fr))" }}>
-              {shown.map(({ p, blocked, reason }) =>
-                <PartCard key={p.id} part={p} blocked={blocked} reason={reason} cur={cur}
-                  chosen={((build[p.cat] || []) as Picked[]).some((x) => x.id === p.id)}
-                  onPick={pick} onBuy={setBuy} />)}
-            </div>
+            <>
+              <div style={{ display: "grid", gap: 9,
+                gridTemplateColumns: "repeat(auto-fill,minmax(196px,1fr))" }}>
+                {items.map(({ p, blocked, reason }) =>
+                  <PartCard key={p.id} part={p} blocked={blocked} reason={reason} cur={cur}
+                    chosen={((build[p.cat] || []) as Picked[]).some((x) => x.id === p.id)}
+                    onPick={pick} onBuy={setBuy} />)}
+              </div>
+              {catalog && items.length < catalog.total && (
+                <button className="btn" style={{ width: "100%", marginTop: 12 }}
+                  onClick={() => setPage((p) => p + 1)}>
+                  Cargar más ({items.length}/{catalog.total})
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

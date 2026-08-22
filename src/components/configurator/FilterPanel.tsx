@@ -1,23 +1,24 @@
 "use client";
-/* Panel de filtros */
+/* Panel de filtros. Desde la fase 4 los valores posibles (facetas) los
+   calcula el servidor sobre la categoría completa; el panel solo pinta. */
 import { useState } from "react";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { FILTERS, type ActiveFilters, type EnumValue, type FilterValue } from "@/lib/filters";
-import type { CatId, Part } from "@/data/parts/types";
+import type { Facet } from "@/lib/catalog-server";
+import type { CatId } from "@/data/parts/types";
 import type { Dispatch, SetStateAction } from "react";
 
-export default function FilterPanel({ cat, pool, filters, setFilters, onClear }: {
+export default function FilterPanel({ cat, facets, filters, setFilters, onClear }: {
   cat: CatId;
-  pool: Part[];
+  facets: Facet[];
   filters: ActiveFilters;
   setFilters: Dispatch<SetStateAction<ActiveFilters>>;
   onClear: () => void;
 }) {
   const defs = FILTERS[cat] || [];
   const [open, setOpen] = useState<Set<string>>(() => new Set(defs.slice(0, 4).map((d) => d.k)));
-  /* Al cambiar de categoría se reabren los cuatro primeros filtros. Mismo
-     comportamiento que el useEffect original, con el patrón de estado
-     derivado en render que recomienda React (sin render en cascada). */
+  /* Al cambiar de categoría se reabren los cuatro primeros filtros
+     (estado derivado en render, mismo comportamiento que el original). */
   const [prevCat, setPrevCat] = useState(cat);
   if (prevCat !== cat) {
     setPrevCat(cat);
@@ -26,6 +27,7 @@ export default function FilterPanel({ cat, pool, filters, setFilters, onClear }:
   const toggle = (k: string) => setOpen((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const set = (k: string, v: FilterValue | undefined) => setFilters((f) => ({ ...f, [k]: v }));
   const active = Object.values(filters).filter((v) => v !== undefined && v !== null && !(Array.isArray(v) && !v.length)).length;
+  const byKey = new Map(facets.map((f) => [f.k, f]));
 
   return (
     <div className="panel scroll" style={{ padding: "12px 12px 20px", height: "100%" }}>
@@ -37,26 +39,20 @@ export default function FilterPanel({ cat, pool, filters, setFilters, onClear }:
       </div>
 
       {defs.map((d) => {
-        const vals = pool.map((p) => (p as unknown as Record<string, unknown>)[d.k]).filter((v) => v !== undefined);
-        if (!vals.length) return null;
+        const facet = byKey.get(d.k);
+        if (!facet) return null;
         const isOpen = open.has(d.k);
         let body: React.ReactNode = null;
 
-        if (d.type === "enum") {
-          const uniq = [...new Set(vals.flat().filter((v) => v !== null && v !== ""))].sort((a, b) =>
-            typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b))) as EnumValue[];
-          if (uniq.length < 2) return null;
+        if (facet.kind === "enum") {
           const sel = (filters[d.k] as EnumValue[] | undefined) || [];
           body = <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {uniq.map((v) => <button key={String(v)} className={`chip ${sel.includes(v) ? "sel" : ""}`}
+            {facet.values.map((v) => <button key={String(v)} className={`chip ${sel.includes(v) ? "sel" : ""}`}
               onClick={() => set(d.k, sel.includes(v) ? sel.filter((x) => x !== v) : [...sel, v])}>{String(v)}</button>)}
           </div>;
         }
-        else if (d.type === "range") {
-          const nums = vals.filter((v): v is number => typeof v === "number");
-          if (nums.length < 2) return null;
-          const lo = Math.min(...nums), hi = Math.max(...nums);
-          if (lo === hi) return null;
+        else if (facet.kind === "range") {
+          const { lo, hi } = facet;
           const cur = (filters[d.k] as [number, number] | undefined) || [lo, hi];
           body = <div>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
