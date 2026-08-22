@@ -1,11 +1,11 @@
 /* ── Categorías del configurador ─────────────────────────────────── */
 import {
   Cpu, MemoryStick, HardDrive, Zap, Fan, Cable, Monitor, Keyboard, Mouse,
-  Headphones, Mic, Video, Speaker,
+  Headphones, Mic, Video, Speaker, Wifi,
 } from "lucide-react";
 import {
   CaseIcon, CoolerIcon, GpuIcon, HubIcon, MboIcon, NetWiredIcon,
-  NetWirelessIcon, PadIcon, PasteIcon, RgbIcon, SoundCardIcon,
+  PadIcon, PasteIcon, RgbIcon, SoundCardIcon,
   type PartIconProps,
 } from "@/components/configurator/icons";
 import type { ComponentType } from "react";
@@ -37,7 +37,7 @@ export const CATS: Category[] = [
 
   { id: "soundcard",   label: "Tarjeta de sonido", icon: SoundCardIcon,   group: "expansion", multi: true },
   { id: "netwired",    label: "Red por cable",     icon: NetWiredIcon,    group: "expansion", multi: true },
-  { id: "netwireless", label: "Red inalámbrica",   icon: NetWirelessIcon, group: "expansion", multi: true },
+  { id: "netwireless", label: "Red inalámbrica",   icon: Wifi,            group: "expansion", multi: true },
 
   { id: "monitor",  label: "Monitor",     icon: Monitor,    group: "periph", multi: true },
   { id: "keyboard", label: "Teclado",     icon: Keyboard,   group: "periph" },

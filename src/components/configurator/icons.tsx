@@ -116,38 +116,31 @@ export const PadIcon = make("PadIcon", <>
   <path d="M16.1 8.2 c0 -1 1.2 -0.8 1 -2" />
 </>);
 
-/* Tarjeta de sonido: jacks en la chapa y contactos PCIe */
+/* Tarjeta de sonido: chapa con jacks, altavoz en su círculo y contactos PCIe */
 export const SoundCardIcon = make("SoundCardIcon", <>
-  <path d="M21 4.5 v13" />
-  <path d="M19 6.5 h2" />
-  <path d="M19 15 h2" />
-  <rect x="3.5" y="5.5" width="15" height="11" rx="1" />
-  <circle cx="7.5" cy="11" r="1.6" />
-  <circle cx="12" cy="11" r="1.6" />
-  <rect x="15" y="7.5" width="2.4" height="2.4" />
-  <path d="M6.5 16.5 v2 h5.5 v-2" />
+  <path d="M3 4 v15" />
+  <path d="M3 7 h1.5" />
+  <path d="M3 12 h1.5" />
+  <rect x="4.5" y="5" width="16.5" height="12" rx="1.5" />
+  <circle cx="7.6" cy="9" r="1" />
+  <circle cx="10.7" cy="9" r="1" />
+  <circle cx="7.6" cy="13" r="1" />
+  <circle cx="10.7" cy="13" r="1" />
+  <circle cx="16.6" cy="11" r="3.7" />
+  <path d="M14.9 10.2 v1.6 h1 l1.9 1.6 v-4.8 l-1.9 1.6 z" />
+  <path d="M7 17 v1.8 h4 v-1.8" />
+  <path d="M13.5 17 v1.8 h4.5 v-1.8" />
 </>);
 
-/* Adaptador de red con cable: puerto RJ45 en la tarjeta */
+/* Red por cable: conector RJ45 hacia el equipo */
 export const NetWiredIcon = make("NetWiredIcon", <>
-  <path d="M21 4.5 v13" />
-  <rect x="3.5" y="6" width="15" height="10" rx="1" />
-  <rect x="6.5" y="9" width="5" height="4.5" />
-  <path d="M8 13.5 h2" />
-  <path d="M8.2 9 v-1.4" />
-  <path d="M9.8 9 v-1.4" />
-  <rect x="13.8" y="8.6" width="2.8" height="2.8" />
-  <path d="M6.5 16 v2 h5.5 v-2" />
-</>);
-
-/* Adaptador inalámbrico: tarjeta con dos antenas */
-export const NetWirelessIcon = make("NetWirelessIcon", <>
-  <rect x="3.5" y="11" width="15" height="7" rx="1" />
-  <path d="M7 11 V5.2" />
-  <circle cx="7" cy="4.2" r="1" />
-  <path d="M14.5 11 V5.2" />
-  <circle cx="14.5" cy="4.2" r="1" />
-  <rect x="9.2" y="13.2" width="3.4" height="2.6" />
-  <path d="M21 9.5 v9.5" />
-  <path d="M6.5 18 v1.6 h6 v-1.6" />
+  <rect x="2.5" y="4" width="6.5" height="8.5" rx="0.5" />
+  <path d="M4.3 6 v1.6" />
+  <path d="M5.75 6 v1.6" />
+  <path d="M7.2 6 v1.6" />
+  <path d="M4.9 12.5 v-1.8 h1.7 v1.8" />
+  <path d="M5.75 12.5 v8" />
+  <rect x="11" y="5.5" width="10.5" height="9" rx="1" />
+  <path d="M16.25 14.5 v2.6" />
+  <path d="M13.5 19 h5.5" />
 </>);
