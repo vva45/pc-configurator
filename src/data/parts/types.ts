@@ -14,7 +14,8 @@ export type MemType = "DDR2" | "DDR3" | "DDR4" | "DDR5" | "DDR5-RDIMM";
 export type Socket =
   | "AM5" | "AM4" | "AM3+" | "FM2+" | "sTR5" | "sTRX4"
   | "LGA1851" | "LGA1700" | "LGA1200" | "LGA1151v2" | "LGA1151"
-  | "LGA1150" | "LGA1155" | "LGA775" | "LGA2011-v3" | "LGA2066" | "DIP16";
+  | "LGA1150" | "LGA1155" | "LGA1156" | "LGA1366" | "LGA775"
+  | "LGA2011" | "LGA2011-v3" | "LGA2066" | "DIP16";
 export type FormFactor = "EEB" | "CEB" | "E-ATX" | "ATX" | "Micro-ATX" | "Mini-ITX";
 export type PsuForm = "ATX" | "SFX" | "SFX-L";
 

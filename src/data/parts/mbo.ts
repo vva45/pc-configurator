@@ -91,6 +91,9 @@ M("ASUS","X99-A II",0,{socket:"LGA2011-v3",chipset:"X99",form:"ATX",memType:"DDR
 M("Gigabyte","X299 AORUS Master",0,{socket:"LGA2066",chipset:"X299",form:"ATX",memType:"DDR4",dimm:8,memMaxGB:256,memOC:4266,pcie16:["3.0 ×16 ×4"],m2:3,sata:8,usbC:"3.1 G2 ×1",usbA:"3.1 G2 ×5, 3.1 G1 ×4",lan:"10 GbE",wifi:"Wi-Fi 5",audio:"ALC1220",vrm:"12+1",rgbHdr:4,fanHdr:8,year:2019,legacy:true});
 
 ADD("ASUS","P5Q Deluxe",0,{socket:"LGA775",chipset:"Intel P45",form:"ATX",memType:"DDR2",dimm:4,memMaxGB:16,memOC:1200,pcie16:["2.0 ×16","2.0 ×8"],m2:0,m2gen5:0,sata:8,usbC:null,usbA:"2.0 ×12",tb:false,lan:"1 GbE ×2",wifi:null,audio:"AD2000B",vrm:"16",bios_flashback:false,rgbHdr:0,fanHdr:5,museum:true,year:2008});
+ADD("ASUS","P6T Deluxe",0,{socket:"LGA1366",chipset:"Intel X58",form:"ATX",memType:"DDR3",dimm:6,memMaxGB:24,memOC:2000,pcie16:["2.0 ×16","2.0 ×16"],m2:0,m2gen5:0,sata:8,usbC:null,usbA:"2.0 ×12",tb:false,lan:"1 GbE ×2",wifi:null,audio:"AD2000B",vrm:"16+2",bios_flashback:false,rgbHdr:0,fanHdr:5,museum:true,year:2008});
+ADD("Gigabyte","GA-P55A-UD4",0,{socket:"LGA1156",chipset:"Intel P55",form:"ATX",memType:"DDR3",dimm:4,memMaxGB:16,memOC:2200,pcie16:["2.0 ×16","2.0 ×8"],m2:0,m2gen5:0,sata:8,usbC:null,usbA:"3.0 ×2, 2.0 ×10",tb:false,lan:"1 GbE",wifi:null,audio:"ALC889",vrm:"12",bios_flashback:false,rgbHdr:0,fanHdr:4,museum:true,year:2009});
+ADD("ASUS","P9X79",0,{socket:"LGA2011",chipset:"Intel X79",form:"ATX",memType:"DDR3",dimm:8,memMaxGB:64,memOC:2400,pcie16:["3.0 ×16","3.0 ×16"],m2:0,m2gen5:0,sata:6,usbC:null,usbA:"3.0 ×6, 2.0 ×8",tb:false,lan:"1 GbE",wifi:null,audio:"ALC898",vrm:"12+2",bios_flashback:true,rgbHdr:0,fanHdr:6,museum:true,year:2011});
 
 /* ── AM4 · gama completa de placas (petición del usuario, ago 2026) ──
    Generadas por script: specs derivadas de chipset + gama + formato con

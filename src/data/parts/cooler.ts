@@ -40,6 +40,8 @@ K("Thermalright","AXP90-X47",25,{type:"Aire (low-profile)",sockets:[...A_MOD,...
 K("Intel","Laminar RM1 (de serie)",0,{type:"Aire (stock)",sockets:["LGA1700"],height:47,tdpRated:65,fans:1,fanSize:92,noise:30,ramClear:99,watt:2,warranty:1,stock:true});
 K("AMD","Wraith Prism (de serie)",0,{type:"Aire (stock)",sockets:["AM4"],height:75,tdpRated:105,fans:1,fanSize:90,noise:39,ramClear:99,watt:3,rgb:true,warranty:1,stock:true});
 K("Intel","Cooler de caja LGA115x",0,{type:"Aire (stock)",sockets:["LGA1200","LGA1151v2","LGA1151","LGA1150","LGA1155","LGA775"],height:40,tdpRated:65,fans:1,fanSize:80,noise:33,ramClear:99,watt:2,warranty:1,stock:true});
+K("Intel","Cooler de caja LGA1366/1156",0,{type:"Aire (stock)",sockets:["LGA1366","LGA1156"],height:45,tdpRated:95,fans:1,fanSize:90,noise:34,ramClear:99,watt:2,warranty:1,stock:true});
+K("Intel","RTS2011AC (de serie)",0,{type:"Aire (stock)",sockets:["LGA2011"],height:105,tdpRated:130,fans:1,fanSize:92,noise:36,ramClear:99,watt:2,warranty:1,stock:true});
 // Kits AIO · refrigeración líquida cerrada
 K("Corsair","iCUE LINK TITAN 360 RX RGB",219,{type:"AIO 360 mm",sockets:[...A_MOD,...I_MOD,"LGA1200"],height:27,radSize:360,tdpRated:350,fans:3,fanSize:120,noise:36,ramClear:99,watt:18,rgb:true,warranty:5});
 K("Corsair","H100i ELITE CAPELLIX XT",139,{type:"AIO 240 mm",sockets:[...A_MOD,...I_MOD,"LGA1200","LGA1151v2"],height:27,radSize:240,tdpRated:280,fans:2,fanSize:120,noise:36,ramClear:99,watt:14,rgb:true,warranty:5});
