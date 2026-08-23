@@ -80,6 +80,55 @@ export interface CatalogResponse {
   pageSize: number;
 }
 
+/* ── Búsqueda libre ──────────────────────────────────────────────────
+   Por palabras: cada término debe aparecer en alguna parte de la pieza
+   (marca, nombre o specs clave), en cualquier orden. La comparación se
+   hace sobre texto compactado (minúsculas, sin espacios ni signos), así
+   «2tb» encuentra «2 TB» y «sn850x» encuentra «SN850X». Con texto de
+   búsqueda se rastrillan también las descatalogadas y piezas de museo,
+   aunque el interruptor esté apagado: buscar es querer verlo todo. */
+const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+const HAY = new Map<string, string>();
+function haystack(p: Part): string {
+  const hit = HAY.get(p.id);
+  if (hit !== undefined) return hit;
+  const o = p as unknown as Record<string, unknown>;
+  const bits: string[] = [p.brand, p.name];
+  for (const k of ["socket", "chipset", "memType", "form", "vtype", "iface", "gen", "eff", "chip", "family", "nand", "atx", "panel", "type"]) {
+    const v = o[k];
+    if (typeof v === "string") bits.push(v);
+    else if (Array.isArray(v)) bits.push(...v.filter((x): x is string => typeof x === "string"));
+  }
+  if (typeof o.vram === "number") bits.push(`${o.vram}gb`);
+  if (typeof o.capGB === "number") bits.push(o.capGB >= 1000 ? `${o.capGB / 1000}tb` : `${o.capGB}gb`);
+  if (p.cat === "psu" && typeof o.watt === "number") bits.push(`${o.watt}w`);
+  if (typeof o.size === "number") bits.push(`${o.size}mm`);
+  if (typeof o.rpm === "number") bits.push(`${o.rpm}rpm`);
+  if (typeof o.speed === "number") bits.push(`${o.speed}mhz`);
+  /* palabras sueltas + parejas adyacentes pegadas: «2 TB» aporta «2tb»
+     sin pegarse al número anterior («540 2 TB» ↛ «5402tb» a secas) y
+     «Ryzen 7 5800X3D» conserva «5800x3d» con frontera limpia */
+  const words: string[] = [];
+  for (const bit of bits) {
+    const w = bit.split(/\s+/).map(compact).filter(Boolean);
+    words.push(...w);
+    for (let i = 0; i < w.length - 1; i++) words.push(w[i] + w[i + 1]);
+  }
+  const hay = words.join("|");
+  HAY.set(p.id, hay);
+  return hay;
+}
+/* Frontera numérica: «2tb» no debe colarse dentro de «12tb» ni «850»
+   dentro de «1850rpm», pero sí valer en «rtx4070» o tras un espacio. */
+const tokenRe = (t: string) => {
+  const esc = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`${/^\d/.test(t) ? "(?<!\\d)" : ""}${esc}${/\d$/.test(t) ? "(?!\\d)" : ""}`);
+};
+function matchesQuery(p: Part, tokens: RegExp[]): boolean {
+  const hay = haystack(p);
+  return tokens.every((t) => t.test(hay));
+}
+
 type SortKey = "rel" | "price" | "priceDesc" | "name";
 const SORT_KEYS: Record<SortKey, (x: CatalogItem) => number | string> = {
   price: (x) => x.p.price || 1e9,
@@ -105,9 +154,10 @@ export function queryCatalog(sp: URLSearchParams): CatalogResponse {
   try { filters = JSON.parse(sp.get("filters") || "{}") as ActiveFilters; } catch { /* filtros ilegibles: sin filtros */ }
   const build = resolveBuild(sp);
 
-  const pool = P.filter((p) => p.cat === cat && (museum || !(p.museum || p.legacy)));
+  const tokens = q.split(/\s+/).map(compact).filter(Boolean).map(tokenRe);
+  const pool = P.filter((p) => p.cat === cat && (tokens.length > 0 || museum || !(p.museum || p.legacy)));
   let r = pool.filter((p) => matches(p, filters, cat));
-  if (q) r = r.filter((p) => (p.brand + " " + p.name).toLowerCase().includes(q));
+  if (tokens.length) r = r.filter((p) => matchesQuery(p, tokens));
   let g: CatalogItem[] = r.map((p) => ({ p, ...gate(p, build) }));
   const nCompat = g.filter((x) => !x.blocked).length;
   const nBlocked = g.length - nCompat;

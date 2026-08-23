@@ -7,8 +7,9 @@ import { PLATFORM, gate, runPost } from "./lib/compat";
 import { calcPower } from "./lib/power";
 import { FILTERS, KEYSPECS } from "./lib/filters";
 import { REGIONS, searchTerm, storesFor } from "./lib/regions";
+import { queryCatalog } from "./lib/catalog-server";
 
 export const __t = {
   P, gate, runPost, calcPower, CATS, CAT, GROUPS,
-  FILTERS, KEYSPECS, PLATFORM, REGIONS, storesFor, searchTerm,
+  FILTERS, KEYSPECS, PLATFORM, REGIONS, storesFor, searchTerm, queryCatalog,
 };

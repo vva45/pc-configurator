@@ -301,7 +301,7 @@ export default function Configurator() {
             <Search size={13} color="var(--silk-dim)"
               style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)" }} />
             <input type="text" value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder={`Buscar en ${CAT[cat].label.toLowerCase()}…`}
+              placeholder={`Buscar en ${CAT[cat].label.toLowerCase()} — «seagate 2tb», «rtx 4070»…`}
               style={{ paddingLeft: 26 }} aria-label="Buscar" />
           </div>
           <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Ordenar"

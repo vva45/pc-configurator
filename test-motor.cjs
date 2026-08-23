@@ -121,5 +121,26 @@ ok(!t.includes('%28')&&!t.includes('%20%20'),'término mal formado: '+t);
 console.log('  '+links+' enlaces de tienda generados y validados');
 console.log('  ejemplo:',decodeURIComponent(storesFor(P.find(p=>p.name.includes('9800X3D')),'ES')[0].url));
 
+// 12. Búsqueda libre del catálogo (por palabras, sin orden, con descatalogadas)
+{
+  const {queryCatalog}=__t;
+  const qc=(cat,q,extra)=>queryCatalog(new URLSearchParams({cat,q,museum:'0',showBlocked:'1',page:'0',size:'5',...extra}));
+  const r1=qc('storage','seagate 2tb');
+  ok(r1.total>0,'búsqueda «seagate 2tb» sin resultados');
+  ok(r1.items.every(x=>x.p.brand.toLowerCase()==='seagate'),'«seagate 2tb» devuelve otras marcas');
+  const r2=qc('storage','2TB SEAGATE');   // orden inverso y mayúsculas
+  ok(r2.total===r1.total,'la búsqueda depende del orden o de mayúsculas');
+  ok(qc('storage','2tb').total>0,'«2tb» no encuentra «2 TB» (espacios)');
+  // con texto de búsqueda deben aparecer también las descatalogadas
+  const legacy=qc('gpu','gtx 970');
+  ok(legacy.total>0 && legacy.items.some(x=>x.p.legacy),'la búsqueda no rastrilla descatalogadas');
+  ok(qc('cpu','ryzen 5800x3d').total>0,'búsqueda multi-palabra en CPU falla');
+  ok(qc('psu','corsair 850').total>0,'búsqueda en fuentes falla');
+  ok(qc('storage','zzzz noexiste').total===0,'la búsqueda imposible devuelve resultados');
+  // frontera numérica: «2tb» no debe casar dentro de «12 TB»
+  ok(!qc('storage','seagate 2tb').items.some(x=>/12 TB|32 TB/.test(x.p.name)),'«2tb» casa dentro de «12 TB»');
+  console.log('  búsqueda libre: palabras sueltas, sin orden ni mayúsculas, con descatalogadas');
+}
+
 console.log(`\n${pass} OK · ${fail} FALLOS`);
 process.exit(fail?1:0);
