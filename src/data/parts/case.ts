@@ -171,4 +171,10 @@ ADD("Gigabyte","C102 GLASS",139,{form:["ATX","Micro-ATX","Mini-ITX"],gpuLen:395,
 ADD("Gigabyte","C201 GLASS",139,{form:["ATX","Micro-ATX","Mini-ITX"],gpuLen:395,coolerH:168,psuLen:200,psuForm:["ATX","SFX"],rad:{top:360,front:360,rear:120},fanInc:3,fanMax:8,fanSizes:[120,140],bays35:2,bays25:2,side:"Cristal templado",psuPos:"Inferior",frontIO:"2× USB-A 3.0, 1× USB-C, jack",dims:"465×230×465 mm",vol:49,color:"Negro / blanco"});
 ADD("Gigabyte","GB-AC300G",139,{form:["ATX","Micro-ATX","Mini-ITX"],gpuLen:395,coolerH:168,psuLen:200,psuForm:["ATX","SFX"],rad:{top:360,front:360,rear:120},fanInc:4,fanMax:8,fanSizes:[120,140],bays35:2,bays25:2,side:"Cristal templado",psuPos:"Inferior",frontIO:"2× USB-A 3.0, jack",dims:"465×230×465 mm",vol:49,color:"Negro / blanco"});
 
+/* ── Corsair iCUE 220T RGB Airflow, en negro y en blanco (petición del
+   usuario, ago 2026). Specs del fabricante: frontal de malla con 3×
+   SP120 RGB PRO, ATX/mATX/ITX, GPU hasta 300 mm, disipador 160 mm. ── */
+ADD("Corsair","iCUE 220T RGB Airflow (negra)",99,{form:["ATX","Micro-ATX","Mini-ITX"],gpuLen:300,coolerH:160,psuLen:180,psuForm:["ATX"],rad:{top:240,front:360},fanInc:3,fanMax:6,fanSizes:[120,140],bays35:2,bays25:2,side:"Cristal templado",psuPos:"Inferior",frontIO:"2× USB-A 3.0, jack",dims:"395×210×450 mm",vol:37.3,color:"Negro"});
+ADD("Corsair","iCUE 220T RGB Airflow (blanca)",99,{form:["ATX","Micro-ATX","Mini-ITX"],gpuLen:300,coolerH:160,psuLen:180,psuForm:["ATX"],rad:{top:240,front:360},fanInc:3,fanMax:6,fanSizes:[120,140],bays35:2,bays25:2,side:"Cristal templado",psuPos:"Inferior",frontIO:"2× USB-A 3.0, jack",dims:"395×210×450 mm",vol:37.3,color:"Blanco"});
+
 export const CASE_ROWS = rows;
