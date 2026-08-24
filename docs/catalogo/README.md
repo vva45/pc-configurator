@@ -1,5 +1,7 @@
 # Catálogo de cajas
 
+> Para las gráficas, ver [graficas.md](graficas.md).
+
 Estado de las **528 cajas** de `src/data/parts/case.ts`, todas con las
 especificaciones del fabricante.
 
