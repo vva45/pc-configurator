@@ -127,5 +127,105 @@ for(const [label,cat,name,ctx,shouldBlock] of T){
   if(!!r.blocked!==shouldBlock) err(`${label}: esperaba ${shouldBlock?'bloqueo':'compatible'}, dio ${r.blocked?'bloqueo ('+r.reason+')':'compatible'}`);
   else console.log(`  ✓ ${label}${r.reason?' — '+r.reason:''}`);
 }
+console.log('\n=== 7. Coherencia física y eléctrica de las gráficas ===');
+/* Las unidades del catálogo se confunden con facilidad al auditar a mano:
+   «boost» va en GHz (2.52 = 2520 MHz) y «psuMin» es la fuente recomendada
+   para el equipo entero, no para la tarjeta sola. Comprobarlas aquí evita
+   que nadie vuelva a improvisar la consulta con las unidades cambiadas. */
+const BUSES=[32,64,96,128,160,192,256,320,352,384,448,512,1024,2048,4096,8192];
+let gpuRev=0;
+for(const g of of('gpu')){
+  if(g.museum||g.legacy) continue;
+  gpuRev++;
+  const q=(c,m)=>{ if(c) err(`${g.brand} ${g.name}: ${m}`); };
+  q(g.boost!==undefined&&(g.boost<0.3||g.boost>4.2), `boost ${g.boost} GHz fuera de rango (el campo va en GHz)`);
+  q(g.tbp!==undefined&&(g.tbp<3||g.tbp>800), `tbp ${g.tbp} W fuera de rango`);
+  q(g.len!==undefined&&(g.len<100||g.len>420), `len ${g.len} mm fuera de rango`);
+  q(g.slots!==undefined&&(g.slots<1||g.slots>5), `slots ${g.slots} fuera de rango`);
+  q(g.vram!==undefined&&(g.vram<1||g.vram>96), `vram ${g.vram} GB fuera de rango`);
+  q(g.bus!==undefined&&!BUSES.includes(g.bus), `bus de ${g.bus} bits no es una anchura real`);
+  q(g.tbp&&g.psuMin&&g.psuMin<g.tbp+50, `psuMin ${g.psuMin} W no deja margen sobre un tbp de ${g.tbp} W`);
+  /* La ranura PCIe da 75 W; cada 8 pines 150 W, cada 6 pines 75 W y el
+     12V-2×6 hasta 600 W. Si la suma no llega al consumo, falta un conector. */
+  const alim=75+(g.conn8||0)*150+(g.conn6||0)*75+(g.hpwr?600:0);
+  q(g.tbp&&alim<g.tbp, `sus conectores dan ${alim} W para un tbp de ${g.tbp} W`);
+}
+console.log(`  ${gpuRev} gráficas a la venta revisadas: unidades, consumo, conectores y bus`);
+
+console.log('\n=== 8. Auxiliares, expansión y periféricos ===');
+/* Estas ocho categorías no tenían ninguna prueba: el motor las filtra por
+   caja y placa (ventiladores, hubs, tiras) o las deja pasar siempre
+   (pasta, cables, tarjetas). Ambas cosas se comprueban aquí. */
+const unMbo=of('mbo').find(m=>m.fanHdr>=4&&m.rgbHdr>=1);
+const unaCaja=of('case').find(c=>c.fanSizes.includes(120)&&c.fanMax>=6);
+const f120=of('fan').find(f=>f.size===120);
+const f200=of('fan').find(f=>f.size===200);
+const cajaSin200=of('case').find(c=>!c.fanSizes.includes(200));
+
+if(f200&&cajaSin200){
+  const r=gate(f200,B({case:cajaSin200}));
+  if(!r.blocked) err(`ventilador de 200 mm aceptado en ${cajaSin200.name}, que admite ${cajaSin200.fanSizes} mm`);
+  else console.log(`  ✓ ventilador de 200 mm rechazado por ${cajaSin200.name} — ${r.reason}`);
+}
+if(f120&&unaCaja){
+  const r=gate(f120,B({case:unaCaja}));
+  if(r.blocked) err(`ventilador de 120 mm rechazado por ${unaCaja.name}: ${r.reason}`);
+  else console.log(`  ✓ ventilador de 120 mm aceptado por ${unaCaja.name}`);
+}
+/* Más ventiladores que posiciones tiene la caja: el informe debe fallar. */
+if(f120&&unaCaja){
+  const exceso=Array(unaCaja.fanMax+2).fill(f120);
+  const b={case:[unaCaja],fan:exceso};
+  /* El motor emite dos líneas FAN_FIT: el recuento y, aparte, el fallo por
+     exceso. Hay que mirar todas, no solo la primera. */
+  const ls=runPost(b,calcPower(b)).filter(x=>x.id==='FAN_FIT');
+  const fallo=ls.find(x=>x.lvl==='fail');
+  if(!fallo) err(`${exceso.length} ventiladores en ${unaCaja.fanMax} posiciones: esperaba un fallo FAN_FIT, dio ${ls.map(x=>x.lvl).join('+')||'nada'}`);
+  else console.log(`  ✓ ${exceso.length} ventiladores sobre ${unaCaja.fanMax} posiciones — ${fallo.msg}`);
+}
+/* Sin hub, pasarse de cabeceras avisa; con hub, deja de avisar. */
+const hubPwm=of('hub').find(h=>h.ports>=6);
+if(f120&&unMbo&&hubPwm){
+  const muchos=Array(unMbo.fanHdr+2).fill(f120);
+  const sin={mbo:[unMbo],fan:muchos};
+  const con={mbo:[unMbo],fan:muchos,hub:[hubPwm]};
+  const a=runPost(sin,calcPower(sin)).find(x=>x.id==='FAN_HDR');
+  const c=runPost(con,calcPower(con)).find(x=>x.id==='FAN_HDR');
+  if(a?.lvl!=='warn') err(`${muchos.length} ventiladores y ${unMbo.fanHdr} cabeceras sin hub: esperaba aviso, dio ${a?.lvl||'nada'}`);
+  else if(c?.lvl!=='ok') err(`el hub de ${hubPwm.ports} puertos no resuelve el aviso de cabeceras (dio ${c?.lvl||'nada'})`);
+  else console.log(`  ✓ ${muchos.length} ventiladores avisan sin hub y quedan cubiertos con él`);
+}
+/* Una tira que exige controladora propietaria avisa si no hay hub RGB. */
+const tiraCtl=of('rgb').find(r=>r.conn.includes('Controladora'));
+const hubRgb=of('hub').find(h=>h.rgb);
+if(tiraCtl&&unMbo&&hubRgb){
+  const sin={mbo:[unMbo],rgb:[tiraCtl]};
+  const con={mbo:[unMbo],rgb:[tiraCtl],hub:[hubRgb]};
+  const a=runPost(sin,calcPower(sin)).find(x=>x.id==='RGB_HDR');
+  const c=runPost(con,calcPower(con)).find(x=>x.id==='RGB_HDR');
+  if(a?.lvl!=='warn') err(`tira con «${tiraCtl.conn}» sin hub RGB: esperaba aviso, dio ${a?.lvl||'nada'}`);
+  else if(c?.lvl==='warn'&&c.msg===a.msg) err(`el hub RGB no resuelve el aviso de la tira «${tiraCtl.conn}»`);
+  else console.log(`  ✓ tira con controladora propietaria avisa sin hub RGB — ${a.msg}`);
+}
+/* Pasta, cables y tarjetas de expansión no restringen el montaje: no deben
+   bloquear en ningún contexto, ni siquiera en la caja más pequeña. */
+const cajaMini=of('case').reduce((a,c)=>(c.vol||99)<(a.vol||99)?c:a);
+const ctx=B({case:cajaMini,mbo:unMbo});
+for(const cid of ['paste','cable','soundcard','netwired','netwireless']){
+  const piezas=of(cid);
+  if(!piezas.length){ err(`la categoría ${cid} no tiene ninguna pieza`); continue; }
+  const bloq=piezas.filter(p=>gate(p,ctx).blocked);
+  if(bloq.length) err(`${cid}: ${bloq.length} pieza(s) bloqueadas sin regla que lo justifique (p. ej. ${bloq[0].name})`);
+  else console.log(`  ✓ ${cid.padEnd(12)} ${String(piezas.length).padStart(2)} pieza(s), ninguna bloqueada en ${cajaMini.name}`);
+}
+/* El consumo declarado de tiras y ventiladores tiene que llegar al cálculo:
+   si no, el vatiaje recomendado se queda corto en equipos muy iluminados. */
+if(tiraCtl&&f120){
+  const vacio=calcPower({});
+  const conLuz=calcPower({rgb:[tiraCtl,tiraCtl],fan:[f120,f120]});
+  if(!(conLuz.total>vacio.total)) err('las tiras RGB y los ventiladores no suman al consumo total');
+  else console.log(`  ✓ 2 tiras + 2 ventiladores suman ${conLuz.total-vacio.total} W al total`);
+}
+
 console.log(bad?`\n✗ ${bad} PROBLEMAS`:'\n✓ CATÁLOGO ÍNTEGRO — 0 problemas');
 process.exit(bad?1:0);
