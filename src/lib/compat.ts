@@ -139,6 +139,18 @@ export function gate(part: Part, b: Build): GateResult {
       if (mbo) {
         if (part.iface.startsWith("M.2") && mbo.m2 === 0) return no("La placa no tiene ranuras M.2");
         if (part.iface.startsWith("SATA") && mbo.sata === 0) return no("La placa no tiene puertos SATA");
+        /* Ni una unidad más de las que hay dónde enchufar. Se cuentan las ya
+           elegidas: al evaluar una pieza del catálogo no está en el montaje,
+           y al revisar una ya puesta se la excluye antes de llamar aquí. */
+        const puestas = (pref: string) => list(b, "storage")
+          .filter((s) => s.iface.startsWith(pref))
+          .reduce((a, s) => a + (s.qty || 1), 0);
+        if (part.iface.startsWith("M.2") && puestas("M.2") >= mbo.m2)
+          return no(mbo.m2 === 1 ? "La única ranura M.2 de la placa ya está ocupada"
+            : `Las ${mbo.m2} ranuras M.2 de la placa ya están ocupadas`);
+        if (part.iface.startsWith("SATA") && puestas("SATA") >= mbo.sata)
+          return no(mbo.sata === 1 ? "El único puerto SATA de la placa ya está ocupado"
+            : `Los ${mbo.sata} puertos SATA de la placa ya están ocupados`);
       }
       break;
     case "fan":

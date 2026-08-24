@@ -33,6 +33,13 @@ type Tab = "build" | "catalog" | "status";
 
 const PAGE_SIZE = 48;
 
+/* Orden de montaje: cada pieza elegida lleva a la siguiente ranura. */
+const CORE = CATS.filter((x) => x.group === "core").map((x) => x.id);
+const siguiente = (c: CatId): CatId | null => {
+  const i = CORE.indexOf(c);
+  return i >= 0 && i < CORE.length - 1 ? CORE[i + 1] : null;
+};
+
 export default function Configurator() {
   const [region, setRegion] = useState<RegionId>("ES");
   const [build, setBuild] = useState<AppBuild>({});
@@ -47,6 +54,7 @@ export default function Configurator() {
   const [summary, setSummary] = useState(false);
   const [tab, setTab] = useState<Tab>("build");     // móvil
   const [showFilters, setShowFilters] = useState(false);
+  const uid = useRef(0);
 
   const pending = useRef<ActiveFilters | null>(null);
   useEffect(() => { setFilters(pending.current || {}); pending.current = null; setQ(""); }, [cat]);
@@ -127,19 +135,26 @@ export default function Configurator() {
 
   function pick(part: Part) {
     const c = CAT[part.cat];
-    const item: Picked = { ...part, _uid: `${part.id}-${Date.now()}`, qty: 1 };
-    setBuild((b) => {
-      if (c.multi) {
-        const cur = (b[part.cat] || []) as Picked[];
-        const dup = cur.find((x) => x.id === part.id);
-        if (dup) return { ...b, [part.cat]: cur.map((x) => x.id === part.id ? { ...x, qty: (x.qty || 1) + 1 } : x) } as AppBuild;
-        return { ...b, [part.cat]: [...cur, item] } as AppBuild;
-      }
-      return { ...b, [part.cat]: [item] } as AppBuild;
-    });
-    const order = CATS.filter((x) => x.group === "core").map((x) => x.id);
-    const i = order.indexOf(part.cat);
-    if (i >= 0 && i < order.length - 1 && !c.multi) setCat(order[i + 1]);
+    const item: Picked = { ...part, _uid: `${part.id}-${++uid.current}`, qty: 1 };
+    const previas = (build[part.cat] || []) as Picked[];
+    const dup = c.multi ? previas.find((x) => x.id === part.id) : undefined;
+    const ahora: Picked[] = !c.multi ? [item]
+      : dup ? previas.map((x) => x.id === part.id ? { ...x, qty: (x.qty || 1) + 1 } : x)
+      : [...previas, item];
+    setBuild((b) => ({ ...b, [part.cat]: ahora }) as AppBuild);
+
+    const next = siguiente(part.cat);
+    if (!next) return;
+    /* De una sola pieza: elegirla ya cierra el paso. */
+    if (!c.multi) { setCat(next); return; }
+    /* La memoria salta sola cuando no queda ningún zócalo libre: no hay
+       nada más que elegir ahí. Con ranuras libres se ofrece el botón, por
+       si alguien quiere seguir llenándolas. */
+    if (part.cat === "ram") {
+      const mbo = (build.mbo || [])[0];
+      const modulos = ahora.reduce((a, r) => a + ((r as Picked & { kit?: number }).kit || 1) * (r.qty || 1), 0);
+      if (mbo && modulos >= (mbo as Picked & { dimm?: number }).dimm!) setCat(next);
+    }
   }
   const remove = (c: CatId, uid: string) => setBuild((b) => {
     const n = ((b[c] || []) as Picked[]).filter((x) => x._uid !== uid);
@@ -151,6 +166,14 @@ export default function Configurator() {
     ...b,
     [c]: ((b[c] || []) as Picked[]).map((x) => x._uid === uid ? { ...x, qty: Math.max(1, (x.qty || 1) + d) } : x),
   }) as AppBuild);
+
+  /* El botón de seguir solo tiene sentido en las categorías de varias piezas
+     (las demás saltan solas) y cuando ya hay al menos una elegida. */
+  const continuar = useMemo(() => {
+    if (!CAT[cat].multi) return null;
+    if (!((build[cat] || []) as Picked[]).length) return null;
+    return siguiente(cat);
+  }, [cat, build]);
 
   // ¿qué pieza concreta rompe el montaje? -> contactos en rojo en su ranura
   const conflicts = useMemo(() => {
@@ -322,6 +345,15 @@ export default function Configurator() {
           <button className="chip filt-toggle" onClick={() => setShowFilters((v) => !v)}>
             <SlidersHorizontal size={10} style={{ display: "inline", verticalAlign: "-1px" }} /> Filtros
           </button>
+          {/* En memoria y almacenamiento se eligen varias piezas, así que no
+              hay salto automático mientras queden ranuras: este botón lo
+              ofrece en cuanto hay algo elegido, sin obligar a llenarlas. */}
+          {continuar && (
+            <button className="btn btn-gold" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}
+              onClick={() => { setCat(continuar); setTab("catalog"); }}>
+              Continuar a {CAT[continuar].label} →
+            </button>
+          )}
         </div>
       </div>
 

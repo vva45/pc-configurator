@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,PLATFORM}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,PLATFORM,queryCatalog}=__t;
 let bad=0; const err=m=>{bad++;console.log('  ✗ '+m);};
 const of=c=>P.filter(p=>p.cat===c);
 const B=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,(Array.isArray(v)?v:[v])]));
@@ -226,6 +226,53 @@ if(tiraCtl&&f120){
   if(!(conLuz.total>vacio.total)) err('las tiras RGB y los ventiladores no suman al consumo total');
   else console.log(`  ✓ 2 tiras + 2 ventiladores suman ${conLuz.total-vacio.total} W al total`);
 }
+
+console.log('\n=== 9. Ranuras de almacenamiento y búsqueda por formato ===');
+/* Dos reglas que se rompen sin avisar: pasarse de discos para las ranuras
+   que hay, y que un formato deje de encontrarse por cómo se teclee. */
+const placa1M2 = of('mbo').find(m => m.m2 === 1 && m.sata >= 2);
+const unM2 = of('storage').filter(s => s.iface.startsWith('M.2'));
+const unSata = of('storage').find(s => s.iface.startsWith('SATA'));
+if (placa1M2 && unM2.length >= 2 && unSata) {
+  const vacia = B({ mbo: placa1M2 });
+  if (gate(unM2[0], vacia).blocked) err(`M.2 rechazada en ${placa1M2.name}, que tiene ${placa1M2.m2} ranura`);
+  else console.log(`  ✓ la primera M.2 entra en ${placa1M2.name}`);
+  const conM2 = { mbo: [placa1M2], storage: [unM2[0]] };
+  const r = gate(unM2[1], conM2);
+  if (!r.blocked) err(`segunda M.2 aceptada en una placa con ${placa1M2.m2} ranura`);
+  else console.log(`  ✓ la segunda M.2 se rechaza — ${r.reason}`);
+  if (gate(unSata, conM2).blocked) err('un SATA se rechaza por tener la M.2 ocupada: son ranuras distintas');
+  else console.log('  ✓ con la M.2 llena, los SATA siguen disponibles');
+  /* Las unidades llevan cantidad: cuatro discos en un puerto es lo mismo
+     que cuatro piezas sueltas y debe contar igual. */
+  const sataLleno = { mbo: [placa1M2], storage: [{ ...unSata, qty: placa1M2.sata }] };
+  const r2 = gate(unSata, sataLleno);
+  if (!r2.blocked) err(`SATA aceptado con los ${placa1M2.sata} puertos ya ocupados por cantidad`);
+  else console.log(`  ✓ la cantidad cuenta como unidades — ${r2.reason}`);
+}
+/* Un formato no puede depender de cómo se escriba: «M-ATX», «matx» y
+   «Micro-ATX» son lo mismo para quien busca. */
+const busca = (cat, q) => queryCatalog(new URLSearchParams({ cat, q, size: '1', museum: '1' })).total;
+const canon = busca('mbo', 'micro-atx');
+if (!canon) err('«micro-atx» no encuentra ninguna placa');
+else {
+  for (const forma of ['matx', 'm-atx', 'M-ATX', 'Matx', 'M-Atx', 'uatx']) {
+    const n = busca('mbo', forma);
+    if (n !== canon) err(`«${forma}» da ${n} placas y «micro-atx» da ${canon}: deberían coincidir`);
+  }
+  console.log(`  ✓ matx · m-atx · M-ATX · Matx · M-Atx · uatx → las mismas ${canon} placas`);
+}
+const itx = busca('mbo', 'mini-itx');
+if (busca('mbo', 'mitx') !== itx) err('«mitx» no encuentra las mismas placas que «mini-itx»');
+else console.log(`  ✓ mitx encuentra las ${itx} placas Mini-ITX`);
+/* Varios términos se combinan: chipset y formato a la vez. */
+const b550 = busca('mbo', 'b550 matx');
+if (!b550) err('«b550 matx» no devuelve nada');
+else if (b550 >= busca('mbo', 'b550')) err('«b550 matx» no filtra por formato');
+else console.log(`  ✓ «b550 matx» acota a ${b550} de las ${busca('mbo', 'b550')} B550`);
+const ram32 = busca('ram', '32gb 3600');
+if (!ram32) err('«32gb 3600» no devuelve kits');
+else console.log(`  ✓ «32gb 3600» devuelve ${ram32} kits`);
 
 console.log(bad?`\n✗ ${bad} PROBLEMAS`:'\n✓ CATÁLOGO ÍNTEGRO — 0 problemas');
 process.exit(bad?1:0);

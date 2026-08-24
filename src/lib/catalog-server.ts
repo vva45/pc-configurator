@@ -88,6 +88,13 @@ export interface CatalogResponse {
    búsqueda se rastrillan también las descatalogadas y piezas de museo,
    aunque el interruptor esté apagado: buscar es querer verlo todo. */
 const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+const FORM_ALIAS: Record<string, string[]> = {
+  microatx: ["matx", "uatx", "matx"],
+  miniitx: ["mitx"],
+  minidtx: ["mdtx"],
+  eatx: ["extendedatx"],
+  flexatx: ["fatx"],
+};
 const HAY = new Map<string, string>();
 function haystack(p: Part): string {
   const hit = HAY.get(p.id);
@@ -113,6 +120,14 @@ function haystack(p: Part): string {
     const w = bit.split(/\s+/).map(compact).filter(Boolean);
     words.push(...w);
     for (let i = 0; i < w.length - 1; i++) words.push(w[i] + w[i + 1]);
+  }
+  /* Un formato se teclea de mil maneras: «Micro-ATX», «mATX», «m-atx»,
+     «uATX». Al compactar quedan cadenas distintas («microatx» no contiene
+     «matx»), así que cada forma canónica arrastra sus variantes y la
+     búsqueda deja de depender de cómo se escriba. */
+  for (const w of [...words]) {
+    const alias = FORM_ALIAS[w];
+    if (alias) words.push(...alias);
   }
   const hay = words.join("|");
   HAY.set(p.id, hay);
