@@ -10,9 +10,9 @@ El usuario pegó un listado de la categoría de cajas de PcComponentes con **516
 productos** (nombre + precios + valoraciones; las valoraciones, opiniones y
 plazos de entrega se ignoran por completo). De ahí:
 
-- **385 cajas ya están añadidas** y desplegadas (`src/data/parts/case.ts`,
-  bloques con la cabecera «Cajas del listado de PcComponentes»): 205 de la
-  primera tanda y **180 de la segunda**.
+- **528 cajas** en `src/data/parts/case.ts`, todas con al menos un dato real
+  de compatibilidad. Eran 545: se retiraron 17 cuya ficha no aparece en
+  ninguna parte (ver «Limpieza de agosto» más abajo).
 - **126 cajas siguen pendientes**, listadas en
   [`cajas-pendientes.txt`](./cajas-pendientes.txt).
 
@@ -143,6 +143,11 @@ bien:
   todos los subagentes**: en cuanto se agota, el resto devuelve vacío. Conviene
   empezar por las marcas con más modelos pendientes.
 
+**No lanzar más de 4-5 subagentes a la vez.** Con más, el buscador se satura
+y empieza a devolver resultados vacíos que los agentes leen como «este
+producto no existe»; una tanda de 76 agentes dio 78 «notfound» de 79 sobre
+cajas con ficha pública evidente. Ver «Limpieza de agosto» más abajo.
+
 **Exigir a cada subagente que vuelque su JSONL cada 3 modelos, no al final.**
 En la segunda tanda se alcanzó el límite de uso del modelo a mitad de trabajo
 y los seis agentes que guardaban solo al terminar **perdieron todo lo buscado**
@@ -195,29 +200,47 @@ lo que se sospechaba: `DeepCool CL660` / `CL6600` (el segundo lleva una AIO de
 360 de fábrica), `ASUS TUF Gaming GT502 PLUS` / `GT502 HORIZON TG ARGB` frente
 al `GT502`, y `ASUS ROG Strix Helios II GX601S` frente al `ROG Strix Helios`.
 
-## Repasos que dejó la tanda anterior
+## Limpieza de agosto: se acabaron las filas inventadas
 
-Una auditoría de las 205 filas añadidas encontró esto. Ya está corregido lo que
-era claramente erróneo (Mars Gaming MC-MIRAGE tenía los ejes de `dims`
-cambiados de orden y un radiador frontal imposible; MC-3TCORELCDM y GameMax
-CLAW 360 declaraban una gráfica más larga que la propia caja; la Jonsbo N2,
-un cubo de 222 mm, declaraba un radiador de 240). Lo que queda:
+La expansión inicial de cajas se hizo sin buscar fichas: rellenaba todo con
+la «cota de clase» por tipo de torre. El resultado era que **187 cajas
+compartían exactamente las mismas medidas, gráfica máxima y altura de
+disipador**, y el configurador las trataba como el mismo chasis. De ellas:
 
-**31 filas se quedaron con la cota de clase en casi todos los campos**, porque
-la búsqueda no devolvió ficha del fabricante. Comparten specs byte a byte, así
-que hoy el configurador las trata como el mismo chasis. Conviene rehacerlas
-con datos reales, empezando por `gpuLen`, `coolerH` y `rad`, que son los que
-deciden la compatibilidad:
+- **170 se han rehecho con especificaciones reales** buscadas modelo a modelo.
+- **17 se han borrado del catálogo** porque su ficha no aparece publicada en
+  ninguna parte: `ASUS Prime AP601` · `NZXT H3 Flow` · `Thermaltake Klea 340
+  TG ARGB` · `Thermaltake AX100` · `SilverStone FARA R2` · `HYTE M60` ·
+  `HYTE M60 Mini` · `Montech X4` · `Tempest Ironvale ARGB Mesh` ·
+  `Hiditec H3 PRO` · `Modecom Volcano AQ500 ARGB` · `Xigmatek Aqua V EN45813`
+  · `Inter-Tech CXC2` · `Thermalright A70 VISION` · `Cougar Purity` ·
+  `Zalman Z10 DS` · `Kolink Unity Code X`.
 
-> Tempest Ironvale ARGB Mesh · Xigmatek META EN45066 · Xigmatek Aqua V EN45813
-> · Inter-Tech CXC2 · Thermalright A70 VISION · APNX V2 · APNX V2-F · APNX V1 ·
-> APNX V1-W · APNX C1-R · Tryx FLOVA F50 · Zalman Z10 DUO · Zalman P30 V2 ·
-> Sharkoon REV300 · Sharkoon REV300 RGB · Sharkoon TK5M RGB · Sharkoon Pure
-> Steel RGB · Sharkoon RGB Flow · Sharkoon V1000 RGB · Sharkoon Rebel C50 RGB ·
-> Aerocool Skyline ARGB · Aerocool P500C Evo · Aerocool D501A · Kolink Unity
-> Code X · Gigabyte C400 GLASS · SilverStone Lucid LD05 · Cougar Purity ·
-> Cougar AirFace Pro RGB · Cougar DuoFace Pro RGB · Montech KING 15 PRO ·
-> HAVN BF 360 Flow
+Hoy **ninguna caja del catálogo tiene todas sus cotas inventadas**, y las
+firmas de especificaciones distintas pasaron del 61 % al 86 %.
+
+### Cuidado al buscar en paralelo: satura el buscador
+
+El primer intento de rescatar esas 187 lanzó **76 agentes a la vez** y
+devolvió «sin ficha» para 78 de 79 modelos — incluidos el Corsair 7000D
+AIRFLOW, el NZXT H7 Flow o el ASUS ProArt PA602, que tienen ficha pública
+evidente. **No faltaban los datos: el buscador estaba saturado y devolvía
+vacío**, y los agentes lo interpretaban como que el producto no existe.
+Repitiendo el trabajo con **4 agentes** y búsquedas de una en una se
+recuperaron 63 de esas 79.
+
+La lección para la próxima tanda: **no más de 4-5 agentes buscando a la vez**,
+y desconfiar siempre de una racha de «notfound» en marcas conocidas — es
+señal de saturación, no de ausencia. Antes de borrar nada por falta de datos,
+comprobar a mano un par de modelos famosos de la lista.
+
+## Lo que queda por pulir
+
+**84 cajas conservan las dimensiones de la cota de clase**, pero todas tienen
+ya `gpuLen`, `coolerH` o `rad` reales, que son los campos que deciden la
+compatibilidad. Lo orientativo en ellas es el volumen en litros que muestra
+la ficha. Son sobre todo modelos de marcas regionales (Nox, Tempest, Hiditec,
+FSP, UNYKAch) donde el fabricante no publica medidas.
 
 Regla al rehacerlas: cuando un dato no esté publicado, **redondear `gpuLen` y
 `coolerH` a la baja**, nunca al alza — así la incertidumbre nunca produce un
@@ -235,30 +258,6 @@ color en vez de un modelo:
 - `Aerocool|P500C` — ya está `P500C Evo`.
 - `Raijintek|Paean` / `Paean Premium` y `Ophion` / `Ophion 7L` — parejas del
   mismo chasis con equipamiento distinto; una búsqueda resuelve las dos.
-
-## Repasos que deja esta tanda
-
-**70 de las 180 filas nuevas llevan las dimensiones de la cota de clase**,
-porque la búsqueda confirmó el resto de la ficha pero no las medidas. Su
-`vol` es también el de clase. No comparten specs byte a byte como las 31 de
-la tanda anterior —casi todas tienen `gpuLen`, `coolerH` o `rad` reales—, así
-que el configurador sí las distingue, pero el volumen que muestran es
-orientativo. Las más flojas, con solo dos o tres datos reales, son
-`Corsair 4500X LX-R RGB` / `4500X RS-R ARGB`, `Corsair AIR 5400 RS-R ARGB` /
-`AIR 5400 LX-R RGB`, `Thermaltake H350 TG RGB` / `H330 TG`,
-`Cooler Master MasterFrame 360 Stage LCD` / `Stage Mirror`,
-`Antec FLUX PRO`, `SilverStone RM46-502-I`, `MSI MAG FORGE 112R` y
-`MSI PRO SHIELD M100P`.
-
-Cuatro modelos se quedaron pendientes **a propósito** pese a tener búsqueda:
-`Antec Performance 1 M`, `DeepCool CK560`, `be quiet! Light Base 600 DX` y
-`Pure Base 501 DX` solo devolvieron un dato cada uno, y una fila con un único
-campo real es indistinguible de una inventada.
-
-Datos que la búsqueda devolvió mal y se han descartado, por si reaparecen:
-la `Thermaltake AX700` / `AX700 TG` con «630 mm de gráfica» y «18 bahías»
-(columnas cruzadas en la fuente), y la `Lian Li A3 Wood` con un radiador
-frontal de 360 en un chasis de 322 mm de alto.
 
 **Precios que conviene contrastar.** Vienen del listado tal cual, pero algunos
 salen de vendedores del marketplace y están muy por encima del PVPR real. Las
