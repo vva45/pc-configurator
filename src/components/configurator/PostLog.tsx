@@ -1,4 +1,6 @@
-/* Informe POST */
+/* Informe POST.
+   El código hexadecimal de cada comprobación (0x01, 0x02…) existe en el
+   modelo pero no se pinta: en pantalla parecía un código de error. */
 import { AlertTriangle, Check, XCircle } from "lucide-react";
 import type { PostLevel, PostLine } from "@/lib/compat";
 
@@ -14,10 +16,9 @@ export default function PostLog({ log }: { log: PostLine[] }) {
       )}
       {log.map((r, i) => (
         <div key={i} className={`log-row fade log-${r.lvl}`} style={{ animationDelay: `${i * 18}ms` }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{ico(r.lvl)}{tag(r.lvl).slice(0, 6)}</span>
-          <span style={{ color: "var(--silk-dim)" }}>{r.code}</span>
-          <span style={{ color: "var(--silk)", opacity: 0.85 }}>{r.id}</span>
-          <span style={{ color: "var(--silk-dim)" }}>{r.msg}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>{ico(r.lvl)}{tag(r.lvl).slice(0, 6)}</span>
+          <span style={{ color: "var(--silk)", opacity: 0.85, whiteSpace: "nowrap" }}>{r.id}</span>
+          <span style={{ color: "var(--silk-dim)", lineHeight: 1.45 }}>{r.msg}</span>
         </div>
       ))}
     </div>

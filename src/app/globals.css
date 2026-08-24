@@ -78,7 +78,7 @@ input[type=text],input[type=number],select{background:var(--board);border:1px so
 input[type=range]{accent-color:var(--gold);width:100%}
 
 .log-ok{color:var(--cyan)} .log-warn{color:var(--amber)} .log-fail{color:var(--red)}
-.log-row{display:grid;grid-template-columns:52px 42px 84px 1fr;gap:8px;
+.log-row{display:grid;grid-template-columns:58px 78px 1fr;gap:8px;align-items:start;
   font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 0;
   border-bottom:1px solid rgba(30,69,52,.4)}
 

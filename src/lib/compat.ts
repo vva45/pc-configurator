@@ -171,8 +171,8 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
         rgbs = list(b, "rgb"), hub = one(b, "hub");
 
   if (cpu && mbo) {
-    if (cpu.socket === mbo.socket) push("ok", "SOCKET", `${cpu.socket} ←→ ${cpu.socket}`);
-    else push("fail", "SOCKET", `CPU ${cpu.socket} contra placa ${mbo.socket}`);
+    if (cpu.socket === mbo.socket) push("ok", "SOCKET", `${cpu.socket}: la CPU encaja en la placa`);
+    else push("fail", "SOCKET", `La CPU es ${cpu.socket} y la placa ${mbo.socket}: no encajan`);
   }
   if (cpu && mbo && cpu.mem?.length) {
     if (cpu.mem.includes(mbo.memType)) push("ok", "CPU_MEM", `La CPU soporta ${mbo.memType}`);
@@ -182,12 +182,12 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
   if (rams.length && mbo) {
     const bad = rams.filter((r) => r.memType !== mbo.memType);
     if (bad.length) push("fail", "MEM_TYPE", `${bad.length} módulo(s) ${bad[0].memType} en placa ${mbo.memType}`);
-    else push("ok", "MEM_TYPE", `${mbo.memType} ←→ ${mbo.memType}`);
+    else push("ok", "MEM_TYPE", `Módulos ${mbo.memType} en una placa ${mbo.memType}`);
     const sticks = rams.reduce((a, r) => a + r.kit * (r.qty || 1), 0);
-    if (sticks <= mbo.dimm) push("ok", "MEM_SLOTS", `${sticks}/${mbo.dimm} DIMM ocupados`);
+    if (sticks <= mbo.dimm) push("ok", "MEM_SLOTS", `${sticks} de ${mbo.dimm} zócalos ocupados${mbo.dimm - sticks > 0 ? `, quedan ${mbo.dimm - sticks} libres` : ""}`);
     else push("fail", "MEM_SLOTS", `${sticks} módulos para ${mbo.dimm} slots`);
     const cap = rams.reduce((a, r) => a + r.capGB * (r.qty || 1), 0);
-    if (cap <= mbo.memMaxGB) push("ok", "MEM_CAP", `${cap} GB / ${mbo.memMaxGB} GB máximos`);
+    if (cap <= mbo.memMaxGB) push("ok", "MEM_CAP", `${cap} GB de los ${mbo.memMaxGB} GB que admite`);
     else push("fail", "MEM_CAP", `${cap} GB supera el máximo de ${mbo.memMaxGB} GB`);
     const fastest = Math.max(...rams.map((r) => r.speed));
     if (fastest > mbo.memOC) push("warn", "MEM_SPEED", `${fastest} MT/s por encima del OC validado (${mbo.memOC})`);
@@ -200,26 +200,26 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
   if (cool) {
     const sock = cpu?.socket || mbo?.socket;
     if (sock) {
-      if (cool.sockets?.includes(sock)) push("ok", "COOL_SOCK", `Anclaje ${sock} incluido`);
+      if (cool.sockets?.includes(sock)) push("ok", "COOL_SOCK", `Incluye el anclaje para ${sock}`);
       else push("fail", "COOL_SOCK", `Sin anclaje para ${sock}`);
     }
     if (cpu) {
       const need = cpu.ppt || cpu.tdp;
-      if (cool.tdpRated >= need) push("ok", "COOL_TDP", `${cool.tdpRated} W ≥ ${need} W de disipación`);
-      else push("fail", "COOL_TDP", `${cool.tdpRated} W para una CPU de ${need} W`);
+      if (cool.tdpRated >= need) push("ok", "COOL_TDP", `Disipa ${cool.tdpRated} W; la CPU pide ${need} W`);
+      else push("fail", "COOL_TDP", `Solo disipa ${cool.tdpRated} W y la CPU pide ${need} W`);
       if (cool.tdpRated >= need && cool.tdpRated < need * 1.2)
         push("warn", "COOL_TDP", "Margen térmico justo: espera throttling en carga sostenida");
     }
     if (cs) {
       if (cool.radSize) {
-        if (radFits(cs, cool.radSize)) push("ok", "RAD_FIT", `Radiador ${cool.radSize} mm alojado`);
+        if (radFits(cs, cool.radSize)) push("ok", "RAD_FIT", `Radiador de ${cool.radSize} mm alojado en la caja`);
         else push("fail", "RAD_FIT", `Radiador ${cool.radSize} mm; la caja admite ${maxRad(cs)} mm`);
-      } else if (cool.height <= cs.coolerH) push("ok", "COOL_HEIGHT", `${cool.height} mm / ${cs.coolerH} mm libres`);
-      else push("fail", "COOL_HEIGHT", `${cool.height} mm > ${cs.coolerH} mm`);
+      } else if (cool.height <= cs.coolerH) push("ok", "COOL_HEIGHT", `${cool.height} mm de disipador, sobran ${cs.coolerH - cool.height} mm`);
+      else push("fail", "COOL_HEIGHT", `Disipador de ${cool.height} mm y la caja admite ${cs.coolerH} mm`);
     }
     if (rams[0] && !cool.radSize) {
       const over = rams[0].height - cool.ramClear;
-      if (over <= 0) push("ok", "COOL_RAM", `RAM de ${rams[0].height} mm bajo el disipador`);
+      if (over <= 0) push("ok", "COOL_RAM", `La RAM de ${rams[0].height} mm pasa bajo el disipador`);
       else if (over <= (cool.fanRaise || 0))
         push("warn", "COOL_RAM", `RAM de ${rams[0].height} mm: hay que subir el ventilador ${over} mm, el disipador pasa a ${cool.height + over} mm`);
       else push("fail", "COOL_RAM", `RAM de ${rams[0].height} mm; solo ${cool.ramClear} mm libres`);
@@ -227,32 +227,32 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
   }
 
   if (gpu && cs) {
-    if (gpu.len > cs.gpuLen) push("fail", "GPU_LEN", `${gpu.len} mm > ${cs.gpuLen} mm`);
+    if (gpu.len > cs.gpuLen) push("fail", "GPU_LEN", `Gráfica de ${gpu.len} mm y la caja admite ${cs.gpuLen} mm`);
     else if (cs.gpuLenRad && (cool?.radSize ?? 0) >= 240 && gpu.len > cs.gpuLenRad)
       push("warn", "GPU_LEN", `Cabe (${gpu.len}/${cs.gpuLen} mm), pero con el radiador delante el límite baja a ${cs.gpuLenRad} mm: móntalo arriba`);
-    else push("ok", "GPU_LEN", `${gpu.len} mm / ${cs.gpuLen} mm`);
+    else push("ok", "GPU_LEN", `${gpu.len} mm de gráfica, sobran ${cs.gpuLen - gpu.len} mm`);
   }
   if (mbo && cs) {
-    if (cs.form.includes(mbo.form)) push("ok", "MBO_FORM", `${mbo.form} en ${cs.name}`);
+    if (cs.form.includes(mbo.form)) push("ok", "MBO_FORM", `Placa ${mbo.form} admitida por la caja`);
     else push("fail", "MBO_FORM", `${cs.name} no admite ${mbo.form}`);
   }
   if (psu && cs) {
-    if (cs.psuForm.includes(psu.form)) push("ok", "PSU_FORM", `Formato ${psu.form} admitido`);
+    if (cs.psuForm.includes(psu.form)) push("ok", "PSU_FORM", `Formato ${psu.form} admitido por la caja`);
     else push("fail", "PSU_FORM", `La caja no admite ${psu.form}`);
-    if (psu.len <= cs.psuLen) push("ok", "PSU_LEN", `${psu.len} mm / ${cs.psuLen} mm`);
-    else push("fail", "PSU_LEN", `Fuente de ${psu.len} mm; caben ${cs.psuLen} mm`);
+    if (psu.len <= cs.psuLen) push("ok", "PSU_LEN", `Fuente de ${psu.len} mm en ${cs.psuLen} mm de bahía`);
+    else push("fail", "PSU_LEN", `Fuente de ${psu.len} mm y la bahía mide ${cs.psuLen} mm`);
   }
   if (psu) {
     const load = power.total, pct = Math.round((load / psu.watt) * 100);
     if (load > psu.watt) push("fail", "PSU_LOAD", `${load} W estimados sobre una fuente de ${psu.watt} W`);
     else if (pct > 85) push("warn", "PSU_LOAD", `${pct}% de carga: sin margen para picos ni ampliaciones`);
-    else push("ok", "PSU_LOAD", `${load} W → ${pct}% de ${psu.watt} W`);
+    else push("ok", "PSU_LOAD", `${load} W en el peor caso, ${pct}% de ${psu.watt} W`);
     if (gpu) {
       if (psu.watt < gpu.psuMin) push("fail", "PSU_LOAD", `El fabricante pide ${gpu.psuMin} W mínimos`);
       if (gpu.hpwr) {
         if (psu.pcie5 > 0) push("ok", "PSU_CONN", "Conector 12V-2×6 nativo disponible");
-        else push("warn", "PSU_CONN", "Sin 12V-2×6 nativo: usarás el adaptador de la gráfica");
-        if (psu.atx === "ATX 2.4") push("warn", "PSU_CONN", "Fuente pre-ATX 3.0: sin tolerancia de picos definida");
+        else push("warn", "PSU_CONN", "Sin 12V-2×6 nativo: irá con adaptador");
+        if (psu.atx === "ATX 2.4") push("warn", "PSU_CONN", "Fuente pre-ATX 3.0: picos sin garantizar");
       } else if ((gpu.conn8 || 0) + (gpu.conn6 || 0) === 0) {
         push("ok", "PSU_CONN", "La gráfica se alimenta por la ranura PCIe, sin cable extra");
       } else {
@@ -267,11 +267,11 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
     const m2 = st.filter((s) => s.iface.startsWith("M.2")).length;
     const sata = st.filter((s) => s.iface.startsWith("SATA")).length;
     if (m2) {
-      if (m2 <= mbo.m2) push("ok", "M2_SLOTS", `${m2}/${mbo.m2} ranuras M.2`);
+      if (m2 <= mbo.m2) push("ok", "M2_SLOTS", `${m2} de ${mbo.m2} ranuras M.2 usadas`);
       else push("fail", "M2_SLOTS", `${m2} unidades M.2 para ${mbo.m2} ranuras`);
     }
     if (sata) {
-      if (sata <= mbo.sata) push("ok", "SATA_PORTS", `${sata}/${mbo.sata} puertos SATA`);
+      if (sata <= mbo.sata) push("ok", "SATA_PORTS", `${sata} de ${mbo.sata} puertos SATA usados`);
       else push("fail", "SATA_PORTS", `${sata} unidades SATA para ${mbo.sata} puertos`);
     }
     if (m2 >= 3 && mbo.sata <= 4) push("warn", "SATA_PORTS", "Muchas M.2 pobladas: en esta placa suelen deshabilitar puertos SATA");
@@ -282,20 +282,20 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
     const q = fans.reduce((a, f) => a + (f.qty || 1), 0);
     const bad = fans.filter((f) => !cs.fanSizes.includes(f.size));
     if (bad.length) push("fail", "FAN_FIT", `Ventilador de ${bad[0].size} mm no admitido`);
-    else push("ok", "FAN_FIT", `${q} ventilador(es) sobre ${cs.fanMax} posiciones`);
+    else push("ok", "FAN_FIT", `${q} ventilador(es) en ${cs.fanMax} posiciones`);
     if (q > cs.fanMax) push("fail", "FAN_FIT", `${q} ventiladores para ${cs.fanMax} posiciones`);
   }
   if (mbo && fans.length) {
     const q = fans.reduce((a, f) => a + (f.qty || 1), 0) + (cool?.fans || 0);
     if (q > mbo.fanHdr && !hub) push("warn", "FAN_HDR", `${q} ventiladores contra ${mbo.fanHdr} cabeceras: añade un hub`);
     else if (hub) push("ok", "FAN_HDR", `Hub de ${hub.ports} puertos cubre ${q} ventiladores`);
-    else push("ok", "FAN_HDR", `${q}/${mbo.fanHdr} cabeceras de ventilador`);
+    else push("ok", "FAN_HDR", `${q} ventilador(es) en ${mbo.fanHdr} cabeceras`);
   }
   if (mbo && rgbs.length) {
     const needsCtl = rgbs.filter((r) => r.conn.includes("Controladora")).length;
     if (needsCtl && !hub?.rgb) push("warn", "RGB_HDR", `${needsCtl} tira(s) exigen controladora propietaria`);
     else if (rgbs.length > mbo.rgbHdr && !hub?.rgb) push("warn", "RGB_HDR", `${rgbs.length} tiras para ${mbo.rgbHdr} cabeceras ARGB`);
-    else push("ok", "RGB_HDR", `Iluminación con cabeceras suficientes`);
+    else push("ok", "RGB_HDR", `Cabeceras ARGB suficientes para las tiras`);
   }
   if (cpu && !gpu && !cpu.igpu) push("fail", "MISC", "La CPU no lleva gráfica integrada: hace falta una tarjeta");
   if (cpu?.museum) push("warn", "MISC", "Pieza histórica: catalogada como referencia, no para montar");

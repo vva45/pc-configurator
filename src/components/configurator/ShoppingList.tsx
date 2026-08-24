@@ -59,7 +59,7 @@ export default function ShoppingList({ build, region, total, onClose }: {
               onClick={() => setStore(s.id)}>{s.name}</button>)}
         </div>
 
-        <div className="scroll" style={{ padding: 14, flex: 1, minHeight: 0 }}>
+        <div className="scroll" style={{ padding: 14, flex: 1, minHeight: 140 }}>
           {items.length === 0 && (
             <div style={{ textAlign: "center", padding: 24, color: "var(--silk-dim)" }}>
               El montaje está vacío. Elige piezas y vuelve aquí.
@@ -101,10 +101,12 @@ export default function ShoppingList({ build, region, total, onClose }: {
               <span className="eyebrow">Copiar el montaje</span>
               <button className="btn btn-gold" onClick={copy}>{copied ? "Copiado" : "Copiar"}</button>
             </div>
-            <textarea ref={ta} readOnly value={text} rows={4} aria-label="Montaje en texto"
+            <textarea ref={ta} readOnly value={text} rows={text.split("\n").length}
+              aria-label="Montaje en texto"
               style={{ width: "100%", background: "var(--board)", border: "1px solid var(--trace)",
                 color: "var(--silk-dim)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11,
-                padding: "8px 9px", resize: "vertical" }} />
+                lineHeight: 1.5, padding: "8px 9px", resize: "vertical",
+                maxHeight: "42vh", overflowY: "auto" }} />
           </div>
         )}
       </div>
