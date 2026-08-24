@@ -1,0 +1,311 @@
+Keep Out|XC-220 Glass|55.99|Negro
+Keep Out|XC-201 Glass|44.00|Negro
+Supra Gaming|Huracan95 ARGB|75.95|Negro
+Alurin|Work|69.99|Negro
+Mars Gaming|MC-VECTOR|47.94|Blanco
+Mars Gaming|MC-MESHPRO|34.32|Negro
+Mars Gaming|MC-EDGE|84.99|Blanco
+Mars Gaming|MC-ULT|76.99|Blanco
+Mars Gaming|MC-PMAX|49.99|Negro
+Mars Gaming|MC-SE2|36.99|Blanco
+Mars Gaming|MC-X2 FRGB|47.17|Negro
+Mars Gaming|MC-NOVA|98.99|Blanco
+Mars Gaming|MC-3C|215.90|Negro / blanco
+Mars Gaming|MC-LCDPRO|99.44|Blanco
+Mars Gaming|MC-REVPROW|108.90|Blanco
+Mars Gaming|MC-U3|144.00|Negro
+Mars Gaming|MC-TOR|142.00|Negro
+Mars Gaming|MC-ELITE|141.00|Negro
+Mars Gaming|MCB XL|218.00|Negro
+Mars Gaming|MC-3T|297.00|Rosa
+Darkflash|DS900WS|169.00|Negro
+Darkflash|DS900G|193.00|Negro
+Darkflash|DY450 PRO|211.00|Negro
+Darkflash|DY451 PRO|200.00|Negro
+Darkflash|HM1|309.00|Blanco
+Darkflash|Tech|193.00|Blanco
+Darkflash|DPX90|193.00|Blanco
+UNYKAch|UK 4129|128.74|Negro
+CoolBox|MPC-45-1|31.86|Negro
+CoolBox|T100 Slim|25.35|Negro
+CoolBox|T310 Slim|50.55|Negro
+CoolBox|T-360 Slim|62.99|Negro
+CoolBox|M640C FullMetal|24.01|Negro
+CoolBox|GE2000 DualView|85.99|Negro
+CoolBox|GA450 Star Light|50.11|Negro
+TooQ|TQC-3005U3|46.98|Negro
+TooQ|TQC-5701U3C-B|28.99|Negro
+TooQ|TQC-4701U3C-B|31.01|Negro
+TooQ|TQC-4702U3C-B|22.99|Negro
+TooQ|RACK-406N-USB3|100.13|Negro
+L-Link|Nova Gaming|64.22|Negro
+L-Link|KLUSTER|38.99|Negro
+Talius|Denver|140.00|Negro
+Talius|Zeus|100.23|Negro
+Approx|APPC-203F|31.99|Negro
+Approx|APPC-205F|35.30|Negro
+Approx|APPC-301F|36.99|Negro
+XYZ|Neut X Pro|147.54|Negro
+XYZ|AURORAX 50|46.35|Negro
+XYZ|QUBEX|99.03|Negro / blanco
+XYZ|TRIFECTA|95.56|Negro
+ProGaming|Banshee|129.00|Negro / blanco
+Silentware|Air 100|224.67|Blanco
+Silentware|View A-RGB|214.00|Blanco
+Silentware|Flow 110 ARGB|184.00|Blanco
+Zolyd|Vexora|94.90|Negro
+Inca|EMG-17XB|127.18|Negro
+Krux|Empero|116.49|Negro
+Yeyian|Mirage S|107.00|Negro
+Inter-Tech|2U-2129N|156.94|Negro
+Inter-Tech|IPC 4U-4129L|197.00|Negro
+Inter-Tech|4U-4098-S|190.89|Negro
+Inter-Tech|4U 40255|187.20|Negro
+Inter-Tech|3U-30255|186.22|Negro
+Inter-Tech|4F28 Mining-Rack|190.36|Negro
+Inter-Tech|IPC 2U-2098-SL|140.79|Negro
+Inter-Tech|SC-4004|141.76|Negro
+Inter-Tech|A80 SFF|95.58|Negro
+Cougar|FV270 RGB|141.15|Negro / blanco
+Cougar|FV270 LCD|211.95|Negro / blanco
+Montech|Air 100|99.75|Negro
+Montech|SKY ONE LITE|187.00|Negro
+Sharkoon|Rebel C20 RGB|216.73|Negro
+Aerocool|P500C|226.00|Blanco
+Aerocool|Aero One Mini Eclipse|97.34|Negro
+Aerocool|Glo|99.88|Negro
+Aerocool|PRISM V3 ARGB|205.00|Negro
+Aerocool|CIPHER|202.00|Negro
+Kolink|Observatory RGB|99.86|Blanco
+Kolink|Void RGB|97.27|Negro
+Gigabyte|AORUS C300 GLASS RGB|289.00|Negro
+Gigabyte|GB-AC500G ST|214.04|Negro
+InWin|101|99.86|Blanco
+InWin|905|299.79|Negro
+InWin|D-Frame Mini|469.97|Rojo
+InWin|BM650|100.28|Blanco
+Raijintek|Paean|207.00|Negro
+Raijintek|Paean Premium|377.00|Negro
+Raijintek|Ophion|221.00|Blanco
+Raijintek|Ophion 7L|187.00|Negro / blanco
+Raijintek|Ponos MS|142.00|Negro
+Raijintek|Thetis Window|192.00|Plata
+Raijintek|AGOS MAX-MS4|144.00|Blanco
+Chieftec|Visio GM-30B-TG|117.99|Negro
+Chieftec|UE-02B|149.99|Negro
+Chieftec|APEX GA-01B-Q|156.99|Negro
+Chieftec|IX-03B|156.99|Negro
+Chieftec|UNC-410S-B-U3|285.59|Negro
+Chenbro|RM42200|484.00|Negro
+Lanberg|SC01-4504-10B|97.34|Negro
+Akasa|Turing TN|324.29|Negro
+Adata|XPG Defender|194.00|Blanco
+Adata|XPG STARKER AIR BTF|97.99|Blanco
+Adata|XPG Lander 501|95.00|Negro
+BitFenix|Prodigy M 2022|99.99|Negro
+BitFenix|Triton ARGB|97.46|Negro
+eBlaztr|EBL-BLA-STA-01|447.29|Negro
+DeepCool|CH160 PLUS|61.24|Negro / blanco
+DeepCool|CH170 PLUS|70.06|Negro
+DeepCool|CH170 Digital|98.72|Negro
+DeepCool|CH260|72.48|Negro / blanco
+DeepCool|CH260 WOOD|80.22|Negro y madera
+DeepCool|CH270 DIGITAL|79.41|Negro
+DeepCool|CH560 ARGB|211.00|Negro / blanco
+DeepCool|CH780 ARGB|189.99|Negro
+DeepCool|CG530 4F|71.14|Negro / blanco
+DeepCool|CG530U 4F|88.06|Blanco
+DeepCool|CG330 3F|61.92|Negro
+DeepCool|CC560 RGB|59.79|Negro
+DeepCool|CC560 V2|66.78|Blanco
+DeepCool|CK560|217.00|Negro / blanco
+DeepCool|CL660|98.52|Negro
+DeepCool|CL6600|200.17|Negro / blanco
+DeepCool|MORPHEUS|212.98|Negro / blanco
+Corsair|FRAME 4000D RS|99.90|Negro
+Corsair|FRAME 4000D RS ARGB|114.90|Negro / blanco
+Corsair|FRAME 4000X RS|159.99|Negro / blanco
+Corsair|FRAME 4000D Wood RS|249.99|Negro y nogal
+Corsair|FRAME 4000D LCD RS ARGB|298.99|Negro / blanco
+Corsair|FRAME 5000D RS|144.90|Negro
+Corsair|FRAME 5000 RS|144.90|Negro / blanco
+Corsair|FRAME 5000 RS ARGB|174.90|Negro
+Corsair|FRAME 5000D WOOD RS|188.90|Negro y nogal
+Corsair|FRAME 5000D WORKSTATION|201.99|Negro
+Corsair|3500X|99.90|Negro
+Corsair|3500X LX-R RGB|194.90|Negro / blanco
+Corsair|3500X RS-R ARGB|139.99|Negro / blanco
+Corsair|4500X LX-R RGB|249.90|Negro / blanco
+Corsair|4500X RS-R ARGB|194.90|Negro / blanco
+Corsair|3000D RGB AIRFLOW|104.90|Negro / blanco
+Corsair|3200D RS|79.99|Negro / blanco
+Corsair|3200D RS ARGB|99.90|Negro / blanco
+Corsair|2800X RS-R ARGB|79.99|Blanco
+Corsair|AIR 5400 RS-R ARGB|274.90|Negro / blanco
+Corsair|AIR 5400 LX-R RGB|329.90|Negro / blanco
+Corsair|WARTHOG|194.99|Negro / verde militar
+Corsair|WARTHOG RS|229.99|Negro
+Corsair|iCUE LINK 5000T LX RGB|279.47|Blanco
+Corsair|iCUE LINK 3500X RGB|186.44|Negro / blanco
+Corsair|iCUE LINK 9000D RGB AIRFLOW|574.90|Negro / blanco
+Corsair|iCUE 5000T RGB|209.90|Negro / blanco
+Corsair|5000T|209.90|Negro
+Corsair|iCUE 5000D RGB AIRFLOW|219.90|Negro / blanco
+Corsair|iCUE 5000X RGB|231.90|Blanco
+Corsair|iCUE 7000X RGB|289.90|Negro / blanco
+Corsair|iCUE 4000D RGB AIRFLOW|139.90|Negro / blanco
+Corsair|5000D AIRFLOW|179.90|Negro / blanco
+Corsair|6500X|209.90|Blanco bambú
+Corsair|Crystal 280X RGB|179.90|Blanco
+Lian Li|Lancool 217|159.99|Negro / blanco
+Lian Li|Lancool 217 Infinity|159.99|Negro / blanco
+Lian Li|Lancool 205M Mesh RGB|109.90|Negro
+Lian Li|Lancool 206|119.90|Negro
+Lian Li|LAN207DX|129.90|Negro
+Lian Li|V100|89.90|Blanco
+Lian Li|Vector V100R MINI|101.03|Negro
+Lian Li|O11 Vision-M|99.99|Negro
+Lian Li|O11 Dynamic Mini V2|129.99|Negro / blanco
+Lian Li|O11 Dynamic Mini V2 Flow|129.99|Negro / blanco
+Lian Li|A4-H2O|139.90|Negro / plata
+Lian Li|Odyssey X|355.26|Negro / plata
+Lian Li|A3 Wood|129.99|Negro y madera
+MSI|MAG PANO 110R PZ|99.99|Negro / blanco
+MSI|MAG PANO 100R PZ ARGB|139.03|Negro / blanco
+MSI|MAG PANO 130R PZ|69.99|Negro / blanco
+MSI|MAG PANO 100L PZ|181.44|Negro
+MSI|MAG FORGE 112R|79.99|Negro
+MSI|MAG FORGE 100M|49.99|Negro
+MSI|MAG FORGE 100R|72.00|Negro
+MSI|MAG FORGE 330R AIRFLOW|97.11|Negro
+MSI|MPG VELOX 300R AIRFLOW|146.95|Negro
+MSI|MPG GUNGNIR 300P AIRFLOW|167.61|Negro
+MSI|MPG GUNGNIR 300R AIRFLOW|212.64|Negro
+MSI|MPG SEKIRA 500G|290.15|Negro
+MSI|MEG MAESTRO 700L PZ|436.12|Negro
+MSI|PRO SHIELD M100P|29.95|Negro
+MSI|MAG VAMPIRIC 300R|294.00|Negro
+NZXT|H6 Flow|119.99|Negro / blanco
+NZXT|H9 Elite RGB|384.00|Negro / blanco
+NZXT|H7 Elite RGB|292.00|Blanco
+NZXT|H510|189.90|Blanco
+Fractal Design|Meshify 3|299.99|Negro
+Fractal Design|Meshify 3 XL|339.99|Negro
+Fractal Design|Meshify 3 Ambience Pro RGB|216.99|Blanco
+Fractal Design|Meshify 2 Compact RGB|341.00|Negro
+Fractal Design|Meshify 2 Compact Lite|275.00|Negro / blanco
+Fractal Design|Meshify 2 Lite|301.00|Negro
+Fractal Design|Meshify 2 Mini|278.00|Negro
+Fractal Design|Meshify C|97.45|Negro
+Fractal Design|Epoch TG|95.99|Negro
+Fractal Design|Epoch XL|149.99|Negro
+Fractal Design|Pop 2 Air|129.99|Negro / blanco
+Fractal Design|Pop 2 Vision|149.99|Negro / blanco
+Fractal Design|Pop Silent|129.99|Negro
+Fractal Design|Focus 2|119.99|Negro / blanco
+Fractal Design|Focus G|63.60|Negro
+Fractal Design|Define R5|129.99|Negro
+Fractal Design|Define 7 Compact|120.45|Negro
+Fractal Design|Define 7 Nano|69.73|Negro
+Fractal Design|Terra|400.00|Plata
+Fractal Design|Mood|299.00|Gris
+Fractal Design|Node 202|385.00|Negro
+Fractal Design|Era|219.03|Negro
+Fractal Design|Torrent Nano RGB|287.00|Blanco
+Fractal Design|Torrent Compact|330.00|Negro / blanco
+Fractal Design|Torrent Compact RGB|326.00|Negro
+Fractal Design|North XL Momentum Edition|249.99|Negro y roble
+be quiet!|Light Base 500|119.99|Negro
+be quiet!|Light Base 600 LX|184.99|Negro / blanco
+be quiet!|Light Base 600 DX|149.99|Negro
+be quiet!|Pure Base 500|306.00|Gris
+be quiet!|Pure Base 500 FX|287.00|Negro
+be quiet!|Pure Base 600|91.95|Negro
+be quiet!|Pure Base 501 DX|124.99|Negro
+be quiet!|Shadow Base 800 DX|134.00|Negro
+be quiet!|Shadow Base 800 FX|184.98|Blanco
+Thermaltake|S250 TG ARGB|84.03|Negro
+Thermaltake|S380 TG ARGB|140.61|Negro
+Thermaltake|AX700|445.77|Negro / blanco
+Thermaltake|AX700 TG|471.35|Negro / blanco
+Thermaltake|AX500|241.66|Negro / blanco
+Thermaltake|AX100|221.08|Blanco
+Thermaltake|The Tower 600|272.41|Multicolor
+Thermaltake|The Tower 300|224.61|Multicolor
+Thermaltake|TR100|217.00|Multicolor
+Thermaltake|TR300 TG|98.19|Negro
+Thermaltake|View 390 TG|220.76|Negro / blanco
+Thermaltake|View 390 Air|221.08|Negro
+Thermaltake|View 380 XL TG ARGB|213.31|Negro
+Thermaltake|View 380 WS ARGB|142.79|Blanco
+Thermaltake|View 290 TG ARGB|97.70|Negro / blanco
+Thermaltake|View 600 TG|215.47|Negro
+Thermaltake|View 51 ARGB Snow|196.37|Blanco
+Thermaltake|Divider 200 TG|324.00|Negro
+Thermaltake|Divider 300 TG|98.58|Negro
+Thermaltake|Core V1|97.67|Negro / blanco
+Thermaltake|H350 TG RGB|100.12|Negro
+Thermaltake|H330 TG|95.97|Negro
+Thermaltake|Versa T35 TG RGB|107.00|Negro
+Thermaltake|Level 20 RS ARGB|216.00|Negro
+Thermaltake|CTE E660 MX|194.58|Azul
+Thermaltake|CTE T500 TG|141.87|Blanco
+Thermaltake|Pureline 270|98.08|Negro
+Thermaltake|The Tower 300 Bumblebee|196.66|Amarillo
+Cooler Master|TD300 Mesh|129.99|Negro / blanco
+Cooler Master|MasterBox 600 RGB|149.99|Blanco
+Cooler Master|MasterBox NR400|190.00|Negro
+Cooler Master|MasterFrame 360 Panorama|213.08|Negro
+Cooler Master|MasterFrame 360 Stage LCD|290.88|Negro
+Cooler Master|MasterFrame 360 Stage Mirror|209.65|Negro
+Cooler Master|MasterFrame 500 Mesh|249.99|Negro
+Cooler Master|MasterFrame 600|192.43|Negro
+Cooler Master|MasterFrame 600 Mesh|192.43|Negro
+Cooler Master|Silencio S400|97.86|Negro
+Cooler Master|COSMOS ALPHA|488.24|Negro y plata
+Cooler Master|Elite 600|99.14|Blanco
+ASUS|A23 PLUS|101.15|Blanco
+ASUS|A31 PLUS|99.99|Negro / blanco
+ASUS|Prime AP303 TG|109.90|Negro
+ASUS|TUF Gaming GT302 ARGB|96.99|Negro
+ASUS|TUF Gaming GT502 PLUS|175.99|Negro
+ASUS|TUF Gaming GT502 HORIZON TG ARGB|202.99|Negro / blanco
+ASUS|ROG Strix Helios II GX601S|380.99|Negro / blanco
+ASUS|ROG Hyperion GR701 BTF Edition|514.17|Negro
+ASUS|ROG Z11|199.99|Negro
+Antec|C6 Curve ARGB|123.53|Negro
+Antec|C7 ARGB|141.44|Negro / blanco
+Antec|CX800 ARGB|189.00|Negro
+Antec|AX20 FRGB|59.00|Negro
+Antec|AX26 RGB Elite|43.00|Negro
+Antec|AX61 Elite|79.98|Negro
+Antec|AX85 ARGB|58.79|Negro
+Antec|VX-310 ARGB|55.00|Negro
+Antec|P10C Silent|99.00|Negro
+Antec|P20CE Performance|129.00|Negro
+Antec|P30 AIR|89.99|Negro
+Antec|FLUX PRO|199.00|Negro y madera
+Antec|FLUX PRO Noctua Edition|490.12|Negro y madera
+Antec|Performance 1|290.00|Negro
+Antec|Performance 1 M|301.91|Negro
+Phanteks|Eclipse G400A D-RGB|99.90|Negro / blanco
+Phanteks|XT V5 RGB|96.79|Negro
+SilverStone|SETA Q1|382.00|Azul
+SilverStone|SETA H2|381.00|Negro
+SilverStone|Grandia GD06B|227.87|Negro
+SilverStone|Grandia GD07|293.63|Negro
+SilverStone|Grandia GD08|312.66|Negro
+SilverStone|GD05B|199.51|Negro
+SilverStone|GD10|186.28|Negro
+SilverStone|GD11|196.92|Blanco
+SilverStone|SUGO SG12|285.00|Negro
+SilverStone|ML08|96.35|Negro
+SilverStone|ML09B|198.90|Negro
+SilverStone|LD03-AF|301.69|Negro
+SilverStone|TJ04B-E|321.35|Negro
+SilverStone|FARA B1|197.45|Negro
+SilverStone|FARA B1 RGB|195.00|Negro
+SilverStone|Fortress FTZ01|317.00|Negro
+SilverStone|DS380B|273.74|Negro
+SilverStone|RM400|297.83|Negro
+SilverStone|RM46-502-I|474.88|Negro
