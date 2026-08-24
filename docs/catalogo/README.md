@@ -1,7 +1,7 @@
 # Catálogo de cajas
 
-Estado de las **528 cajas** de `src/data/parts/case.ts` y lo único que queda
-por cerrar.
+Estado de las **528 cajas** de `src/data/parts/case.ts`, todas con las
+especificaciones del fabricante.
 
 ## Cómo se llegó aquí
 
@@ -28,33 +28,25 @@ Bumblebee` y `Performance 1`), y las filas `FRAME 4000D` / `FRAME 4000D RGB`
 se renombraron a sus nombres reales `FRAME 4000D RS` / `RS ARGB` con ficha
 verificada.
 
-## Lo único que queda: 84 medidas
+## Ya no queda nada pendiente
 
-Esas 84 cajas tienen **gráfica máxima, altura de disipador y radiadores
-reales** —los campos con los que el motor decide la compatibilidad—, pero sus
-dimensiones son la estimación por tipo de torre, y de ahí sale también el
-volumen en litros que muestra la ficha. Es un dato informativo, no decide
-ningún montaje.
+Las 84 cajas que conservaban las dimensiones estimadas por tipo de torre
+tienen desde agosto las medidas reales del fabricante, aportadas a mano por el
+usuario. **Ninguna de las 528 cajas del catálogo lleva ya datos inventados.**
 
-Están listadas en [`medidas-que-faltan.txt`](./medidas-que-faltan.txt), una
-por línea, para rellenar a mano:
+Al normalizarlas hubo que leer las etiquetas del texto en vez de fiarse del
+orden: llegaban copiadas de fichas distintas («An x Pr x Al», «Case Height…»,
+pulgadas, centímetros) y tomar la posición literal habría cruzado los ejes.
+Donde no había etiqueta, el ancho es la medida menor: lo es en el 96 % de las
+cajas verificadas.
 
-```
-Thermaltake|The Tower 600|489×299×634
-```
-
-Se acepta `x` o `×`, con o sin `mm`, con coma o punto decimal. Las que se
-dejen vacías conservan su estimación. Después:
-
-```bash
-node scripts/aplicar-medidas.mjs --dry   # ver qué cambiaría
-node scripts/aplicar-medidas.mjs         # aplicarlo
-npm run verify
-```
-
-El script recalcula el volumen y **aborta sin escribir** si una medida no
-cuadra con la ficha (una gráfica más larga que el chasis, un disipador más
-alto que el ancho): es preferible corregir la línea a colar la contradicción.
+Ocho chocaban con su propia ficha, casi todas por no ser torres verticales
+—en un HTPC tumbado como el SilverStone GD10 la gráfica va a lo ancho, y en
+chasis verticales como The Tower 300 o el TR100 se monta de pie—. Dos traían
+las etiquetas cruzadas en origen. Si en el futuro se vuelven a tocar medidas,
+conviene contrastarlas siempre contra `gpuLen`, `coolerH` y `rad`: ahí saltó
+que la Mars Gaming MC-NOVAM declaraba una gráfica de 337 mm en un fondo de
+335, que se corrigió a la baja.
 
 ## Si algún día se vuelve a buscar en lote
 
