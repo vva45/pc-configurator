@@ -37,7 +37,7 @@ U("Cooler Master","V850 SFX Gold",169,{watt:850,eff:"80+ Gold",cert:"Cybenetics 
 U("FSP","Hydro PTM PRO 1200W",229,{watt:1200,eff:"80+ Platinum",cert:"Cybenetics Platinum",atx:"ATX 3.0",form:"ATX",len:170,modular:"Full",pcie5:1,pcie8:6,eps:2,sata:12,fan:"135 mm FDB",zero:true,warranty:10});
 U("XPG","Core Reactor II 750W",109,{watt:750,eff:"80+ Gold",cert:"Cybenetics Gold",atx:"ATX 3.0",form:"ATX",len:140,modular:"Full",pcie5:1,pcie8:4,eps:2,sata:8,fan:"120 mm FDB",zero:true,warranty:10});
 U("Corsair","RM450x",79,{watt:450,eff:"80+ Gold",cert:"Cybenetics Gold",atx:"ATX 2.4",form:"ATX",len:160,modular:"Full",pcie8:2,eps:1,sata:8,fan:"135 mm FDB",zero:true,warranty:10});
-U("Silverstone","ST45SF-G v2.0",89,{watt:450,eff:"80+ Gold",cert:"—",atx:"ATX 2.4",form:"SFX",len:100,modular:"Full",pcie8:2,eps:1,sata:4,fan:"92 mm",warranty:3});
+U("SilverStone","ST45SF-G v2.0",89,{watt:450,eff:"80+ Gold",cert:"—",atx:"ATX 2.4",form:"SFX",len:100,modular:"Full",pcie8:2,eps:1,sata:4,fan:"92 mm",warranty:3});
 U("Seasonic","S12III 500",49,{watt:500,eff:"80+ Bronze",cert:"—",atx:"ATX 2.4",form:"ATX",len:140,modular:"No",pcie8:2,eps:1,sata:4,fan:"120 mm sleeve",warranty:5});
 U("Chieftec","Polaris 750W",89,{watt:750,eff:"80+ Silver",cert:"Cybenetics Silver",atx:"ATX 2.4",form:"ATX",len:150,modular:"Full",pcie8:4,eps:2,sata:8,fan:"120 mm",warranty:5});
 U("Enermax","Revolution D.F. 12 850W",149,{watt:850,eff:"80+ Gold",cert:"Cybenetics Gold",atx:"ATX 3.1",form:"ATX",len:150,modular:"Full",pcie5:1,pcie8:4,eps:2,sata:8,fan:"120 mm FDB",zero:true,warranty:10});
