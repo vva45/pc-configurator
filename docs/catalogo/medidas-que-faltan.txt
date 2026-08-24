@@ -15,111 +15,111 @@
 #
 # marca|modelo|largo×ancho×alto
 
-Antec|C6 Curve ARGB|
-Antec|CX800 ARGB|
-Antec|FLUX PRO|
-Antec|FLUX PRO Noctua Edition|
-Antec|P10C Silent|
+Antec|C6 Curve ARGB| 480 x 235 x 470mm
+Antec|CX800 ARGB|(An x Pr x Al)302 x 435 x 390 mm
+Antec|FLUX PRO| 530 x 245 x 545 mm
+Antec|FLUX PRO Noctua Edition|245x545x530 mm
+Antec|P10C Silent| 477 x 220 x 486 mm (LxAxA)
 
-ASUS|ROG Strix Helios II GX601S|
+ASUS|ROG Strix Helios II GX601S|250 x 565 x 591 mm
 
-be quiet!|Light Base 500|
-be quiet!|Pure Base 500|
-be quiet!|Pure Base 500 FX|
+be quiet!|Light Base 500|305 x 432 x 436 mm
+be quiet!|Pure Base 500|Ancho, 232 mm. Profundidad, 450 mm. Altura, 443 mm
+be quiet!|Pure Base 500 FX|450 x 232 x 463 mm
 
-Cooler Master|MasterBox 600 RGB|
-Cooler Master|MasterFrame 360 Stage LCD|
-Cooler Master|MasterFrame 360 Stage Mirror|
+Cooler Master|MasterBox 600 RGB|Ancho: 230 mm; Profundidad: 474 mm; Altura: 481 mm;
+Cooler Master|MasterFrame 360 Stage LCD|Ancho: 29,1 cm x Altura: 58,1 cm x Profundidad/longitud: 54,9 cm
+Cooler Master|MasterFrame 360 Stage Mirror|549 x 291 x 581 mm
 
-Corsair|3000D RGB AIRFLOW|
-Corsair|AIR 5400 LX-R RGB|
-Corsair|AIR 5400 RS-R ARGB|
+Corsair|3000D RGB AIRFLOW|Case Height 466mm  Case Length 462mm     Case Width 230mm
+Corsair|AIR 5400 LX-R RGB|Case Height 467mm  Case Length 470mm     Case Width 340mm
+Corsair|AIR 5400 RS-R ARGB|Case Height 467mm  Case Length 470mm   Case Width 340mm
 
-DeepCool|CG330 3F|
-DeepCool|CG530 4F|
-DeepCool|CG530U 4F|
-DeepCool|CH170 PLUS|
-DeepCool|CH560 ARGB|
-DeepCool|CL660|
-DeepCool|CL6600|
-DeepCool|MORPHEUS|
+DeepCool|CG330 3F|285 x 420 x 368 mm
+DeepCool|CG530 4F|440×285×399mm(L×W×H)
+DeepCool|CG530U 4F|475 x 285 x 380 mm
+DeepCool|CH170 PLUS|195 mm x 424,5 mm x 290 mm
+DeepCool|CH560 ARGB|458×230×471mm(L×W×H)
+DeepCool|CL660|457.5×235×533.5mm(L×W×H)
+DeepCool|CL6600|457.5×235×533.5mm(L×W×H)
+DeepCool|MORPHEUS|528×250×551mm(L×W×H)
 
-Evolveo|Xenon|
+Evolveo|Xenon| 420 × 204 × 355 mm
 
-Fractal Design|Define 7 Nano|
-Fractal Design|Epoch TG|
-Fractal Design|Epoch XL|
-Fractal Design|Meshify 2 Compact Lite|
-Fractal Design|Meshify 2 Compact RGB|
-Fractal Design|Meshify 3|
-Fractal Design|Meshify 3 Ambience Pro RGB|
-Fractal Design|Pop 2 Air|
+Fractal Design|Define 7 Nano|399 x 205 x 361mm
+Fractal Design|Epoch TG|447 x 215 x 469 mm
+Fractal Design|Epoch XL|Dimensiones (AnxPrxAl)	240 x 503 x 509 mm
+Fractal Design|Meshify 2 Compact Lite|Ancho: 210 mm  Profundidad: 424 mm  Altura: 475 mm
+Fractal Design|Meshify 2 Compact RGB|Ancho: 210 mm · Profundidad: 424 mm · Altura: 475 mm
+Fractal Design|Meshify 3|245 x 575 x 515 mm
+Fractal Design|Meshify 3 Ambience Pro RGB|433 x 229 x 507mm
+Fractal Design|Pop 2 Air|215 mm x 481 mm x 462 mm
 
-FSP|U530-BS|
+FSP|U530-BS|473 x 230 x 490mm
 
-GameMax|N90|
+GameMax|N90| 240,5 mm x 439 mm x 530 mm
 
-Genesis|Diaxid 605 ARGB|
-Genesis|Irid 505 V2|
+Genesis|Diaxid 605 ARGB|217 mm de ancho, 420 mm de profundidad y 466 mm de altura
+Genesis|Irid 505 V2|(An x Pr x Al), 220 x 447 x 510 mm
 
-Hiditec|H2 AIR ARGB|
+Hiditec|H2 AIR ARGB|510 x 215 x 415 mm (Al x An x Pr)
 
-Jonsbo|D31 STD|
+Jonsbo|D31 STD|205 x 440 x 363 mm
 
-Lian Li|LAN207DX|
-Lian Li|Lancool 205M Mesh RGB|
-Lian Li|Lancool 206|
-Lian Li|O11 Vision-M|
+Lian Li|LAN207DX| Longitud / Profundidad. 455,6 mm. Ancho. 219 mm. Altura. 456 mm.
+Lian Li|Lancool 205M Mesh RGB|210 mm (ancho) x 415 mm (profundidad) x 400 mm (alto)
+Lian Li|Lancool 206|462 mm (D) x 220 mm (An) x 488.2 mm (Al)
+Lian Li|O11 Vision-M|419,6 mm de profundidad x 275,1 mm de ancho x 395,2 mm de alto
 
-Mars Gaming|MC-3TCORELCD|
-Mars Gaming|MC-AIR|
-Mars Gaming|MC-NOVAM|
-Mars Gaming|MC51W|
+Mars Gaming|MC-3TCORELCD|440x286x401mm
+Mars Gaming|MC-AIR|Ancho, 202 mm. Profundidad, 380 mm. Altura, 452 mm
+Mars Gaming|MC-NOVAM|Ancho-27.5 Alto-31 Largo-33.5cm
+Mars Gaming|MC51W| 215 mm de ancho, 550 mm de profundidad y 505 mm de altura
 
-Modecom|Volcano Stellar 5F ARGB|
+Modecom|Volcano Stellar 5F ARGB|235 mm x 472 mm x 445 mm
 
-Montech|XR|
+Montech|XR|Longitud / Profundidad. 435 mm. Ancho. 230 mm. Altura. 450 mm.
 
-MSI|MEG MAESTRO 700L PZ|
+MSI|MEG MAESTRO 700L PZ|470 x 300 x 474 mm
 
-Nox|Hummer ASTRA NEO|
-Nox|Hummer BLADE ARGB|
-Nox|Hummer ETHER|
-Nox|Hummer Signal ARGB|
-Nox|Hummer TGX Rainbow RGB|
-Nox|Hummer Vision|
-Nox|Hummer ZX|
-Nox|Infinity Epsilon ARGB|
-Nox|Infinity IOTA ARGB Mesh|
-Nox|Infinity Zeta ARGB|
+Nox|Hummer ASTRA NEO|295 x 388 x 433 mm (W x H x L).
+Nox|Hummer BLADE ARGB|245 mm x 486 mm x 520 mm
+Nox|Hummer ETHER|	230 mm x 415 mm x 470 mm
+Nox|Hummer Signal ARGB|221 mm de ancho x 486 mm de fondo x 459 mm de altura
+Nox|Hummer TGX Rainbow RGB|235 x 515 x 500 mm (AN x AL x PR)
+Nox|Hummer Vision|487 x 212 x 346mm
+Nox|Hummer ZX|Ancho 200 mm   Profundidad 502 mm   Altura 486 mm
+Nox|Infinity Epsilon ARGB|20,5f. x 38,5an. x 42,5al. centímetros
+Nox|Infinity IOTA ARGB Mesh|220 mm x 370 mm x 446 mm
+Nox|Infinity Zeta ARGB|385 x 205 x 425mm
 
-SilverStone|GD10|
-SilverStone|SG17|
+SilverStone|GD10| 442mm (W) x 171mm (H) x 362mm (D)
+SilverStone|SG17| (al. × an. × pr.) 286 mm × 202 mm × 451 mm
 
-Tacens|Anima AC5|
+Tacens|Anima AC5|38,1f. x 20,6an. x 34,3al. centímetros
 
-Tempest|Airflow Bastion ARGB|
-Tempest|Compact Lumina ARGB|
+Tempest|Airflow Bastion ARGB| (L x An x Al): 479 x 233 x 493 mm
+Tempest|Compact Lumina ARGB|425 mm × 212 mm × 420 mm
 
-Thermaltake|AX500|
-Thermaltake|AX700|
-Thermaltake|AX700 TG|
-Thermaltake|Core V1|
-Thermaltake|CTE E660 MX|
-Thermaltake|Divider 200 TG|
-Thermaltake|Divider 300 TG|
-Thermaltake|H330 TG|
-Thermaltake|H350 TG RGB|
-Thermaltake|S250 TG ARGB|
-Thermaltake|S380 TG ARGB|
-Thermaltake|The Tower 300|
-Thermaltake|The Tower 600|
-Thermaltake|TR100|
-Thermaltake|View 380 WS ARGB|
-Thermaltake|View 380 XL TG ARGB|
-Thermaltake|View 390 Air|
-Thermaltake|View 390 TG|
+Thermaltake|AX500|DIMENSIONES (AL x AN x PR) 550 x 248 x 548 mm (21.7 x 9.8 x 21.6 inch)
+Thermaltake|AX700|Dimensiones (An x Prof x Alt)	324,6 mm x 685 mm x 645 mm
+Thermaltake|AX700 TG|Dimensiones (An x Prof x Alt)	324,6 mm x 685 mm x 645 mm
+Thermaltake|Core V1|DIMENSIONES (AL x AN x PR)	276 x 260 x 316 mm (10.9 x 10.2 x 12.4 inch)
+Thermaltake|CTE E660 MX|(AL x AN x PR) 558.5 x 270 x 513mm (21.99 x 10.63 x 20.2 inch)
+Thermaltake|Divider 200 TG|364.7 x 333.2 x 425.7mm
+Thermaltake|Divider 300 TG|(AL x AN x PR), 475 x 220 x 461 mm
+Thermaltake|H330 TG| Ancho: 210 mm; Profundidad: 480 mm; Altura: 419 mm;
+Thermaltake|H350 TG RGB|(Pr x Al x An): 442 x 210 x 480 mm;
+Thermaltake|S250 TG ARGB|(AL x AN x PR)	490 x 218 x 462 mm (19.3 x 8.6 x 18.2 inch)
+Thermaltake|S380 TG ARGB| (al. × an. × pr.) 536 mm × 238 mm × 485 mm 
+Thermaltake|The Tower 300|551 x 342 x 281 mm (alto, ancho, profundo)
+Thermaltake|The Tower 600|420 mm x 286,4 mm x 550 mm
+Thermaltake|TR100|(AL x AN x PR)462.8 x 266 x 266 mm (18.2 x 10.5 x 10.5 pulgadas)
+Thermaltake|View 380 WS ARGB|288 mm (ancho) × 471 mm (alto) × 473 mm (profundidad) 
+Thermaltake|View 380 XL TG ARGB| 288 mm x 469 mm x 471 mm
+Thermaltake|View 390 Air|503 x 287 x 485mm (19.80 x 11.30 x 19.1inch)
+Thermaltake|View 390 TG| (AL x AN x PR), 503 x 287 x 485mm (19.80 x 11.30 x 19.1inch)
 
-UNYKAch|AERO C12 V2|
+UNYKAch|AERO C12 V2|DIMENSIONES 372 (L) x 178 (W) x 353 (H) mm
 
-Zalman|I3 Neo V2|
+Zalman|I3 Neo V2|Dimensiones	484 mm (alto) x 213 mm (ancho aprox.) x 476 mm (profundo)
