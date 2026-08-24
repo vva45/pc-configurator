@@ -195,7 +195,35 @@ los datos — me encontró cuatro errores reales al triplicar el catálogo.
 
 ---
 
-## 7. Limitaciones conocidas
+## 7. Instalación de dependencias
+
+`package.json` lleva un campo **`allowScripts`** que autoriza los scripts de
+instalación de dos paquetes:
+
+```json
+"allowScripts": {
+  "esbuild@0.28.2": true,
+  "unrs-resolver@1.12.2": true
+}
+```
+
+Desde npm 11 los paquetes con `postinstall` se avisan, y **en npm 12 se
+bloquearán si no están aprobados**. Los dos que usa el proyecto son legítimos
+y necesarios: `esbuild` descarga su binario nativo (sin él no funciona
+`scripts/build-test-bundle.mjs`, del que dependen los tests) y
+`unrs-resolver` —que llega por `eslint-config-next` →
+`eslint-import-resolver-typescript`— prepara su binario NAPI.
+
+Las entradas están **fijadas a la versión**, así que al actualizar cualquiera
+de los dos volverá el aviso. Se re-aprueba revisando primero qué hace el
+script nuevo:
+
+```bash
+npm approve-scripts --allow-scripts-pending   # ver qué hay pendiente
+npm approve-scripts esbuild unrs-resolver     # aprobarlos
+```
+
+## 8. Limitaciones conocidas
 
 - El consumo es el **peor caso** (todo al límite a la vez), más conservador que PCPartPicker.
   Se muestran también la carga en juego (~80 %) y el pico transitorio.
