@@ -1,0 +1,125 @@
+# Medidas que faltan — 84 cajas
+#
+# Estas cajas tienen la gráfica máxima, el disipador y los radiadores REALES,
+# pero sus dimensiones son una estimación por tipo de torre. Solo hace falta
+# el dato de la caja montada, en milímetros:
+#
+#     largo (fondo) × ancho × alto
+#
+# Rellena después de la última barra y guarda. Ejemplo:
+#
+#     Corsair|4000D Airflow|453×230×466
+#
+# El volumen en litros se calcula solo, no hace falta.
+# Si alguna no la encuentras, déjala vacía y se queda como está.
+#
+# marca|modelo|largo×ancho×alto
+
+Antec|C6 Curve ARGB|
+Antec|CX800 ARGB|
+Antec|FLUX PRO|
+Antec|FLUX PRO Noctua Edition|
+Antec|P10C Silent|
+
+ASUS|ROG Strix Helios II GX601S|
+
+be quiet!|Light Base 500|
+be quiet!|Pure Base 500|
+be quiet!|Pure Base 500 FX|
+
+Cooler Master|MasterBox 600 RGB|
+Cooler Master|MasterFrame 360 Stage LCD|
+Cooler Master|MasterFrame 360 Stage Mirror|
+
+Corsair|3000D RGB AIRFLOW|
+Corsair|AIR 5400 LX-R RGB|
+Corsair|AIR 5400 RS-R ARGB|
+
+DeepCool|CG330 3F|
+DeepCool|CG530 4F|
+DeepCool|CG530U 4F|
+DeepCool|CH170 PLUS|
+DeepCool|CH560 ARGB|
+DeepCool|CL660|
+DeepCool|CL6600|
+DeepCool|MORPHEUS|
+
+Evolveo|Xenon|
+
+Fractal Design|Define 7 Nano|
+Fractal Design|Epoch TG|
+Fractal Design|Epoch XL|
+Fractal Design|Meshify 2 Compact Lite|
+Fractal Design|Meshify 2 Compact RGB|
+Fractal Design|Meshify 3|
+Fractal Design|Meshify 3 Ambience Pro RGB|
+Fractal Design|Pop 2 Air|
+
+FSP|U530-BS|
+
+GameMax|N90|
+
+Genesis|Diaxid 605 ARGB|
+Genesis|Irid 505 V2|
+
+Hiditec|H2 AIR ARGB|
+
+Jonsbo|D31 STD|
+
+Lian Li|LAN207DX|
+Lian Li|Lancool 205M Mesh RGB|
+Lian Li|Lancool 206|
+Lian Li|O11 Vision-M|
+
+Mars Gaming|MC-3TCORELCD|
+Mars Gaming|MC-AIR|
+Mars Gaming|MC-NOVAM|
+Mars Gaming|MC51W|
+
+Modecom|Volcano Stellar 5F ARGB|
+
+Montech|XR|
+
+MSI|MEG MAESTRO 700L PZ|
+
+Nox|Hummer ASTRA NEO|
+Nox|Hummer BLADE ARGB|
+Nox|Hummer ETHER|
+Nox|Hummer Signal ARGB|
+Nox|Hummer TGX Rainbow RGB|
+Nox|Hummer Vision|
+Nox|Hummer ZX|
+Nox|Infinity Epsilon ARGB|
+Nox|Infinity IOTA ARGB Mesh|
+Nox|Infinity Zeta ARGB|
+
+SilverStone|GD10|
+SilverStone|SG17|
+
+Tacens|Anima AC5|
+
+Tempest|Airflow Bastion ARGB|
+Tempest|Compact Lumina ARGB|
+
+Thermaltake|AX500|
+Thermaltake|AX700|
+Thermaltake|AX700 TG|
+Thermaltake|Core V1|
+Thermaltake|CTE E660 MX|
+Thermaltake|Divider 200 TG|
+Thermaltake|Divider 300 TG|
+Thermaltake|H330 TG|
+Thermaltake|H350 TG RGB|
+Thermaltake|S250 TG ARGB|
+Thermaltake|S380 TG ARGB|
+Thermaltake|The Tower 300|
+Thermaltake|The Tower 600|
+Thermaltake|TR100|
+Thermaltake|View 380 WS ARGB|
+Thermaltake|View 380 XL TG ARGB|
+Thermaltake|View 390 Air|
+Thermaltake|View 390 TG|
+
+UNYKAch|AERO C12 V2|
+
+Zalman|I3 Neo V2|
