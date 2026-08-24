@@ -274,5 +274,19 @@ const ram32 = busca('ram', '32gb 3600');
 if (!ram32) err('«32gb 3600» no devuelve kits');
 else console.log(`  ✓ «32gb 3600» devuelve ${ram32} kits`);
 
+/* Un procesador se busca por su número, no por su nombre completo: quien
+   quiere el i5-4690 teclea «4690». Al compactar, el guion desaparece y el
+   número queda pegado al «i5»; si el buscador no guarda además los trozos
+   sueltos, la frontera numérica lo deja fuera y no aparece nada. */
+for (const [modelo, minimo] of [['4690', 3], ['9900k', 3], ['4790k', 1], ['6700k', 1], ['12100f', 1], ['5800x3d', 1]]) {
+  const n = busca('cpu', modelo);
+  if (n < minimo) err(`«${modelo}» encuentra ${n} procesador(es) y debería encontrar al menos ${minimo}`);
+}
+console.log('  ✓ los procesadores se encuentran por el número suelto: 4690 · 9900k · 4790k · 6700k · 12100f · 5800x3d');
+/* Y el nombre debe ir como lo escribe Intel, sin espacio tras el guion. */
+const malEscritos = of('cpu').filter(c => /[A-Za-z]-\s/.test(c.name));
+if (malEscritos.length) err(`${malEscritos.length} procesador(es) con espacio tras el guion, p.ej. «${malEscritos[0].name}»`);
+else console.log(`  ✓ los ${of('cpu').length} procesadores llevan el nombre sin espacio tras el guion`);
+
 console.log(bad?`\n✗ ${bad} PROBLEMAS`:'\n✓ CATÁLOGO ÍNTEGRO — 0 problemas');
 process.exit(bad?1:0);

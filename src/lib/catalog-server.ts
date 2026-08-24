@@ -120,6 +120,14 @@ function haystack(p: Part): string {
     const w = bit.split(/\s+/).map(compact).filter(Boolean);
     words.push(...w);
     for (let i = 0; i < w.length - 1; i++) words.push(w[i] + w[i + 1]);
+    /* Nadie teclea «Core i5-4690S» entero: se busca «4690». Al compactar,
+       el guion desaparece y el número queda pegado al «i5», donde la
+       frontera numérica ya no deja entrar. Así que lo que separa un signo
+       se guarda además suelto, sin quitar la palabra entera. */
+    for (const crudo of bit.split(/\s+/)) {
+      const trozos = crudo.split(/[^A-Za-z0-9]+/).map(compact).filter(Boolean);
+      if (trozos.length > 1) words.push(...trozos);
+    }
   }
   /* Un formato se teclea de mil maneras: «Micro-ATX», «mATX», «m-atx»,
      «uATX». Al compactar quedan cadenas distintas («microatx» no contiene
