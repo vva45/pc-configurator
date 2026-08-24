@@ -10,15 +10,16 @@ El usuario pegó un listado de la categoría de cajas de PcComponentes con **516
 productos** (nombre + precios + valoraciones; las valoraciones, opiniones y
 plazos de entrega se ignoran por completo). De ahí:
 
-- **205 cajas ya están añadidas** y desplegadas (`src/data/parts/case.ts`,
-  bloque final con la cabecera «Cajas del listado de PcComponentes»).
-- **311 cajas siguen pendientes**, listadas en
+- **385 cajas ya están añadidas** y desplegadas (`src/data/parts/case.ts`,
+  bloques con la cabecera «Cajas del listado de PcComponentes»): 205 de la
+  primera tanda y **180 de la segunda**.
+- **126 cajas siguen pendientes**, listadas en
   [`cajas-pendientes.txt`](./cajas-pendientes.txt).
 
-Se quedaron fuera porque la sesión anterior **agotó su presupuesto de búsquedas
-web** (200 de 200) antes de poder verificar sus especificaciones, y no se
-inventan datos para rellenar el hueco. Ese presupuesto **se renueva en cada
-sesión nueva**: ese es el único motivo por el que hay que abrir otra.
+Se quedan fuera las que no se han podido verificar antes de que la sesión
+agote su **presupuesto de búsquedas web**, y no se inventan datos para
+rellenar el hueco. Ese presupuesto **se renueva en cada sesión nueva**: ese es
+el único motivo por el que hay que abrir otra.
 
 ## Qué hay que hacer
 
@@ -128,8 +129,8 @@ git checkout main-ipcxbk
 
 ## Cómo repartir la búsqueda
 
-Son 311 modelos y una sesión tiene unas 200 búsquedas web, así que **no caben
-todos en una sola tanda**. Lo que funcionó bien:
+Quedan 126 modelos y una sesión tiene unas 200 búsquedas web. Lo que funcionó
+bien:
 
 - Lanzar varios subagentes en paralelo, cada uno con un bloque de marcas, y
   pedirles que devuelvan **solo el JSONL** con el esquema de arriba.
@@ -142,19 +143,57 @@ todos en una sola tanda**. Lo que funcionó bien:
   todos los subagentes**: en cuanto se agota, el resto devuelve vacío. Conviene
   empezar por las marcas con más modelos pendientes.
 
+**Exigir a cada subagente que vuelque su JSONL cada 3 modelos, no al final.**
+En la segunda tanda se alcanzó el límite de uso del modelo a mitad de trabajo
+y los seis agentes que guardaban solo al terminar **perdieron todo lo buscado**
+(unas 60 búsquedas tiradas); los que ya habían escrito el fichero conservaron
+su lote entero. El trabajo perdido no se puede recuperar del transcript: los
+agentes acumulan las fichas en su contexto, no en el texto.
+
+Conviene también **validar el JSONL antes de generar**, porque los agentes
+cometen errores de lectura que el generador no ve: valores fuera de rango (un
+«630 mm de GPU» o «18 bahías» leídos de la columna equivocada), dimensiones con
+decimales, y radiadores que no caben en el plano donde dicen montarse. La
+comprobación útil es que un radiador de N mm necesita N+30 mm de arista en su
+plano, y que `gpu` nunca supere la arista mayor del chasis.
+
 Reparto pendiente por marca (las 15 con más peso):
 
 | Marca | Pendientes | Marca | Pendientes |
 |---|---|---|---|
-| Corsair | 35 | Cooler Master | 12 |
-| Thermaltake | 28 | be quiet! | 9 |
-| Fractal Design | 26 | ASUS | 9 |
-| SilverStone | 19 | Inter-Tech | 9 |
-| DeepCool | 17 | Raijintek | 7 |
-| Mars Gaming | 16 | Darkflash | 7 |
-| MSI | 15 | CoolBox | 7 |
-| Antec | 15 | Chieftec | 5 |
-| Lian Li | 13 | resto | ~56 |
+| Mars Gaming | 16 | Chieftec | 5 |
+| Fractal Design | 10 | XYZ | 4 |
+| Inter-Tech | 9 | InWin | 4 |
+| Darkflash | 7 | Approx | 3 |
+| CoolBox | 7 | Silentware | 3 |
+| Raijintek | 7 | Adata | 3 |
+| TooQ | 5 | Gigabyte | 2 |
+| Aerocool | 5 | resto | ~36 |
+
+## Duplicados ya resueltos (no volver a buscarlos)
+
+La segunda tanda confirmó por búsqueda estos casos y **ya los ha retirado del
+listado de pendientes**:
+
+- `Corsair|FRAME 5000 RS` y `FRAME 5000 RS ARGB` — no existe una gama «FRAME
+  5000» sin la «D». La primera era la `FRAME 5000D RS` que ya estaba en el
+  listado; la segunda se ha **renombrado** a `Corsair|FRAME 5000D RS ARGB` y
+  sigue pendiente, conservando su precio.
+- `Corsair|iCUE LINK 9000D RGB AIRFLOW` = `9000D RGB AIRFLOW`, ya en `case.ts`.
+- `Corsair|5000T` = `iCUE 5000T RGB`, añadida en esta tanda.
+- `Thermaltake|The Tower 300 Bumblebee` — edición de color de `The Tower 300`,
+  añadida en esta tanda.
+- `Antec|Performance 1` = `Performance 1 FT`, ya en `case.ts`.
+
+También se ha resuelto el nombre equivocado que señalaba la tanda anterior: las
+filas `FRAME 4000D` y `FRAME 4000D RGB` **se han reemplazado** por
+`FRAME 4000D RS` y `FRAME 4000D RS ARGB`, con ficha verificada (490×239×486 mm,
+E-ATX, 430 mm de gráfica) en lugar de las cotas de clase que llevaban.
+
+En cambio, **sí son productos distintos** y se han añadido por separado, contra
+lo que se sospechaba: `DeepCool CL660` / `CL6600` (el segundo lleva una AIO de
+360 de fábrica), `ASUS TUF Gaming GT502 PLUS` / `GT502 HORIZON TG ARGB` frente
+al `GT502`, y `ASUS ROG Strix Helios II GX601S` frente al `ROG Strix Helios`.
 
 ## Repasos que dejó la tanda anterior
 
@@ -188,21 +227,47 @@ Regla al rehacerlas: cuando un dato no esté publicado, **redondear `gpuLen` y
 porque pueden ser el mismo producto que algo ya cargado o una variante de
 color en vez de un modelo:
 
-- `Corsair|iCUE LINK 9000D RGB AIRFLOW` — en `case.ts` ya está como
-  `9000D RGB AIRFLOW`, sin el prefijo de gama.
-- `Corsair|iCUE 5000T RGB` y `Corsair|5000T` — misma caja, con y sin prefijo.
-- `Corsair|FRAME 4000D RS` / `FRAME 4000D RS ARGB` — en `case.ts` están como
-  `FRAME 4000D` y `FRAME 4000D RGB`; conviene unificar al nombre real.
 - `Gigabyte|AORUS C300 GLASS RGB` — puede ser el SKU `GB-AC300G`, ya cargado.
-- `Thermaltake|The Tower 300 Bumblebee` y compañía — son ediciones de color de
-  `The Tower 300`, no modelos distintos.
 - `Alurin|Work` y `Darkflash|Tech` — nombres de familia sin modelo concreto.
+- `Mars Gaming|MC-MESHPRO` / `MC-NOVA` / `MC-3T` — en `case.ts` hay `MCM`,
+  `MC-NOVAM` y `MC-3TCORELCD(M)`; comprobar si son el mismo chasis.
+- `Darkflash|DS900WS` y `DS900G` — ya están `DS900` y `DS900WD`.
+- `Aerocool|P500C` — ya está `P500C Evo`.
+- `Raijintek|Paean` / `Paean Premium` y `Ophion` / `Ophion 7L` — parejas del
+  mismo chasis con equipamiento distinto; una búsqueda resuelve las dos.
+
+## Repasos que deja esta tanda
+
+**70 de las 180 filas nuevas llevan las dimensiones de la cota de clase**,
+porque la búsqueda confirmó el resto de la ficha pero no las medidas. Su
+`vol` es también el de clase. No comparten specs byte a byte como las 31 de
+la tanda anterior —casi todas tienen `gpuLen`, `coolerH` o `rad` reales—, así
+que el configurador sí las distingue, pero el volumen que muestran es
+orientativo. Las más flojas, con solo dos o tres datos reales, son
+`Corsair 4500X LX-R RGB` / `4500X RS-R ARGB`, `Corsair AIR 5400 RS-R ARGB` /
+`AIR 5400 LX-R RGB`, `Thermaltake H350 TG RGB` / `H330 TG`,
+`Cooler Master MasterFrame 360 Stage LCD` / `Stage Mirror`,
+`Antec FLUX PRO`, `SilverStone RM46-502-I`, `MSI MAG FORGE 112R` y
+`MSI PRO SHIELD M100P`.
+
+Cuatro modelos se quedaron pendientes **a propósito** pese a tener búsqueda:
+`Antec Performance 1 M`, `DeepCool CK560`, `be quiet! Light Base 600 DX` y
+`Pure Base 501 DX` solo devolvieron un dato cada uno, y una fila con un único
+campo real es indistinguible de una inventada.
+
+Datos que la búsqueda devolvió mal y se han descartado, por si reaparecen:
+la `Thermaltake AX700` / `AX700 TG` con «630 mm de gráfica» y «18 bahías»
+(columnas cruzadas en la fuente), y la `Lian Li A3 Wood` con un radiador
+frontal de 360 en un chasis de 322 mm de alto.
 
 **Precios que conviene contrastar.** Vienen del listado tal cual, pero algunos
-salen de vendedores del marketplace y están muy por encima del PVPR real: todo
-el bloque de Fractal Design, la be quiet! Pure Base 500 a 306 €, y varias
-Mars Gaming y Darkflash con precios de gama alta. Si al buscar la ficha se ve
-el PVPR oficial, mejor ese.
+salen de vendedores del marketplace y están muy por encima del PVPR real. Las
+Mars Gaming y Darkflash con precios de gama alta siguen pendientes, así que
+todavía se pueden corregir al añadirlas. En cambio **ya están cargadas con el
+precio del listado**, y habría que revisarlas a mano, las de Fractal Design
+(`Meshify 2 Compact RGB` a 341 €, `Meshify 2 Lite` a 301 €, `Torrent Compact`
+a 330 €, `Node 202` a 385 €, `Terra` a 400 €) y la `be quiet! Pure Base 500` a
+306 €, que de PVPR ronda los 90 €.
 
 ## Prompt para arrancar la sesión nueva
 
