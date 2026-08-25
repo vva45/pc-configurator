@@ -1,6 +1,7 @@
 # Catálogo de cajas
 
-> Para las gráficas, ver [graficas.md](graficas.md).
+> Para las gráficas, ver [graficas.md](graficas.md). Para los procesadores,
+> [procesadores.md](procesadores.md).
 
 Estado de las **528 cajas** de `src/data/parts/case.ts`, todas con las
 especificaciones del fabricante.
