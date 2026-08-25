@@ -44,11 +44,34 @@ encuentra el buscador. Y el listado daba 8 GB a la Arc Pro A50, que lleva 6.
 
 Alchemist sigue en tienda, así que **no** va marcada como descatalogada.
 
-## AMD: el listado ya estaba
+## AMD: 204 tarjetas más
 
-De las 233 tarjetas Radeon del listado, **232 ya estaban en el catálogo con el
-mismo nombre**; la restante era la Sapphire NITRO+ RX 9070 XT, que ya figura
-sin el sufijo «16GB». No había nada que añadir.
+Del segundo listado —RX 400, 500, 6000, 7000 y 9000, 591 tarjetas— ya estaban
+278 y entraron 204. La ficha de las 35 GPU que ya figuraban se tomó de sus
+propias filas, verificadas antes; las seis que no estaban se buscaron aparte:
+RX 6700, RX 6300, RX 560 de 2 GB, RX 9070 GRE, RX 9060 y RX 9050.
+
+El largo y las ranuras salen de la mediana de esa misma familia de disipador
+de esa misma marca, ya medida en el catálogo, así que **ninguna fila nueva
+lleva una cota inventada**. Las marcas que revenden la placa de referencia con
+su pegatina —AMD, Club 3D, VisionTek— llevan la cota de la referencia.
+
+Quedaron fuera 109:
+
+- **108 de Yeston, Dataland, BIOSTAR, VASTARMOR, Diamond Multimedia y
+  GeCube.** Ninguna publica las cotas de sus productos, así que habrían
+  entrado todas con la misma medida de clase: el mismo defecto que se limpió
+  del catálogo de cajas.
+- **El ASRock RX 9060**, porque AMD solo vende ese chip a fabricantes de
+  equipos. La ficha de referencia sí está.
+
+### 189 tarjetas con conectores que no daban su consumo
+
+Un R9 290X de 315 W no se alimenta con un 8 y un 6 pines, que suman 300 con
+los 75 de la ranura. Cada una subió al menor conector que sí la alimenta, y
+la sección 7 de la auditoría pasa a comprobarlo **también en las
+descatalogadas**: los vatios que da un conector no dependen de que la tarjeta
+siga a la venta.
 
 118 de ellas están marcadas como descatalogadas: toda la serie RX 5000 y la
 gama media-alta de RX 6000 (6600 XT a 6900 XT). No es un descuido, es el mismo
