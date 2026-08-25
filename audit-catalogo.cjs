@@ -32,6 +32,28 @@ for(const mt of [...new Set(of('mbo').map(m=>m.memType))]){
   else console.log(`  ${mt.padEnd(12)} ${n} kits`);
 }
 
+/* Tres cosas de un procesador se pueden comprobar sin mirar ninguna ficha,
+   y las tres se colaron al ampliar el catálogo copiando la variante sin
+   sufijo sobre la T o la S. */
+{
+  const SIN_TURBO = /^(Pentium|Celeron)|^Core i3-[4-8]\d{2,3}/;  // el i3 gana turbo en la 9ª
+  const CUARTO_MB = ['LGA1150', 'LGA1151', 'LGA1151v2', 'LGA1155'];  // 256 KB de L2 por núcleo
+  let cpuRev = 0, quejas = 0;
+  const q = (c, m) => { if (c) { err(m); quejas++; } };
+  for (const c of of('cpu')) {
+    cpuRev++;
+    q(c.boost < c.base, `${c.name}: turbo ${c.boost} GHz por debajo de la base ${c.base} GHz`);
+    q(c.threads !== c.cores && c.threads !== c.cores * 2 && !c.pcores,
+      `${c.name}: ${c.threads} hilos con ${c.cores} núcleos`);
+    if (SIN_TURBO.test(c.name) && CUARTO_MB.includes(c.socket))
+      q(c.boost !== c.base, `${c.name} no lleva Turbo Boost: el turbo (${c.boost}) debería ser la base (${c.base})`);
+    if (CUARTO_MB.includes(c.socket) && c.l2 !== undefined && !c.pcores)
+      q(Math.abs(c.l2 - c.cores * 0.25) > 1e-9,
+        `${c.name}: L2 de ${c.l2} MB con ${c.cores} núcleos (256 KB por núcleo dan ${c.cores * 0.25})`);
+  }
+  if (!quejas) console.log(`  ✓ ${cpuRev} procesadores: turbo por encima de la base, hilos por núcleo y L2 por núcleo`);
+}
+
 console.log('\n=== 3. Cada CPU puede montarse de verdad ===');
 let sinMontaje=0;
 for(const c of of('cpu')){
