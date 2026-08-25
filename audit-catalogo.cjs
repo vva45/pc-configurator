@@ -157,6 +157,11 @@ console.log('\n=== 7. Coherencia física y eléctrica de las gráficas ===');
 const BUSES=[32,64,96,128,160,192,256,320,352,384,448,512,1024,2048,4096,8192];
 let gpuRev=0;
 for(const g of of('gpu')){
+  /* Los conectores son física, no comercio: una tarjeta descatalogada
+     tampoco puede alimentar 315 W con un 8 y un 6 pines. Esa comprobación
+     se hace sobre todas; el resto, solo sobre las que están a la venta. */
+  const alim0=75+(g.conn8||0)*150+(g.conn6||0)*75+(g.hpwr?600:0);
+  if(g.tbp&&alim0<g.tbp) err(`${g.brand} ${g.name}: sus conectores dan ${alim0} W para un tbp de ${g.tbp} W`);
   if(g.museum||g.legacy) continue;
   gpuRev++;
   const q=(c,m)=>{ if(c) err(`${g.brand} ${g.name}: ${m}`); };
