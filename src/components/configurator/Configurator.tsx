@@ -16,6 +16,7 @@ import type { CatId, Part } from "@/data/parts/types";
 import { CAT, CATS, GROUPS } from "@/data/categories";
 import { gate, one, runPost, type AppBuild, type Build, type Picked } from "@/lib/compat";
 import { calcPower } from "@/lib/power";
+import { analyzeForgeBuild, type ForgeConflict } from "@/lib/forge-intelligence";
 import { type ActiveFilters } from "@/lib/filters";
 import { REGIONS, type RegionId } from "@/lib/regions";
 import { eur } from "./format";
@@ -27,6 +28,7 @@ import ShoppingList from "./ShoppingList";
 import Slot from "./Slot";
 import StoreSheet from "./StoreSheet";
 import BuildSummary from "./BuildSummary";
+import ForgeIntelligence from "./ForgeIntelligence";
 
 type SortKey = "rel" | "price" | "priceDesc" | "name";
 type Tab = "build" | "catalog" | "status";
@@ -178,18 +180,36 @@ export default function Configurator() {
   }, [cat, build]);
 
   // ¿qué pieza concreta rompe el montaje? -> contactos en rojo en su ranura
-  const conflicts = useMemo(() => {
-    const set = new Set<string>();
+  const conflictDetails = useMemo(() => {
+    const found: ForgeConflict[] = [];
     for (const [c, arr] of Object.entries(build) as [CatId, Picked[] | undefined][]) {
       for (const it of arr || []) {
         const rest = { ...build } as Record<CatId, Picked[] | undefined>;
         rest[c] = ((build[c] || []) as Picked[]).filter((x) => x._uid !== it._uid);
         if (!rest[c]?.length) delete rest[c];
-        if (gate(it, rest as Build).blocked) set.add(it._uid);
+        const result = gate(it, rest as Build);
+        if (result.blocked) found.push({ uid: it._uid, name: `${it.brand} ${it.name}`, reason: result.reason || "Conflicto detectado por el motor de compatibilidad.", cat: c });
       }
     }
-    return set;
+    return found;
   }, [build]);
+  const conflicts = useMemo(() => new Set(conflictDetails.map((item) => item.uid)), [conflictDetails]);
+  const selectedCategories = useMemo(() => new Set((Object.entries(build) as [CatId, Picked[] | undefined][])
+    .filter(([, items]) => Boolean(items?.length)).map(([id]) => id)), [build]);
+  const selectedCount = useMemo(() => (Object.values(build) as Picked[][]).flat().length, [build]);
+  const intelligence = useMemo(() => analyzeForgeBuild({
+    selectedCount, requiredCore: requiredCore.map((item) => item.id), selectedCategories,
+    conflicts: conflictDetails, post: log, power, psuWatt: one(build, "psu")?.watt,
+    nextCategory: cat, categoryLabel: (id) => CAT[id].label,
+  }), [selectedCount, requiredCore, selectedCategories, conflictDetails, log, power, build, cat]);
+
+  const openGuidance = (target: CatId, minWatt?: number) => {
+    if (target === "psu" && minWatt) {
+      const f: ActiveFilters = { watt: [minWatt, 2000] };
+      if (cat === "psu") setFilters(f); else pending.current = f;
+    }
+    setCat(target); setTab("catalog");
+  };
 
   const Bar = (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
@@ -266,6 +286,7 @@ export default function Configurator() {
 
   const StatusPane = (
     <div className="scroll" style={{ padding: 12, height: "100%" }}>
+      <ForgeIntelligence analysis={intelligence} onAction={openGuidance} />
       <PowerGauge power={power} psu={one(build, "psu")} />
 
       {power.total > 0 && (
@@ -291,9 +312,7 @@ export default function Configurator() {
 
       {!one(build, "psu") && power.total > 0 && (
         <button className="btn btn-gold" style={{ width: "100%", marginTop: 10 }}
-          onClick={() => { const f: ActiveFilters = { watt: [power.rec, 2000] };
-            if (cat === "psu") setFilters(f); else pending.current = f;
-            setCat("psu"); setTab("catalog"); }}>
+          onClick={() => openGuidance("psu", power.rec)}>
           Ver fuentes de {power.rec} W o más
         </button>
       )}
