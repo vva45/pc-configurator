@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -140,6 +140,55 @@ console.log('  ejemplo:',decodeURIComponent(storesFor(P.find(p=>p.name.includes(
   // frontera numérica: «2tb» no debe casar dentro de «12 TB»
   ok(!qc('storage','seagate 2tb').items.some(x=>/12 TB|32 TB/.test(x.p.name)),'«2tb» casa dentro de «12 TB»');
   console.log('  búsqueda libre: palabras sueltas, sin orden ni mayúsculas, con descatalogadas');
+}
+
+// 14. Forge Intelligence: score e insights deterministas
+{
+  const required=['cpu','cooler','mbo','ram','storage','psu','case'];
+  const power=(total=0,target=0,rec=0)=>({detail:{},total,gaming:0,spike:total,rec,desk:0,target});
+  const input=(extra={})=>({selectedCount:0,requiredCore:required,selectedCategories:new Set(),conflicts:[],post:[],power:power(),
+    nextCategory:'cpu',categoryLabel:c=>CAT[c].label,...extra});
+  ok(calculateForgeScore(input())===null,'build vacía muestra un falso 0');
+  const cpu=calculateForgeScore(input({selectedCount:1,selectedCategories:new Set(['cpu']),power:power(120,150,160)}));
+  ok(cpu&&cpu.core===5&&cpu.total>0&&cpu.total<100,'score parcial de CPU incorrecto');
+  const complete=calculateForgeScore(input({selectedCount:7,selectedCategories:new Set(required),post:[{lvl:'ok',id:'CPU_MBO',code:'0x01',msg:'ok'}],power:power(500,625,650),psuWatt:650}));
+  ok(complete&&complete.core===35&&complete.compatibility===30,'CORE completo sin conflictos incorrecto');
+  const conflict=calculateForgeScore(input({selectedCount:1,selectedCategories:new Set(['cpu']),conflicts:[{uid:'1',name:'CPU',reason:'Socket',cat:'cpu'}]}));
+  ok(conflict&&conflict.compatibility===18,'conflicto no resta 12 puntos');
+  const warning=calculateForgeScore(input({selectedCount:1,selectedCategories:new Set(['cpu']),post:[{lvl:'warn',id:'MISC',code:'0x7F',msg:'aviso'}]}));
+  ok(warning&&warning.post===16,'warning POST no resta 4 puntos');
+  const failure=calculateForgeScore(input({selectedCount:1,selectedCategories:new Set(['cpu']),post:[{lvl:'fail',id:'MISC',code:'0x7F',msg:'fallo'}]}));
+  ok(failure&&failure.post===10,'failure POST no resta 10 puntos');
+  const noPsu=calculateForgeScore(input({selectedCount:1,selectedCategories:new Set(['cpu']),power:power(500,625,650)}));
+  ok(noPsu&&noPsu.power===0,'build sin PSU recibe puntos de energía');
+  const weak=calculateForgeScore(input({selectedCount:2,selectedCategories:new Set(['cpu','psu']),power:power(500,625,650),psuWatt:450}));
+  ok(weak&&weak.power===0,'PSU insuficiente recibe puntos');
+  const close=calculateForgeScore(input({selectedCount:2,selectedCategories:new Set(['cpu','psu']),power:power(500,625,650),psuWatt:550}));
+  ok(close&&close.power===7,'PSU utilizable sin objetivo no recibe puntuación intermedia');
+  const good=calculateForgeScore(input({selectedCount:2,selectedCategories:new Set(['cpu','psu']),power:power(500,625,650),psuWatt:750}));
+  ok(good&&good.power===15,'PSU correcta no recibe 15 puntos');
+  const abused=calculateForgeScore(input({selectedCount:1,requiredCore:[],selectedCategories:new Set(),conflicts:Array(20).fill({}),post:Array(20).fill({lvl:'fail'}),power:power(Infinity,Infinity,0),psuWatt:1}));
+  ok(abused&&abused.total>=0&&abused.total<=100&&Number.isFinite(abused.total),'score fuera de 0–100');
+  const noGpu=calculateForgeScore(input({selectedCount:7,selectedCategories:new Set(required)}));
+  ok(noGpu&&noGpu.core===35,'GPU ausente penaliza CORE');
+  const dynamic=calculateForgeScore(input({selectedCount:2,requiredCore:['cpu','mbo'],selectedCategories:new Set(['cpu'])}));
+  ok(dynamic&&dynamic.core===18,'requiredCore dinámico sigue hardcodeado a 7');
+
+  const emptyInsights=generateForgeInsights(input());
+  ok(emptyInsights[0]?.id==='start-build'&&emptyInsights[0].targetCat==='cpu','build vacía no guía a CPU');
+  const requiredInsights=generateForgeInsights(input({selectedCount:1,selectedCategories:new Set(['cpu']),nextCategory:'cooler'}));
+  ok(requiredInsights.some(x=>x.id==='next-cooler'),'categoría requerida pendiente incorrecta');
+  const conflictInsights=generateForgeInsights(input({selectedCount:1,conflicts:[{uid:'x',name:'RAM',reason:'DDR4 ≠ DDR5',cat:'ram'}],post:[{lvl:'fail',id:'MEM_TYPE',code:'0x04',msg:'RAM'}]}));
+  ok(conflictInsights[0]?.severity==='critical'&&conflictInsights[0].id==='conflict-x','conflicto no tiene prioridad crítica');
+  ok(conflictInsights.some(x=>x.id.startsWith('post-fail')&&x.severity==='critical'),'POST failure sin insight crítico');
+  const weakInsights=generateForgeInsights(input({selectedCount:2,power:power(500,625,650),psuWatt:450}));
+  ok(weakInsights.some(x=>x.id==='psu-insufficient'&&x.severity==='critical'),'PSU insuficiente sin insight');
+  const psuInsights=generateForgeInsights(input({selectedCount:1,power:power(500,625,650)}));
+  ok(psuInsights.some(x=>x.id==='psu-missing'&&x.detail.includes('650 W')),'PSU pendiente no usa power.rec');
+  const coreInsights=generateForgeInsights(input({selectedCount:7,selectedCategories:new Set(required),nextCategory:'gpu'}));
+  ok(coreInsights.some(x=>x.id==='core-complete'&&x.severity==='success'),'CORE completo sin success');
+  ok(!coreInsights.some(x=>x.severity==='warning'&&x.targetCat==='gpu'),'GPU opcional genera warning');
+  console.log('  Forge Intelligence: score, prioridades, PSU y guidance validados');
 }
 
 console.log(`\n${pass} OK · ${fail} FALLOS`);

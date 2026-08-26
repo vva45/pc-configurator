@@ -395,6 +395,31 @@ input[type=text]:focus,input[type=number]:focus,select:focus{
   .mtabs button{font-size:9px!important}
 }
 
+/* ═══ FORGE — Phase 3: deterministic build intelligence ═══ */
+.forge-score,.forge-insights{position:relative;border:1px solid rgba(79,140,103,.62)!important;background:linear-gradient(145deg,rgba(18,48,31,.9),rgba(5,18,11,.88))!important}
+.forge-score::before{content:"";position:absolute;inset:0 auto 0 0;width:2px;background:var(--gold);box-shadow:0 0 10px rgba(223,184,94,.28)}
+.forge-score-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.forge-score-caption{margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--silk-dim)}
+.forge-score-reading{display:flex;align-items:baseline;gap:4px;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.forge-score-reading strong{font-size:34px;line-height:.9;letter-spacing:-.07em}.forge-score-reading span{font-size:8px;letter-spacing:.08em;color:var(--silk-dim)}
+.forge-score-status{margin-top:7px;font-family:'Archivo',sans-serif;font-size:11px;letter-spacing:.14em;color:var(--cyan)}
+.forge-score-track{height:4px;margin-top:5px;background:var(--trace);overflow:hidden}.forge-score-track i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));transition:width .2s ease}
+.forge-score-breakdown{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;margin:8px 0 0;background:rgba(79,140,103,.28)}
+.forge-score-breakdown>div{display:flex;justify-content:space-between;gap:4px;padding:5px 6px;background:rgba(5,18,11,.92);font-family:'IBM Plex Mono',monospace;font-size:8.5px}
+.forge-score-breakdown dt{color:var(--silk-dim)}.forge-score-breakdown dd{margin:0;color:var(--silk);font-variant-numeric:tabular-nums}
+.forge-score-empty{display:grid;gap:4px;margin-top:10px;padding:8px;border-left:2px solid var(--trace);background:rgba(4,16,10,.35)}
+.forge-score-empty strong{font-size:11px;color:var(--silk)}.forge-score-empty span,.forge-score-note{font-size:9px;line-height:1.45;color:var(--silk-dim)}
+.forge-score-note{margin:7px 0 0}
+.forge-insights-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.forge-insights-head>span,.forge-insights-more{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--silk-dim);text-transform:uppercase}
+.forge-insight-list{display:grid;gap:6px;margin-top:7px}.forge-insight{padding:7px 8px;border:1px solid var(--trace);border-left-width:2px;background:rgba(4,16,10,.34)}
+.forge-insight-critical{border-left-color:var(--red)}.forge-insight-warning{border-left-color:var(--amber)}.forge-insight-info{border-left-color:var(--cyan)}.forge-insight-success{border-left-color:var(--gold)}
+.forge-insight-marker{display:flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--silk-dim)}
+.forge-insight-critical .forge-insight-marker{color:var(--red)}.forge-insight-warning .forge-insight-marker{color:var(--amber)}.forge-insight-info .forge-insight-marker{color:var(--cyan)}.forge-insight-success .forge-insight-marker{color:var(--gold)}
+.forge-insight h3{margin:4px 0 2px;font-size:11px;line-height:1.25;color:var(--silk)}.forge-insight p{margin:0;font-size:9px;line-height:1.4;color:var(--silk-dim)}
+.forge-insight .btn{width:100%;min-height:30px;margin-top:6px;padding:5px 7px;font-size:8.5px}.forge-insights-more{padding-top:7px;text-align:center}
+@media(max-width:900px){.forge-score-reading strong{font-size:31px}.forge-score-breakdown{grid-template-columns:repeat(4,minmax(0,1fr))}.forge-score-breakdown>div{display:grid;gap:2px}.forge-insight h3{font-size:12px}.forge-insight p{font-size:10px}.forge-insight .btn{min-height:36px}}
+@media(max-width:400px){.forge-score-breakdown{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 /* ═══ FORGE — Phase 2: guided build flow and part selection ═══ */
 .build-group-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
 .build-group-title{min-width:0}
