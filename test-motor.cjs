@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,aioGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions,getTabSwipeGestureOwner,isIntentionalTabSwipe}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,aioGeometry,getAioSchematicGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions,getTabSwipeGestureOwner,isIntentionalTabSwipe}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -64,6 +64,22 @@ const m2Profile=createVisualHardwareProfile(visual.parts.storage); ok(m2Profile.
 ok(createVisualHardwareProfile(createVisualBuildModel(B({psu:{cat:'psu',id:'pw',brand:'Forge',name:'Snow White'}})).parts.psu).isLight&&!createVisualHardwareProfile(visual.parts.psu).isLight,'PSU white/default incorrecta');
 ok(aioGeometry(240).fanCount===2&&aioGeometry(240).widthMm>aioGeometry(240).fanSizeMm&&aioGeometry(360).fanCount===3,'geometría AIO 240/360 incorrecta');
 ok(aioGeometry(120).fanCount===1&&aioGeometry(280).fanCount===2&&aioGeometry(420).fanCount===3,'mapa físico de ventiladores AIO incorrecto');
+
+// AIO schematic geometry stays physical before the SVG applies one uniform scale.
+const schematicAios=[120,240,280,360,420].map(getAioSchematicGeometry);
+const expectedFans=[[1,120],[2,120],[2,140],[3,120],[3,140]];
+schematicAios.forEach((geometry,index)=>{
+  ok(geometry.fanCount===expectedFans[index][0]&&geometry.fanDiameter===expectedFans[index][1],`geometría esquemática AIO ${geometry.radiatorMm} incorrecta`);
+  ok(geometry.radiatorWidth>geometry.fanDiameter,`radiador AIO ${geometry.radiatorMm} no sobresale del ventilador`);
+  ok(geometry.fanCenters.every(center=>center-geometry.fanDiameter/2>=0&&center+geometry.fanDiameter/2<=geometry.radiatorLength),`ventilador AIO ${geometry.radiatorMm} fuera del radiador`);
+  const spacings=geometry.fanCenters.slice(1).map((center,i)=>center-geometry.fanCenters[i]);
+  ok(spacings.every(spacing=>spacing===geometry.fanDiameter+geometry.fanGap),`centros AIO ${geometry.radiatorMm} no son uniformes`);
+});
+const [g120,g240,g280,g360,g420]=schematicAios;
+ok(g280.radiatorLength>g240.radiatorLength&&g280.radiatorWidth>g240.radiatorWidth,'AIO 280 no supera físicamente al 240');
+ok(g420.radiatorLength>g360.radiatorLength&&g420.radiatorWidth>g360.radiatorWidth,'AIO 420 no supera físicamente al 360');
+ok(g120.radiatorLength===148&&g240.radiatorLength===270&&g280.radiatorLength===310&&g360.radiatorLength===392&&g420.radiatorLength===452,'longitudes físicas AIO inesperadas');
+ok(getAioSchematicGeometry(480).fanCount===4,'fallback AIO no deriva una medida no canónica');
 
 // Phase 5: pure VisualBuildModel → deterministic 3D scene layout.
 const empty3d=createVisual3DScene(visualEmpty);
