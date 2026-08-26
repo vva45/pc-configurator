@@ -7,7 +7,6 @@
    ═══════════════════════════════════════════════════════════════════ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowRight, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
 } from "lucide-react";
@@ -187,13 +186,24 @@ export default function Configurator() {
     return siguiente(cat);
   }, [cat, build]);
   useEffect(() => {
+    const button = continueButton.current;
+    if (!button || !continuar) { setShowFloatingNext(false); return; }
     const root = catalogScroll.current;
-    if (!root || !continuar) { setShowFloatingNext(false); return; }
-    const onScroll = () => setShowFloatingNext(root.scrollTop > 240);
-    root.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => root.removeEventListener("scroll", onScroll);
+    let visible = true;
+    const update = () => setShowFloatingNext(!visible || Boolean(root && window.matchMedia("(max-width: 900px)").matches && root.scrollTop > 120));
+    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); }, { threshold: .9 });
+    observer.observe(button);
+    root?.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => { observer.disconnect(); root?.removeEventListener("scroll", update); };
   }, [continuar, cat]);
+
+  const resetHome = () => {
+    setBuild({}); setCat("cpu"); setTab("catalog"); setQ(""); setFilters({});
+    setSort("rel"); setMuseum(false); setShowFilters(false); setBuy(null);
+    setShopping(false); setSummary(false);
+    window.history.replaceState(null, "", window.location.pathname);
+  };
 
   const tabs: Tab[] = ["build", "catalog", "status"];
   const swipeEnd = (event: React.TouchEvent) => {
@@ -245,7 +255,7 @@ export default function Configurator() {
   const Bar = (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
       borderBottom: "1px solid var(--trace)", background: "var(--board-2)", position: "sticky", top: 0, zIndex: 30, flexWrap: "wrap" }}>
-      <Link href="/" aria-label="Ir a la página principal de Forge" className="forge-home">
+      <button type="button" onClick={resetHome} aria-label="Reiniciar montaje y volver a CPU" className="forge-home">
         <div style={{ width: 26, height: 26, border: "1px solid var(--gold)", display: "grid", placeItems: "center" }}>
           <CircuitBoard size={14} color="var(--gold)" />
         </div>
@@ -253,7 +263,7 @@ export default function Configurator() {
           <div className="dsp" style={{ fontSize: 17, letterSpacing: ".02em" }}>Forge</div>
           <div className="eyebrow" style={{ fontSize: 8.5, marginTop: -2 }}>Configurador de PC</div>
         </div>
-      </Link>
+      </button>
       <div style={{ flex: 1 }} />
       <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <Globe size={13} color="var(--silk-dim)" />
@@ -480,7 +490,7 @@ export default function Configurator() {
           style={{ borderLeft: "1px solid var(--trace)", minHeight: 0 }}>{StatusPane}</div>
       </div>
 
-      {continuar && showFloatingNext && <button className="floating-next" onClick={() => { setCat(continuar); setTab("catalog"); }} aria-label={`Continuar a ${CAT[continuar].label}`}>{(() => { const Icon = CAT[continuar].icon; return <Icon size={16}/>; })()}<ArrowRight size={17}/></button>}
+      {continuar && showFloatingNext && <button className="floating-next" onClick={() => { setCat(continuar); setTab("catalog"); }} aria-label={`Continuar a ${CAT[continuar].label}`}>{(() => { const Icon = CAT[continuar].icon; return <Icon size={16}/>; })()}<span>{CAT[continuar].label}</span><ArrowRight size={17}/></button>}
 
       {buy && <StoreSheet part={buy} region={region} onClose={() => setBuy(null)} />}
       {shopping && <ShoppingList build={build} region={region} total={total}

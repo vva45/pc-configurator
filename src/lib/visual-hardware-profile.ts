@@ -70,7 +70,7 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
     case "case": {
       const dimensions = parseCaseDimensions(part.metadata.dimensions);
       const caseLight = /\b(WHITE|BLANCO|SNOW)\b/.test(value) && !/NEGRO\s*\/\s*BLANCO/.test(value);
-      return { ...base, primaryColor: caseLight ? LIGHT : "#161a19", secondaryColor: caseLight ? LIGHT_GREY : "#343a37", material: "metal", metalness: .78, roughness: .3, dimensions, style: inferCaseStyle(part, dimensions), isLight: caseLight };
+      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style: inferCaseStyle(part, dimensions), isLight: caseLight };
     }
     case "mbo": return { ...base, primaryColor: light ? "#d8dcd8" : "#171b1a", secondaryColor: light ? "#8f9792" : "#505653", material: "pcb", metalness: .35, roughness: .42, isLight: light };
     case "cpu": return { ...base, primaryColor: "#c6cbc7", secondaryColor: "#313633", material: "metal", metalness: .9, roughness: .22, isLight: true };
@@ -83,10 +83,12 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
   }
 }
 
-export function aioGeometry(radiatorMm: unknown, declaredFans?: unknown) {
+export function aioGeometry(radiatorMm: unknown, _declaredFans?: unknown) {
   const size = typeof radiatorMm === "number" && Number.isFinite(radiatorMm) ? Math.min(420, Math.max(120, radiatorMm)) : 240;
   const fanSize = size === 280 || size === 420 ? 140 : 120;
   const canonicalFans = Math.max(1, Math.round(size / fanSize));
-  const fanCount = typeof declaredFans === "number" && declaredFans > 0 ? Math.min(4, Math.round(declaredFans)) : canonicalFans;
+  // Radiator size is the physical source of truth; catalog fan fields can
+  // describe included spare/push-pull fans rather than one populated face.
+  const fanCount = canonicalFans;
   return { radiatorMm: size, fanSizeMm: fanSize, fanCount, widthMm: fanSize + 6, lengthMm: fanSize * fanCount + 12, thicknessMm: 30 };
 }
