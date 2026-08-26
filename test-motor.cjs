@@ -109,7 +109,7 @@ ok(atxPsu.parts.find(x=>x.category==='psu').scale[0]>createVisual3DScene(visual)
 const mountedPsu=atxPsu.parts.find(x=>x.category==='psu');
 ok(mountedPsu.position.join(',')===atxPsu.layout.psuBay.join(',')&&mountedPsu.position[1]<0,'PSU no está anclada a la bahía inferior');
 const dual3d=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'o11',brand:'Lian Li',name:'O11 Dynamic',dims:'465×285×459 mm'},cooler:{cat:'cooler',id:'a36',brand:'Forge',name:'AIO 360',type:'Liquid',radSize:360}})));
-ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.radiatorMounts.side&&dual3d.parts.find(x=>x.category==='cooler').mount==='top','dual chamber no aplica la heurística segura top/front/side');
+ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.archetype==='DUAL_CHAMBER_SHOWCASE'&&dual3d.layout.radiatorMounts.side&&dual3d.parts.find(x=>x.category==='cooler').mount==='side','dual chamber no prioriza el montaje lateral canónico');
 ok(atx3d.camera.minDistance<atx3d.camera.maxDistance&&atx3d.camera.fov>=35&&atx3d.camera.fov<=45,'encuadre 3D no mantiene límites útiles para desktop/mobile');
 for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
 ok(createVisual3DScene(visual).parts.find(x=>x.category==='ram').state==='conflict','3D conflict no se propaga');
