@@ -1,9 +1,17 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,aioGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,aioGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions,getTabSwipeGestureOwner,isIntentionalTabSwipe}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
 const B=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Array.isArray(v)?v:[v]]));
+
+// Mobile gesture arbitration: ownership is fixed from the initial target.
+const targetMatching=(match)=>({closest:selector=>selector.includes(match)?{}:null});
+ok(getTabSwipeGestureOwner(targetMatching('[data-horizontal-scroll-zone]'))==='horizontal-scroll','scroller horizontal no conserva el gesto');
+ok(getTabSwipeGestureOwner(targetMatching('button'))==='none','control interactivo inicia swipe de tabs');
+ok(getTabSwipeGestureOwner(targetMatching('canvas'))==='none','canvas 3D inicia swipe de tabs');
+ok(getTabSwipeGestureOwner({closest:()=>null})==='tabs','contenido normal no permite swipe de tabs');
+ok(isIntentionalTabSwipe(64,20)&&!isIntentionalTabSwipe(63,0)&&!isIntentionalTabSwipe(80,70),'umbral/dirección de swipe incorrectos');
 
 // Phase 4: BUILD → VISUAL MODEL remains pure and independent from the SVG renderer.
 const visualEmpty=createVisualBuildModel({}, {nextCategory:'cpu'});

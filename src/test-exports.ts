@@ -12,6 +12,7 @@ import { analyzeForgeBuild, calculateForgeScore, generateForgeInsights } from ".
 import { createVisualBuildModel, getInitialVisualPart, gpuFamilyLabel, visualCapacityLabel } from "./lib/visual-build";
 import { createVisual3DScene } from "./lib/visual-3d";
 import { aioGeometry, createVisualHardwareProfile, inferCaseStyle, parseCaseDimensions } from "./lib/visual-hardware-profile";
+import { getTabSwipeGestureOwner, isIntentionalTabSwipe } from "./lib/tab-swipe";
 
 export const __t = {
   P, gate, runPost, calcPower, CATS, CAT, GROUPS,
@@ -19,4 +20,5 @@ export const __t = {
   analyzeForgeBuild, calculateForgeScore, generateForgeInsights,
   createVisualBuildModel, getInitialVisualPart, gpuFamilyLabel, visualCapacityLabel, createVisual3DScene,
   aioGeometry, createVisualHardwareProfile, inferCaseStyle, parseCaseDimensions,
+  getTabSwipeGestureOwner, isIntentionalTabSwipe,
 };

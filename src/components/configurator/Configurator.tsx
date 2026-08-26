@@ -32,6 +32,7 @@ import BuildSummary from "./BuildSummary";
 import ForgeIntelligence from "./ForgeIntelligence";
 import VisualBuild from "./VisualBuild";
 import { createVisualBuildModel } from "@/lib/visual-build";
+import { getTabSwipeGestureOwner, isIntentionalTabSwipe, type TabSwipeGestureOwner } from "@/lib/tab-swipe";
 
 type SortKey = "rel" | "price" | "priceDesc" | "name";
 type Tab = "build" | "catalog" | "status";
@@ -63,7 +64,7 @@ export default function Configurator() {
   const catalogScroll = useRef<HTMLDivElement>(null);
   const continueButton = useRef<HTMLButtonElement>(null);
   const [showFloatingNext, setShowFloatingNext] = useState(false);
-  const touchStart = useRef<{ x: number; y: number; target: EventTarget | null } | undefined>(undefined);
+  const touchStart = useRef<{ x: number; y: number; owner: TabSwipeGestureOwner } | undefined>(undefined);
 
   const pending = useRef<ActiveFilters | null>(null);
   useEffect(() => { setFilters(pending.current || {}); pending.current = null; setQ(""); }, [cat]);
@@ -197,12 +198,10 @@ export default function Configurator() {
   const tabs: Tab[] = ["build", "catalog", "status"];
   const swipeEnd = (event: React.TouchEvent) => {
     const start = touchStart.current; touchStart.current = undefined;
-    if (!start || event.changedTouches.length !== 1) return;
-    const target = start.target as HTMLElement | null;
-    if (target?.closest("input, select, textarea, [data-no-swipe], .three-stage")) return;
+    if (!start || start.owner !== "tabs" || event.changedTouches.length !== 1) return;
     const dx = event.changedTouches[0].clientX - start.x;
     const dy = event.changedTouches[0].clientY - start.y;
-    if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+    if (!isIntentionalTabSwipe(dx, dy)) return;
     const current = tabs.indexOf(tab);
     setTab(tabs[Math.max(0, Math.min(tabs.length - 1, current + (dx < 0 ? 1 : -1)))]);
   };
@@ -377,7 +376,7 @@ export default function Configurator() {
       {/* La categoría se elige en el panel de montaje de la izquierda;
           aquí solo buscador, orden y conmutadores. */}
       <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--trace)" }}>
-        <nav className="category-jump" aria-label="Categorías del montaje">
+        <nav className="category-jump" aria-label="Categorías del montaje" data-horizontal-scroll-zone>
           {CATS.map((category) => { const Icon = category.icon; const selected = ((build[category.id] || []) as Picked[]).length > 0; return <button key={category.id} className={cat === category.id ? "is-active" : selected ? "is-selected" : ""} aria-current={cat === category.id ? "step" : undefined} onClick={() => setCat(category.id)}><Icon size={13}/><span>{category.label}</span>{selected && <i aria-label="seleccionada" />}</button>; })}
         </nav>
         <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
@@ -473,7 +472,7 @@ export default function Configurator() {
             onClick={() => setTab(k)}>{l}{k === "status" && fails > 0 ? ` (${fails})` : ""}</button>)}
       </div>
 
-      <div className="layout" onTouchStart={(event) => { if (event.touches.length === 1) touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY, target: event.target }; }} onTouchEnd={swipeEnd}>
+      <div className="layout" onTouchStart={(event) => { if (event.touches.length === 1) touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY, owner: getTabSwipeGestureOwner(event.target) }; else touchStart.current = undefined; }} onTouchEnd={swipeEnd} onTouchCancel={() => { touchStart.current = undefined; }}>
         <div className={`col-build ${tab === "build" ? "on" : ""}`}
           style={{ borderRight: "1px solid var(--trace)", minHeight: 0 }}>{BuildPane}</div>
         <div className={`col-catalog ${tab === "catalog" ? "on" : ""}`} style={{ minHeight: 0 }}>{CatalogPane}</div>
