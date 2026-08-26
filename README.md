@@ -38,11 +38,13 @@ src/app/
   api/build/route.ts       → restauración de montajes compartidos
 src/components/configurator/
   Configurator.tsx         → orquestador del cliente
+  ForgeIntelligence.tsx    → Forge Score, insights y acciones contextuales
   FilterPanel.tsx
   PowerGauge.tsx  PostLog.tsx  StoreSheet.tsx  ShoppingList.tsx  BuildSummary.tsx  PartCard.tsx
 src/lib/
   compat.ts                → gate, runPost, POST_CODES
   power.ts                 → calcPower, PSU_SIZES
+  forge-intelligence.ts    → score y señales deterministas del montaje
   filters.ts               → FILTERS, KEYSPECS, matches
   regions.ts               → REGIONS, storesFor, searchTerm
   catalog-server.ts        → consulta, facetas y paginación en servidor
@@ -54,6 +56,11 @@ src/data/parts/            → módulos de catálogo por categoría
 de compatibilidad. `/api/build` resuelve los parámetros serializados del montaje sin enviar
 el catálogo al navegador. Cada cambio del build se refleja en la URL para poder copiarlo,
 compartirlo y restaurarlo en el servidor antes de revalidarlo en el cliente.
+
+Forge incluye además un **Forge Score de integridad**, insights deterministas y guidance
+contextual para el siguiente paso o la fuente recomendada. Esta capa reutiliza los motores
+existentes y no usa IA externa ni benchmarks; `PROJECT_STATE.md` y `DESIGN_SYSTEM.md` recogen
+el detalle funcional y visual.
 
 ---
 
@@ -184,7 +191,7 @@ salas de prensa de cada fabricante. Añade `img` a cada pieza y cambia `PartArt`
 - `0x13` RAM alta bajo torre de aire: distingue entre **no cabe** y **sube el ventilador
   N mm**, y comprueba si la altura resultante sigue entrando en la caja
 
-**Cobertura de pruebas:** 4.461 aserciones en verde (`test-motor.cjs`), incluyendo todos los cruces
+**Cobertura de pruebas:** 4.482 aserciones en verde (`test-motor.cjs`), incluyendo todos los cruces
 Intel/AMD, DDR3/4/5, formatos de caja, cotas y los 1.280 enlaces de tienda.
 
 Además hay una **auditoría de catálogo** (`audit-catalogo.cjs`) que comprueba las 16.458 piezas:

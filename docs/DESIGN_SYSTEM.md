@@ -1,6 +1,6 @@
 # Forge Design System
 
-This document describes the visual system implemented through Phase 2. It is a reference for preserving Forge's identity, not a request to redesign the interface or implement the roadmap.
+This document describes the visual system implemented through Phase 3. It is a reference for preserving Forge's identity, not a request to redesign the interface or implement the roadmap.
 
 ## Design concept
 
@@ -127,6 +127,25 @@ ENIG gold is a functional signal reserved for:
 
 Gold should remain scarce enough to preserve meaning. Do not turn the whole interface gold or use broad gold gradients as generic decoration.
 
+## Forge Intelligence
+
+### Forge Score
+
+Forge Score is a technical instrument, not a gamified rating. It uses a large but controlled numeric reading, a qualitative status, a compact CORE / Compatibility / POST / Power breakdown, and a restrained progress bar. ENIG gold provides the functional signal while the surrounding module remains part of the PCB workstation.
+
+The score communicates build integrity and readiness; it is not a performance score and does not use benchmarks. Do not replace it with a generic SaaS donut, celebratory gamification, or decorative charting.
+
+### Forge Insight
+
+Insights are compact, modular technical signals. Severity uses icon, text, and color together rather than relying on color alone:
+
+- **critical:** contained red treatment for conflicts or failed checks;
+- **warning:** amber treatment for conditions requiring review;
+- **info:** cyan/silkscreen treatment for orientation and next steps;
+- **success:** restrained positive state for confirmed readiness.
+
+Contextual actions use native buttons and the established Forge control language. Insight modules should remain scannable instrumentation, not become promotional cards or chat-style AI output.
+
 ## Desktop
 
 Above 1180 px, Forge is a three-panel workstation:
@@ -136,6 +155,12 @@ Above 1180 px, Forge is a three-panel workstation:
 3. **SYSTEM STATUS / 03** — power instrumentation, consumption distribution, PSU guidance, POST, and build actions.
 
 The catalog receives the largest share of width. Build and Status support the central workspace rather than appearing as three equal dashboard cards.
+
+Forge Score and Forge Insight live at the top of System Status above the existing power and POST instrumentation.
+
+## Tablet
+
+From 901 px through 1180 px, Build and Catalog remain visible and System Status remains hidden. Phase 3 does not change this breakpoint or introduce a separate intelligence surface at tablet width.
 
 ## Mobile
 
@@ -148,6 +173,8 @@ At 900 px and below:
 - System Status uses natural height when empty instead of forcing an empty viewport-height panel;
 - build, catalog, status actions, and scroll targets reserve bottom space with `env(safe-area-inset-bottom)` for external floating controls and device safe areas;
 - filter controls expand within the catalog rather than remaining a permanent side rail.
+
+Forge Intelligence lives inside the existing `Consumo y POST` tab; it does not add a fourth tab. Its approximate reading order is Score, Insights, Power, POST, and actions.
 
 At 400 px and below, the header controls and tabs compact further. Preserve legibility and tap targets when refining density.
 
