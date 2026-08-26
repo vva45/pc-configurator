@@ -1,9 +1,34 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
 const B=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Array.isArray(v)?v:[v]]));
+
+// Phase 4: BUILD → VISUAL MODEL remains pure and independent from the SVG renderer.
+const visualEmpty=createVisualBuildModel({}, {nextCategory:'cpu'});
+ok(visualEmpty.isEmpty&&visualEmpty.parts.cpu.state==='next'&&visualEmpty.parts.gpu.state==='empty','visual build vacío/ghost incorrecto');
+const visualFixture=B({
+  mbo:{cat:'mbo',id:'vm',brand:'Forge',name:'Board',form:'Micro-ATX',dimm:4},
+  ram:{cat:'ram',id:'vr',brand:'Forge',name:'2×16 GB DDR5',kit:2,capGB:32,memType:'DDR5',qty:2},
+  gpu:{cat:'gpu',id:'vg',brand:'Forge',name:'Long GPU',len:360,slots:3,vram:16},
+  cooler:{cat:'cooler',id:'vc',brand:'Forge',name:'Air tower',type:'Air',height:165},
+  psu:{cat:'psu',id:'vp',brand:'Forge',name:'SFX Power',form:'SFX',watt:750},
+  storage:{cat:'storage',id:'vs',brand:'Forge',name:'NVMe',iface:'M.2 NVMe',gen:'PCIe 4.0',capGB:2000},
+});
+const visual=createVisualBuildModel(visualFixture,{conflicts:[{cat:'ram',reason:'Conflicto real'}],nextCategory:'case'});
+ok(visual.parts.mbo.metadata.form==='Micro-ATX','visual motherboard no normaliza formato');
+ok(visual.parts.ram.metadata.modules===4,'visual RAM no refleja kit × qty');
+ok(visual.parts.gpu.state==='installed'&&visual.parts.gpu.metadata.lengthMm===360,'visual GPU no normaliza longitud');
+ok(visual.parts.cooler.metadata.mode==='air','visual cooler AIR mal clasificado');
+ok(visual.parts.psu.metadata.form==='SFX'&&visual.parts.psu.metadata.watt===750,'visual PSU pierde formato/watt');
+ok(visual.parts.storage.metadata.type==='M.2','visual storage M.2 mal clasificado');
+ok(visual.parts.ram.state==='conflict'&&visual.parts.ram.reason==='Conflicto real','visual conflict no usa estado/reason real');
+ok(visual.parts.case.state==='next','visual siguiente categoría no se destaca');
+const aio=createVisualBuildModel(B({cooler:{cat:'cooler',id:'va',brand:'Forge',name:'AIO 360',type:'Liquid',radSize:360}}));
+ok(aio.parts.cooler.metadata.mode==='aio'&&aio.parts.cooler.metadata.radiatorMm===360,'visual AIO pierde radiador');
+const removed={...visualFixture}; delete removed.gpu;
+ok(createVisualBuildModel(removed).parts.gpu.state==='empty','visual GPU no desaparece al eliminarla');
 
 console.log('CATÁLOGO: '+P.length+' piezas');
 const byCat={}; P.forEach(p=>byCat[p.cat]=(byCat[p.cat]||0)+1);
