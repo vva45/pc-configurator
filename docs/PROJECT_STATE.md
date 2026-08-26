@@ -21,6 +21,17 @@ GitHub Actions completed successfully for the audited `main` SHA. Its GitHub com
 | Phase 1 | Shell, responsive behavior, and Forge visual identity | **COMPLETE / APPROVED / MERGED / PRODUCTION** |
 | Phase 2 | Build Flow + Part Selection UX | **COMPLETE / APPROVED / MERGED / PRODUCTION** |
 | Phase 3 | Forge Intelligence: Score, Insight, and Guidance | **COMPLETE / APPROVED / MERGED / PRODUCTION** |
+| Phase 4 | Visual Build / digital twin foundation | **IMPLEMENTED / PENDING REVIEW** |
+
+## Phase 4 preview architecture
+
+Phase 4 introduces a lightweight SVG/CSS visual build inside Build Control, with an internal
+expanded inspector for desktop and mobile. `src/lib/visual-build.ts` is the pure normalization
+boundary between the selected build and any renderer: it consumes real catalog metadata where
+available and supplies safe category-level fallbacks where it is absent. The current SVG renderer
+in `VisualBuild.tsx` can therefore be complemented or replaced by a future 3D renderer without
+moving catalog interpretation into the presentation layer. Phase 4 remains pending Preview review;
+it is not yet approved, merged, or in production.
 
 ## Phase history
 

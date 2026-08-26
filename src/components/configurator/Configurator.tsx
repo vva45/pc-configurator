@@ -29,6 +29,8 @@ import Slot from "./Slot";
 import StoreSheet from "./StoreSheet";
 import BuildSummary from "./BuildSummary";
 import ForgeIntelligence from "./ForgeIntelligence";
+import VisualBuild from "./VisualBuild";
+import { createVisualBuildModel } from "@/lib/visual-build";
 
 type SortKey = "rel" | "price" | "priceDesc" | "name";
 type Tab = "build" | "catalog" | "status";
@@ -202,6 +204,10 @@ export default function Configurator() {
     conflicts: conflictDetails, post: log, power, psuWatt: one(build, "psu")?.watt,
     nextCategory: cat, categoryLabel: (id) => CAT[id].label,
   }), [selectedCount, requiredCore, selectedCategories, conflictDetails, log, power, build, cat]);
+  const visualBuild = useMemo(() => createVisualBuildModel(build, {
+    conflicts: conflictDetails.map(({ cat: conflictCat, reason }) => ({ cat: conflictCat, reason })),
+    nextCategory: cat,
+  }), [build, conflictDetails, cat]);
 
   const openGuidance = (target: CatId, minWatt?: number) => {
     if (target === "psu" && minWatt) {
@@ -250,6 +256,7 @@ export default function Configurator() {
 
   const BuildPane = (
     <div className="scroll" style={{ padding: 12, height: "100%" }}>
+      <VisualBuild model={visualBuild} onOpenCategory={(id) => { setCat(id); setTab("catalog"); }} />
       {GROUPS.map((g) => (
         <div key={g.id} className={`build-group build-group-${g.id}`} style={{ marginBottom: 16 }}>
           <div className="build-group-heading" style={{ marginBottom: 7 }}>
