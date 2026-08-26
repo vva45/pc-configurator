@@ -3,7 +3,7 @@ import { aioGeometry, createVisualHardwareProfile, type VisualHardwareProfile } 
 
 export type Vector3Tuple = [number, number, number];
 export type Visual3DKind = "chassis" | "motherboard" | "cpu" | "ram" | "gpu" | "air-cooler" | "aio" | "psu" | "m2" | "drive-25" | "drive-35" | "fan" | "rgb" | "expansion";
-export interface Visual3DPart { id: string; kind: Visual3DKind; category: VisualCategory; source: VisualPart; state: VisualState; position: Vector3Tuple; rotation: Vector3Tuple; scale: Vector3Tuple; instances: number; metadata: VisualPart["metadata"]; profile: VisualHardwareProfile; }
+export interface Visual3DPart { id: string; kind: Visual3DKind; category: VisualCategory; source: VisualPart; state: VisualState; position: Vector3Tuple; rotation: Vector3Tuple; scale: Vector3Tuple; instances: number; metadata: VisualPart["metadata"]; profile: VisualHardwareProfile; connectionTarget?: Vector3Tuple; }
 export interface Visual3DScene { chassis: Visual3DPart; parts: Visual3DPart[]; focusTarget: Vector3Tuple; bounds: { min: Vector3Tuple; max: Vector3Tuple }; camera: { position: Vector3Tuple; target: Vector3Tuple; minDistance: number; maxDistance: number }; }
 
 const clamp = (value: unknown, fallback: number, min: number, max: number) => Math.min(max, Math.max(min, typeof value === "number" && Number.isFinite(value) ? value : fallback));
@@ -20,27 +20,31 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   const mboProfile = createVisualHardwareProfile(p.mbo!);
   const profile = (part: VisualPart) => createVisualHardwareProfile(part, mboProfile);
   const chassis = descriptor(p.case!, "chassis", [0, 0, 0], caseProfile, caseScale);
-  const x = -half[0] * .08;
-  const backZ = -half[2] + .24;
+  /* Stable chassis regions: tray, socket, slots, PSU bay and roof mount. */
+  const trayX = -half[0] + Math.min(.34, half[0] * .28);
+  const trayZ = -half[2] + Math.min(.3, half[2] * .18);
+  const cpuAnchor: Vector3Tuple = [trayX, .58, trayZ + .16];
   const parts: Visual3DPart[] = [
-    descriptor(p.mbo!, "motherboard", [x, .25, backZ], mboProfile, formScale(p.mbo?.metadata.form)),
-    descriptor(p.cpu!, "cpu", [x - .18, .82, backZ + .14], profile(p.cpu!), [.48, .48, .12]),
-    descriptor(p.ram!, "ram", [x + .58, .72, backZ + .2], profile(p.ram!), [1, 1, 1], Math.round(clamp(p.ram?.metadata.modules, 2, 1, 4))),
-    descriptor(p.gpu!, "gpu", [x, -.62, backZ + .42], profile(p.gpu!), [clamp(p.gpu?.metadata.lengthMm, 280, 170, 420) / 280, 1, 1]),
+    descriptor(p.mbo!, "motherboard", [trayX, .1, trayZ], mboProfile, formScale(p.mbo?.metadata.form)),
+    descriptor(p.cpu!, "cpu", cpuAnchor, profile(p.cpu!), [.48, .48, .12]),
+    descriptor(p.ram!, "ram", [trayX + .58, .52, trayZ + .2], profile(p.ram!), [1, 1, 1], Math.round(clamp(p.ram?.metadata.modules, 2, 1, 4))),
+    descriptor(p.gpu!, "gpu", [trayX + .5, -.62, trayZ + .42], profile(p.gpu!), [clamp(p.gpu?.metadata.lengthMm, 280, 170, 420) / 280, 1, 1]),
   ];
   const coolerMode = p.cooler?.metadata.mode === "aio" ? "aio" : "air-cooler";
   const aio = aioGeometry(p.cooler?.metadata.radiatorMm, p.cooler?.metadata.fans);
   const coolerScale: Vector3Tuple = coolerMode === "aio" ? [aio.lengthMm / 240, aio.widthMm / 126, aio.thicknessMm / 30] : [1, clamp(p.cooler?.metadata.heightMm, 155, 70, 190) / 155, 1];
-  parts.push(descriptor(p.cooler!, coolerMode, coolerMode === "aio" ? [0, half[1] - .34, -.15] : [x - .18, .92, backZ + .62], profile(p.cooler!), coolerScale, coolerMode === "aio" ? aio.fanCount : 1));
+  const cooler = descriptor(p.cooler!, coolerMode, coolerMode === "aio" ? [0, half[1] - .3, -.15] : [cpuAnchor[0], cpuAnchor[1], trayZ + .58], profile(p.cooler!), coolerScale, coolerMode === "aio" ? aio.fanCount : 1);
+  if (coolerMode === "aio") cooler.connectionTarget = [cpuAnchor[0] - cooler.position[0], cpuAnchor[1] - cooler.position[1], cpuAnchor[2] + .35 - cooler.position[2]];
+  parts.push(cooler);
   const psuForm = String(p.psu?.metadata.form || "ATX").toLowerCase();
   const psuScale = psuForm.includes("sfx") ? (psuForm.includes("-l") ? .82 : .72) : 1;
   parts.push(descriptor(p.psu!, "psu", [half[0] - .78, -half[1] + .7, -.15], profile(p.psu!), [psuScale, psuScale, psuScale]));
   const storageType = String(p.storage?.metadata.type || "M.2");
   const storageKind: Visual3DKind = storageType.includes("3.5") ? "drive-35" : storageType.includes("2.5") ? "drive-25" : "m2";
-  parts.push(descriptor(p.storage!, storageKind, [x + .66, -.02, backZ + .2], profile(p.storage!), [1, 1, 1], Math.round(clamp(p.storage?.metadata.count, 1, 1, storageKind === "m2" ? 4 : 3))));
+  parts.push(descriptor(p.storage!, storageKind, storageKind === "m2" ? [trayX + .62, -.05, trayZ + .2] : [half[0] - .4, -.25, .55], profile(p.storage!), [1, 1, 1], Math.round(clamp(p.storage?.metadata.count, 1, 1, storageKind === "m2" ? 4 : 3))));
   parts.push(descriptor(p.fan!, "fan", [half[0] - .32, .15, .25], profile(p.fan!), [1, 1, 1], Math.round(clamp(p.fan?.metadata.count, 2, 1, 5))));
   parts.push(descriptor(p.rgb!, "rgb", [-half[0] + .18, 0, .45], profile(p.rgb!), [1, 1, 1], Math.round(clamp(p.rgb?.metadata.count, 1, 1, 3))));
-  parts.push(descriptor(p.expansion!, "expansion", [x, -1.13, backZ + .36], profile(p.expansion!), [1, 1, 1], Math.round(clamp(p.expansion?.metadata.count, 1, 1, 3))));
+  parts.push(descriptor(p.expansion!, "expansion", [trayX + .4, -1.13, trayZ + .36], profile(p.expansion!), [1, 1, 1], Math.round(clamp(p.expansion?.metadata.count, 1, 1, 3))));
   const radius = Math.hypot(...half);
   return { chassis, parts, focusTarget: [0, 0, 0], bounds: { min: [-half[0], -half[1], -half[2]], max: half }, camera: { position: [radius * 1.4, radius * .8, radius * 1.55], target: [0, 0, 0], minDistance: radius * 1.05, maxDistance: radius * 4 } };
 }

@@ -63,6 +63,7 @@ ok(createVisualHardwareProfile(whiteRamPart).isLight&&createVisualHardwareProfil
 const m2Profile=createVisualHardwareProfile(visual.parts.storage); ok(m2Profile.primaryColor==='#303634'&&m2Profile.accentColor==='#dfb85e','M.2 no usa gris + ENIG');
 ok(createVisualHardwareProfile(createVisualBuildModel(B({psu:{cat:'psu',id:'pw',brand:'Forge',name:'Snow White'}})).parts.psu).isLight&&!createVisualHardwareProfile(visual.parts.psu).isLight,'PSU white/default incorrecta');
 ok(aioGeometry(240).fanCount===2&&aioGeometry(240).widthMm>aioGeometry(240).fanSizeMm&&aioGeometry(360).fanCount===3,'geometría AIO 240/360 incorrecta');
+ok(aioGeometry(120).fanCount===1&&aioGeometry(280).fanCount===2&&aioGeometry(420).fanCount===3,'mapa físico de ventiladores AIO incorrecto');
 
 // Phase 5: pure VisualBuildModel → deterministic 3D scene layout.
 const empty3d=createVisual3DScene(visualEmpty);
@@ -70,6 +71,8 @@ ok(empty3d.parts.length===10&&empty3d.parts.every(x=>x.state==='empty'||x.state=
 const atx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'atx',brand:'Forge',name:'ATX',form:'ATX'}})));
 const itx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'itx',brand:'Forge',name:'ITX',form:'Mini-ITX'}})));
 ok(atx3d.parts.find(x=>x.category==='mbo').scale[0]>itx3d.parts.find(x=>x.category==='mbo').scale[0],'3D ATX/Mini-ITX no escala distinto');
+const mountedMbo=atx3d.parts.find(x=>x.category==='mbo');
+ok(mountedMbo.position[0]>=atx3d.bounds.min[0]&&mountedMbo.position[2]>=atx3d.bounds.min[2],'motherboard queda fuera de la bandeja interior');
 const shortGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gs',brand:'Forge',name:'Short',len:170}})));
 const longGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gl',brand:'Forge',name:'Long',len:360}})));
 ok(shortGpu.parts.find(x=>x.category==='gpu').scale[0]<longGpu.parts.find(x=>x.category==='gpu').scale[0],'3D GPU 170/360 no escala longitud');
@@ -80,6 +83,7 @@ ok(createVisual3DScene(visual).parts.find(x=>x.category==='cooler').kind==='air-
 const aio240=createVisual3DScene(createVisualBuildModel(B({cooler:{cat:'cooler',id:'a24',brand:'Forge',name:'AIO 240',type:'Liquid',radSize:240}})));
 const aio360=createVisual3DScene(aio);
 ok(aio240.parts.find(x=>x.category==='cooler').kind==='aio'&&aio240.parts.find(x=>x.category==='cooler').scale[0]<aio360.parts.find(x=>x.category==='cooler').scale[0],'3D AIO 240/360 incorrecto');
+ok(Array.isArray(aio240.parts.find(x=>x.category==='cooler').connectionTarget),'AIO no conecta radiador y bloque CPU');
 const atxPsu=createVisual3DScene(createVisualBuildModel(B({psu:{cat:'psu',id:'pa',brand:'Forge',name:'ATX',form:'ATX'}})));
 ok(atxPsu.parts.find(x=>x.category==='psu').scale[0]>createVisual3DScene(visual).parts.find(x=>x.category==='psu').scale[0],'3D ATX/SFX PSU no escala distinto');
 for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
