@@ -39,21 +39,23 @@ function PartShape({ part, active, onActivate, onInspect }: { part: VisualPart; 
   if (part.category === "fan") return <g {...common}>{[77, 137].map((cy) => <g key={cy}><circle cx="295" cy={cy} r="18" /><circle cx="295" cy={cy} r="5" /><path d={`M295 ${cy - 14}q12 8 0 14q-12-8 0-14M309 ${cy}q-8 12-14 0q8-12 14 0`} /></g>)}</g>;
   if (part.category === "gpu") {
     const length = typeof part.metadata.lengthMm === "number" ? Math.max(105, Math.min(185, 105 + (part.metadata.lengthMm - 170) * .28)) : z.w;
-    return <g {...common}><rect x={z.x} y={z.y} width={installed ? length : z.w} height={z.h} rx="2" />{installed && <><circle cx={z.x + 45} cy={z.y + 19} r="13" /><circle cx={z.x + 99} cy={z.y + 19} r="13" /><path d={`M${z.x + 8} ${z.y + 7}h145M${z.x + 12} ${z.y + 31}h132`} /></>}</g>;
+    const connectors = part.metadata.hpwr ? 1 : Number(part.metadata.conn8 || 0) + Number(part.metadata.conn6 || 0);
+    return <g {...common}><path className="visual-solid" d={`M${z.x} ${z.y + 4}h${length - 12}l12 8v${z.h - 12}H${z.x}z`} />{installed && <><circle cx={z.x + 38} cy={z.y + 19} r="12" /><circle cx={z.x + 86} cy={z.y + 19} r="12" /><path d={`M${z.x + 4} ${z.y + 34}h${length - 15}m-10-27h10`} />{Array.from({length: Math.min(3, connectors)}, (_, i) => <rect key={i} x={z.x + length - 20 - i * 10} y={z.y - 3} width="7" height="6" />)}<text className={`visual-gpu-label is-${part.metadata.vendor}`} x={z.x + 106} y={z.y + 24}>{String(part.metadata.family || "GPU")}</text></>}</g>;
   }
   if (part.category === "ram") {
     const modules = installed ? Math.max(1, Math.min(4, Number(part.metadata.modules) || 1)) : 2;
     return <g {...common}>{Array.from({ length: modules }, (_, i) => <rect key={i} x={z.x + i * 9} y={z.y} width="6" height={z.h} rx="1" />)}</g>;
   }
-  if (part.category === "cooler" && part.metadata.mode === "aio") return <g {...common}><rect x="268" y="45" width="52" height="137" rx="2" /><circle cx="139" cy="101" r="22" /><path d="M155 86C210 35 245 55 268 65M158 112c50 43 80 35 110 49" /></g>;
-  return <g {...common}><rect x={z.x} y={z.y} width={z.w} height={z.h} rx="2" />{part.category === "mbo" && <path d="M80 57h67v-7m68 12h18v62m-151 65h42v10m47-32h62" />}{part.category === "cpu" && <><path d="M124 86h30v30h-30zM118 101h42" /><circle cx="139" cy="101" r="4" /></>}{part.category === "psu" && <><circle cx="286" cy="221" r="13" /><path d="M230 211h31M230 218h26M230 225h20" /></>}{part.category === "storage" && <path d="M222 75v43m0-32h12m-12 12h12m-12 12h12" />}</g>;
+  if (part.category === "cooler" && part.metadata.mode === "aio") { const fans = Math.max(1, Math.min(4, Number(part.metadata.fans) || 2)); return <g {...common}><rect x="266" y="43" width="56" height="141" rx="3" />{Array.from({length:fans},(_,i)=><circle key={i} cx="294" cy={58+i*(112/Math.max(1,fans-1))} r={Math.min(18,48/fans)} />)}<circle cx="139" cy="101" r="23" /><circle cx="139" cy="101" r="17" /><path className="visual-tube" d="M157 87C205 42 241 49 268 66M158 115c47 39 78 38 110 49" /><rect className="visual-hit" x="258" y="38" width="70" height="151" /></g>; }
+  if (part.category === "storage" && installed) { const drives = JSON.parse(String(part.metadata.drives || "[]")) as Array<{type:string;capacity:string}>; return <g {...common}>{drives.slice(0,4).map((drive,i) => drive.type === "M.2" ? <g key={i}><rect x={211-i*8} y={64+i*19} width="31" height="11" rx="1"/><circle cx={239-i*8} cy={69.5+i*19} r="1.5"/><path d={`M${214-i*8} ${67+i*19}h4v5h-4z`}/><text className="visual-capacity" x={220-i*8} y={71+i*19}>{drive.capacity}</text></g> : <g key={i}><rect x={212-i*5} y={67+i*23} width="28" height="19" rx="2"/><text className="visual-capacity" x={216-i*5} y={79+i*23}>{drive.capacity}</text></g>)}</g>; }
+  return <g {...common}><rect x={z.x} y={z.y} width={z.w} height={z.h} rx="2" />{part.category === "mbo" && <path d="M80 57h67v-7m68 12h18v62m-151 65h42v10m47-32h62" />}{part.category === "cpu" && <><path d="M124 86h30v30h-30zM118 101h42" /><circle cx="139" cy="101" r="4" /><rect className="visual-hit" x="120" y="82" width="38" height="38" /></>}{part.category === "psu" && <><circle cx="276" cy="221" r="15" /><circle cx="276" cy="221" r="10"/><path d="M261 221h30m-15-15v30M229 210h20v10h-20zM232 225h13v7h-13z" /></>}{part.category === "storage" && <path d="M222 75v43m0-32h12m-12 12h12m-12 12h12" />}</g>;
 }
 
 function Renderer({ model, onOpenCategory, compact = false }: Props & { compact?: boolean }) {
   const gridId = `visual-grid-${useId().replace(/:/g, "")}`;
   const [inspectedCategory, setInspectedCategory] = useState<VisualCategory>(() => getInitialVisualPart(model).category);
   const inspected = model.parts[inspectedCategory] || getInitialVisualPart(model);
-  const order: VisualCategory[] = ["case", "mbo", "cpu", "ram", "storage", "expansion", "gpu", "psu", "fan", "rgb", "cooler"];
+  const order: VisualCategory[] = ["case", "mbo", "ram", "storage", "expansion", "gpu", "psu", "fan", "rgb", "cooler", "cpu"];
   return <div className={`visual-renderer${compact ? " is-compact" : ""}`}>
     <svg viewBox="0 0 340 262" aria-label="Representación técnica del montaje" preserveAspectRatio="xMidYMid meet">
       <defs><pattern id={gridId} width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" /></pattern></defs>

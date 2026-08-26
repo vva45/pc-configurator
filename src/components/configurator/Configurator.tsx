@@ -7,8 +7,9 @@
    ═══════════════════════════════════════════════════════════════════ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
-  CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
+  ArrowRight, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
 } from "lucide-react";
 import { buildToParams, hasBuildParams } from "@/lib/share";
 import type { CatalogResponse } from "@/lib/catalog-server";
@@ -59,6 +60,10 @@ export default function Configurator() {
   const [tab, setTab] = useState<Tab>("build");     // móvil
   const [showFilters, setShowFilters] = useState(false);
   const uid = useRef(0);
+  const catalogScroll = useRef<HTMLDivElement>(null);
+  const continueButton = useRef<HTMLButtonElement>(null);
+  const [showFloatingNext, setShowFloatingNext] = useState(false);
+  const touchStart = useRef<{ x: number; y: number; target: EventTarget | null } | undefined>(undefined);
 
   const pending = useRef<ActiveFilters | null>(null);
   useEffect(() => { setFilters(pending.current || {}); pending.current = null; setQ(""); }, [cat]);
@@ -180,6 +185,27 @@ export default function Configurator() {
     if (!((build[cat] || []) as Picked[]).length) return null;
     return siguiente(cat);
   }, [cat, build]);
+  useEffect(() => {
+    const root = catalogScroll.current;
+    if (!root || !continuar) { setShowFloatingNext(false); return; }
+    const onScroll = () => setShowFloatingNext(root.scrollTop > 240);
+    root.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => root.removeEventListener("scroll", onScroll);
+  }, [continuar, cat]);
+
+  const tabs: Tab[] = ["build", "catalog", "status"];
+  const swipeEnd = (event: React.TouchEvent) => {
+    const start = touchStart.current; touchStart.current = undefined;
+    if (!start || event.changedTouches.length !== 1) return;
+    const target = start.target as HTMLElement | null;
+    if (target?.closest("input, select, textarea, [data-no-swipe], .three-stage")) return;
+    const dx = event.changedTouches[0].clientX - start.x;
+    const dy = event.changedTouches[0].clientY - start.y;
+    if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+    const current = tabs.indexOf(tab);
+    setTab(tabs[Math.max(0, Math.min(tabs.length - 1, current + (dx < 0 ? 1 : -1)))]);
+  };
 
   // ¿qué pieza concreta rompe el montaje? -> contactos en rojo en su ranura
   const conflictDetails = useMemo(() => {
@@ -220,7 +246,7 @@ export default function Configurator() {
   const Bar = (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
       borderBottom: "1px solid var(--trace)", background: "var(--board-2)", position: "sticky", top: 0, zIndex: 30, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+      <Link href="/" aria-label="Ir a la página principal de Forge" className="forge-home">
         <div style={{ width: 26, height: 26, border: "1px solid var(--gold)", display: "grid", placeItems: "center" }}>
           <CircuitBoard size={14} color="var(--gold)" />
         </div>
@@ -228,7 +254,7 @@ export default function Configurator() {
           <div className="dsp" style={{ fontSize: 17, letterSpacing: ".02em" }}>Forge</div>
           <div className="eyebrow" style={{ fontSize: 8.5, marginTop: -2 }}>Configurador de PC</div>
         </div>
-      </div>
+      </Link>
       <div style={{ flex: 1 }} />
       <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <Globe size={13} color="var(--silk-dim)" />
@@ -351,6 +377,9 @@ export default function Configurator() {
       {/* La categoría se elige en el panel de montaje de la izquierda;
           aquí solo buscador, orden y conmutadores. */}
       <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--trace)" }}>
+        <nav className="category-jump" aria-label="Categorías del montaje">
+          {CATS.map((category) => { const Icon = category.icon; const selected = ((build[category.id] || []) as Picked[]).length > 0; return <button key={category.id} className={cat === category.id ? "is-active" : selected ? "is-selected" : ""} aria-current={cat === category.id ? "step" : undefined} onClick={() => setCat(category.id)}><Icon size={13}/><span>{category.label}</span>{selected && <i aria-label="seleccionada" />}</button>; })}
+        </nav>
         <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
           <span className="eyebrow" style={{ whiteSpace: "nowrap" }}>{CAT[cat].label}</span>
           <div style={{ position: "relative", flex: "1 1 180px", minWidth: 150 }}>
@@ -382,7 +411,7 @@ export default function Configurator() {
               hay salto automático mientras queden ranuras: este botón lo
               ofrece en cuanto hay algo elegido, sin obligar a llenarlas. */}
           {continuar && (
-            <button className="btn btn-gold" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}
+            <button ref={continueButton} className="btn btn-gold" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}
               onClick={() => { setCat(continuar); setTab("catalog"); }}>
               Continuar a {CAT[continuar].label} →
             </button>
@@ -396,7 +425,7 @@ export default function Configurator() {
           <FilterPanel cat={cat} facets={catalog?.facets || []} filters={filters} setFilters={setFilters}
             onClear={() => setFilters({})} />
         </div>
-        <div className="scroll" style={{ flex: 1, padding: 12 }}>
+        <div ref={catalogScroll} className="scroll" style={{ flex: 1, padding: 12 }}>
           <div className="mono" style={{ fontSize: 10.5, color: "var(--silk-dim)", marginBottom: 9 }}>
             {catalog ? <>
               {catalog.nCompat} compatibles
@@ -444,13 +473,15 @@ export default function Configurator() {
             onClick={() => setTab(k)}>{l}{k === "status" && fails > 0 ? ` (${fails})` : ""}</button>)}
       </div>
 
-      <div className="layout">
+      <div className="layout" onTouchStart={(event) => { if (event.touches.length === 1) touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY, target: event.target }; }} onTouchEnd={swipeEnd}>
         <div className={`col-build ${tab === "build" ? "on" : ""}`}
           style={{ borderRight: "1px solid var(--trace)", minHeight: 0 }}>{BuildPane}</div>
         <div className={`col-catalog ${tab === "catalog" ? "on" : ""}`} style={{ minHeight: 0 }}>{CatalogPane}</div>
         <div className={`col-status ${tab === "status" ? "on" : ""}`}
           style={{ borderLeft: "1px solid var(--trace)", minHeight: 0 }}>{StatusPane}</div>
       </div>
+
+      {continuar && showFloatingNext && <button className="floating-next" onClick={() => { setCat(continuar); setTab("catalog"); }} aria-label={`Continuar a ${CAT[continuar].label}`}>{(() => { const Icon = CAT[continuar].icon; return <Icon size={16}/>; })()}<ArrowRight size={17}/></button>}
 
       {buy && <StoreSheet part={buy} region={region} onClose={() => setBuy(null)} />}
       {shopping && <ShoppingList build={build} region={region} total={total}
