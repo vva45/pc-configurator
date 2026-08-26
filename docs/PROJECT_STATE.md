@@ -1,16 +1,20 @@
 # Forge — Current Project State
 
-This document records the repository state verified during the Codex Cloud audit on **2026-08-25**. It describes the current baseline, not future implementation requirements. Revalidate changing facts such as the remote `main` commit, catalog size, and test counts before treating them as current in a later task.
+This document records the repository state verified during the Phase 2 closeout on **2026-08-26**. It describes the current baseline, not future implementation requirements. Revalidate changing facts such as the remote `main` commit, catalog size, and test counts before treating them as current in a later task.
 
 ## Current production baseline
 
 - Repository: `vva45/pc-configurator`
 - Official source of truth: GitHub `main`
-- Audited `main`: `6acd21bbae4fbb381180e0b02321ed4005b4c1c7`
-- PR #1: **Merge Forge Phase 1 shell into main**
-- PR #1 status at audit: merged into `main`
+- Phase 2 merge baseline on `main`: `51d8857317e5dcecc7f232d47fdef2d13bbbe629`
+- PR #1: Phase 1 shell, merged through `6acd21bbae4fbb381180e0b02321ed4005b4c1c7`
+- PR #2: persistent project documentation, merged through `696878b`
+- PR #3: Phase 2 implementation history, merged into the Phase 2 branch through `6d1bd66`
+- PR #4: **V2 phase 2 build flow**, merged into `main` through `51d8857317e5dcecc7f232d47fdef2d13bbbe629`
 
-The audited checkout and the GitHub `refs/heads/main` reference both resolved to the commit above. The repository alone does not prove which commit an external production deployment is serving; verify the deployment separately when that distinction matters.
+The closeout began with the audited checkout and GitHub `refs/heads/main` both at the Phase 2
+merge SHA above. The closeout commit on `main` is the commit containing this document; use Git
+for its immutable SHA. Deployment status must be verified independently after publication.
 
 ## Phase 1
 
@@ -41,6 +45,17 @@ The audited checkout and the GitHub `refs/heads/main` reference both resolved to
 
 The three Phase 1 commits changed only `src/app/globals.css`. They did not change configurator behavior, APIs, catalog data, dependencies, or the compatibility and power engines.
 
+## Phase 2
+
+Phase 2 established guided slot states, dynamically derived required-CORE progress, `PartCard`
+2.0 hierarchy, visible compatible/selected/blocked states and reasons, and responsive/mobile
+orientation. The final closeout corrected active-installed slot semantics and ARIA, removed the
+legacy `.slot.active` and positional PartCard styling assumptions, separated card selection from
+purchase interaction, and hardened empty total, POST, power, and search states.
+
+**Phase 2 status: COMPLETE / APPROVED / MERGED.** Production status is confirmed only after the
+published closeout commit passes GitHub Actions and the production deployment reports Ready.
+
 ## Current functionality
 
 The audit verified that Forge currently provides:
@@ -69,7 +84,7 @@ The audited distribution included the full set of core, auxiliary, expansion, ne
 
 ## Current validation baseline
 
-Results recorded on 2026-08-25 from the audited `main` baseline:
+Results recorded on 2026-08-26 during the Phase 2 closeout:
 
 | Check | Result |
 | --- | --- |

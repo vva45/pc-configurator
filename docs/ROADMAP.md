@@ -10,20 +10,15 @@ Phase 1 established the engineering-workstation frame, three-panel desktop hiera
 
 Status: **COMPLETE / APPROVED / MERGED** through PR #1.
 
-## Phase 2 — PLANNED
+## Phase 2 — COMPLETE
 
-**Direction:** Build Flow + Part Selection UX.
+**Scope:** Build Flow + Part Selection UX.
 
-Potential high-level goals:
+Phase 2 delivered guided slot states, dynamic required-CORE progress, `PartCard` 2.0,
+visible compatible/selected/blocked states and reasons, mobile orientation refinements, and a
+final closeout covering empty states, interaction semantics, contrast, and inherited CSS.
 
-- clearer `Slot` states;
-- clearer build progression;
-- stronger next-step guidance;
-- improved `PartCard` information hierarchy;
-- more visible compatibility and conflict states;
-- responsive and mobile orientation improvements.
-
-These goals do not prescribe exact components, interactions, copy, layouts, or implementation order. Phase 2 must receive an explicit task and branch before work begins. Preserve the existing functional regression baseline while its scope is defined.
+Status: **COMPLETE / APPROVED / MERGED** through PR #4 and the Phase 2 closeout on `main`.
 
 ## Future phases
 

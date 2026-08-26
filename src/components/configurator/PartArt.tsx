@@ -26,8 +26,6 @@ export default function PartArt({ part, h = 88 }: { part: Part; h?: number }) {
             estándar (antes 30) para que los iconos con detalle se lean. */}
         <Icon size={h > 70 ? 44 : 30} color="var(--gold)" strokeWidth={1.3} opacity={0.9} />
       </div>
-      <div className="mono" style={{ position: "absolute", left: 8, top: 7, fontSize: 9.5,
-        letterSpacing: ".13em", color: "var(--gold-dim)", textTransform: "uppercase" }}>{part.brand}</div>
     </div>
   );
 }

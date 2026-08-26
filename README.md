@@ -1,7 +1,7 @@
 # FORGE — Configurador de PC
 
 Motor de compatibilidad, cálculo de consumo, filtros por especificación y capa de compra por
-región. **447 piezas** con specs verificadas, desde el Intel 4004 hasta el Threadripper PRO 7995WX.
+región. **16.458 piezas** auditadas, desde hardware histórico hasta plataformas actuales.
 
 ---
 
@@ -25,35 +25,35 @@ No son ofertas y no se actualizan.
 
 ---
 
-## 2. Pasarlo a Next.js
+## 2. Arquitectura Next.js
 
-El artefacto es un solo fichero para poder verlo. Para el proyecto real:
+Forge funciona sobre Next.js 16, React 19 y TypeScript. El catálogo completo permanece en el
+servidor: el cliente solicita páginas filtradas, ordenadas y evaluadas por compatibilidad.
 
 ```
-app/
+src/app/
   layout.tsx
   page.tsx                 → <Configurator />
-components/configurator/
-  Configurator.tsx         → export default App
-  BuildList.tsx  Catalog.tsx  FilterPanel.tsx
+  api/parts/route.ts       → catálogo paginado y compatible
+  api/build/route.ts       → restauración de montajes compartidos
+src/components/configurator/
+  Configurator.tsx         → orquestador del cliente
+  FilterPanel.tsx
   PowerGauge.tsx  PostLog.tsx  StoreSheet.tsx  ShoppingList.tsx  BuildSummary.tsx  PartCard.tsx
-lib/
+src/lib/
   compat.ts                → gate, runPost, POST_CODES
   power.ts                 → calcPower, PSU_SIZES
   filters.ts               → FILTERS, KEYSPECS, matches
   regions.ts               → REGIONS, storesFor, searchTerm
-data/
-  parts/cpu.json  mbo.json  ram.json  gpu.json  …
+  catalog-server.ts        → consulta, facetas y paginación en servidor
+  share.ts                 → formato estable de URL del montaje
+src/data/parts/            → módulos de catálogo por categoría
 ```
 
-Corta por los comentarios `═══` del fichero: cada bloque es un módulo.
-El CSS pasa a `globals.css` (las variables `--board`, `--gold`… tal cual).
-
-Dos cambios al mover:
-- `useState` del montaje → guardar en URL (`?cpu=…&mbo=…`) para compartir builds. Es la
-  función que más se usa en PCPartPicker y sale casi gratis con `useSearchParams`.
-- Los `data/*.json` se cargan en servidor y se sirven paginados; con 5.000 SKU no puedes
-  mandar el catálogo entero al cliente.
+`/api/parts` entrega páginas de 48 resultados con búsqueda, filtros, orden, facetas y estados
+de compatibilidad. `/api/build` resuelve los parámetros serializados del montaje sin enviar
+el catálogo al navegador. Cada cambio del build se refleja en la URL para poder copiarlo,
+compartirlo y restaurarlo en el servidor antes de revalidarlo en el cliente.
 
 ---
 
@@ -122,19 +122,19 @@ dentro y a veces querrás contarlos. Al marcarla se recalcula todo, consumo incl
 
 ## 4. El catálogo
 
-447 piezas. Reparto:
+16.458 piezas auditadas. Reparto actual:
 
 | Categoría | Nº | Cobertura |
 |---|---|---|
-| CPU | 91 | Intel LGA1155→LGA1851 (2ª a 14ª gen + Core Ultra 200S) con Celeron, Pentium e i3/i5/i7/i9 · AMD FX, FM2+, Ryzen 1000–9000, APU G, Threadripper 3000/7000 · HEDT LGA2011-v3 y LGA2066 |
-| Placa base | 71 | Todos los chipsets AM4 (A320→X570), AM5 (A620→X870E), Intel serie 6 a 800, TRX40/TRX50/WRX90, X99, X299, 990FX, A88X |
-| Gráfica | 81 | GT 710→GT 1030, GTX 750 Ti→1080 Ti, RTX 2000/3000/4000/5000, HD 4870→7970, R7/R9, RX 400/500/Vega/5000/6000/7000/9000 XT y no-XT, Arc, y profesionales Quadro / RTX A / RTX Ada / Radeon Pro |
-| Refrigeración | 47 | Aire y AIO 120/240/280/360/420 de Noctua, be quiet!, Corsair, Cooler Master, DeepCool, Arctic, Thermalright, NZXT, Lian Li, MSI, ASUS, Thermaltake, EK, Scythe, Endorfy, ID-COOLING, SilverStone, Tempest + los de serie |
-| Almacenamiento | 42 | M.2 de 250 GB a 4 TB (PCIe 3.0/4.0/5.0, con y sin disipador), SSD SATA 2,5", HDD 3,5" domésticos, NAS, videovigilancia y servidor |
-| Fuente | 33 | 450 W a 1600 W · White, Bronze, Silver, Gold, Platinum, Titanium · modulares y no modulares · ATX, SFX y SFX-L |
-| Memoria | 27 | DDR2, DDR3, DDR4, DDR5 y DDR5 RDIMM ECC |
-| Caja | 16 | Mini-ITX a EEB, incluido chasis de servidor |
-| Auxiliares y periféricos | 39 | Ventiladores, hubs, pasta, RGB, cables, monitores, teclados, ratones, alfombrillas, auriculares, micros, webcams y altavoces |
+| CPU | 683 | Plataformas Intel y AMD históricas y actuales |
+| Placa base | 1.247 | Chipsets y formatos desde plataformas legacy hasta AM5/LGA1851 |
+| Gráfica | 6.573 | GPU de consumo y profesionales, con conectores y potencia auditados |
+| Refrigeración | 940 | Aire y AIO con sockets, alturas y radiadores |
+| Almacenamiento | 649 | M.2, SSD SATA y HDD |
+| Fuente | 204 | ATX, SFX y SFX-L con potencia y conectores |
+| Memoria | 5.320 | DDR2, DDR3, DDR4, DDR5 y DDR5 RDIMM ECC |
+| Caja | 528 | Formatos compactos, torre y workstation |
+| Auxiliares, expansión y periféricos | 314 | Ventilación, conectividad, iluminación y periféricos |
 
 129 piezas van marcadas como **descatalogadas** o **museo** y se ocultan por defecto. El
 interruptor «Mostrar descatalogadas» las saca en cualquier categoría que las tenga. Es lo que
@@ -184,10 +184,10 @@ salas de prensa de cada fabricante. Añade `img` a cada pieza y cambia `PartArt`
 - `0x13` RAM alta bajo torre de aire: distingue entre **no cabe** y **sube el ventilador
   N mm**, y comprueba si la altura resultante sigue entrando en la caja
 
-**Cobertura de pruebas:** 4.421 aserciones en verde (`test.cjs`), incluyendo todos los cruces
+**Cobertura de pruebas:** 4.461 aserciones en verde (`test-motor.cjs`), incluyendo todos los cruces
 Intel/AMD, DDR3/4/5, formatos de caja, cotas y los 1.280 enlaces de tienda.
 
-Además hay una **auditoría de catálogo** (`audit.cjs`) que comprueba, para las 447 piezas:
+Además hay una **auditoría de catálogo** (`audit-catalogo.cjs`) que comprueba las 16.458 piezas:
 que cada socket tenga placas, memoria y disipadores; que cada CPU se pueda montar de extremo
 a extremo hasta la fuente sin un solo fallo POST; que las gráficas declaren conectores
 coherentes con su consumo; y quince cruces que nunca deben colarse. Pásala después de tocar

@@ -18,10 +18,10 @@ export default function PartCard({ part, blocked, reason, chosen, onPick, onBuy,
   const state = blocked ? "blocked" : chosen ? "selected" : "compatible";
   const stateLabel = blocked ? "Incompatible" : chosen ? "Seleccionada" : "Compatible";
   return (
-    <article className={`card part-card part-card-${state}`} tabIndex={0} role="button"
-      aria-disabled={blocked || undefined} aria-pressed={chosen} aria-label={`${part.brand} ${part.name}: ${stateLabel}`}
-      onClick={() => !blocked && onPick(part)}
-      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !blocked && e.target === e.currentTarget) { e.preventDefault(); onPick(part); } }}>
+    <article className={`card part-card part-card-${state}`} aria-label={`${part.brand} ${part.name}: ${stateLabel}`}>
+      <button className="part-card-select" type="button" disabled={blocked}
+        aria-label={`${chosen ? "Cambiar selección a" : "Seleccionar"} ${part.brand} ${part.name}`}
+        aria-pressed={chosen} onClick={() => onPick(part)} />
       <div className="part-card-art"><PartArt part={part} /></div>
       {(part.museum || part.legacy) && <div className="mono" style={{ position: "absolute", right: 7, top: 7, fontSize: 9,
         letterSpacing: ".1em", color: "var(--copper)", border: "1px solid var(--copper)", padding: "1px 5px" }}>
@@ -43,7 +43,7 @@ export default function PartCard({ part, blocked, reason, chosen, onPick, onBuy,
           <div><span className="part-price-label">Precio</span><span className="part-price mono">
             {part.price ? `${eur(part.price)} ${cur}` : "—"}
           </span></div>
-          <button className="btn part-buy" onClick={(e) => { e.stopPropagation(); onBuy(part); }}>
+          <button className="btn part-buy" type="button" onClick={() => onBuy(part)}>
             <ShoppingBag size={11} /> Dónde comprar
           </button>
         </div>}

@@ -25,7 +25,7 @@ jobs:
         run: npm run lint
       - name: Bundle de tests (esbuild)
         run: node scripts/build-test-bundle.mjs
-      - name: Motor (4.421 aserciones)
+      - name: Motor / compatibility assertions
         run: node test-motor.cjs
       - name: Auditoría del catálogo
         run: node audit-catalogo.cjs

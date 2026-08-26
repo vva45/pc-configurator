@@ -222,7 +222,7 @@ export default function Configurator() {
       <div style={{ textAlign: "right" }}>
         <div className="eyebrow" style={{ fontSize: 8.5 }}>Total del montaje</div>
         <div className="mono" style={{ fontSize: 17, color: "var(--gold)", fontWeight: 600, lineHeight: 1.1 }}>
-          {eur(total)} {cur}
+          {total > 0 ? `${eur(total)} ${cur}` : "—"}
         </div>
       </div>
     </div>
@@ -238,7 +238,8 @@ export default function Configurator() {
             </div>
             {g.id === "core" && <div className="core-progress" aria-label={`${coreDone} de ${requiredCore.length} componentes requeridos seleccionados`}>
               <div className="core-progress-copy"><span>Core build</span><strong>{coreDone} / {requiredCore.length}</strong></div>
-              <div className="core-progress-track" aria-hidden="true">
+              <div className="core-progress-track" aria-hidden="true"
+                style={{ gridTemplateColumns: `repeat(${requiredCore.length}, minmax(0, 1fr))` }}>
                 {requiredCore.map((c) => <i key={c.id} className={((build[c.id] || []) as Picked[]).length ? "done" : ""} />)}
               </div>
             </div>}
@@ -300,8 +301,8 @@ export default function Configurator() {
       <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
         <span className="eyebrow">POST · verificación</span>
         <div style={{ flex: 1, height: 1, background: "var(--trace)" }} />
-        <span className="mono" style={{ fontSize: 10, color: fails ? "var(--red)" : warns ? "var(--amber)" : "var(--cyan)" }}>
-          {fails ? `${fails} fallo${fails > 1 ? "s" : ""}` : warns ? `${warns} aviso${warns > 1 ? "s" : ""}` : "todo correcto"}
+        <span className="mono" style={{ fontSize: 10, color: !log.length ? "var(--silk-dim)" : fails ? "var(--red)" : warns ? "var(--amber)" : "var(--cyan)" }}>
+          {!log.length ? "pendiente" : fails ? `${fails} fallo${fails > 1 ? "s" : ""}` : warns ? `${warns} aviso${warns > 1 ? "s" : ""}` : "todo correcto"}
         </span>
       </div>
       <div style={{ marginTop: 8 }}><PostLog log={log} /></div>
@@ -330,7 +331,7 @@ export default function Configurator() {
             <Search size={13} color="var(--silk-dim)"
               style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)" }} />
             <input type="text" value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder={`Buscar en ${CAT[cat].label.toLowerCase()} — «seagate 2tb», «rtx 4070»…`}
+              placeholder="Buscar por marca, modelo o especificación…"
               style={{ paddingLeft: 26 }} aria-label="Buscar" />
           </div>
           <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Ordenar"

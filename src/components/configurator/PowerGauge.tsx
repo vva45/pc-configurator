@@ -8,16 +8,17 @@ export default function PowerGauge({ power, psu, compact }: {
   psu?: BuildItem<CatMap["psu"]>;
   compact?: boolean;
 }) {
-  const cap = psu?.watt || power.rec || 850;
-  const pct = Math.min(100, (power.total / cap) * 100);
-  const spikePct = Math.min(100, (power.spike / cap) * 100);
+  const hasLoad = power.total > 0;
+  const cap = psu?.watt || (hasLoad ? power.rec : 0);
+  const pct = cap ? Math.min(100, (power.total / cap) * 100) : 0;
+  const spikePct = cap ? Math.min(100, (power.spike / cap) * 100) : 0;
   const tone = pct > 85 ? "var(--red)" : pct > 70 ? "var(--amber)" : "var(--gold)";
   return (
     <div style={{ width: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
         <span className="eyebrow" title="Todos los componentes a su límite a la vez">Peor caso</span>
         <span className="mono" style={{ fontSize: compact ? 13 : 16, color: tone, fontWeight: 600 }}>
-          {power.total} W <span style={{ color: "var(--silk-dim)", fontSize: 11 }}>/ {cap} W</span>
+          {power.total} W <span style={{ color: "var(--silk-dim)", fontSize: 11 }}>/ {cap ? `${cap} W` : "—"}</span>
         </span>
       </div>
       <div style={{ position: "relative", height: compact ? 9 : 14, background: "#0A1610",
@@ -39,7 +40,7 @@ export default function PowerGauge({ power, psu, compact }: {
             En juego ≈ {power.gaming} W · pico {power.spike} W
           </span>
           <span className="mono" style={{ fontSize: 10, color: "var(--silk-dim)" }}>
-            Recomendada: <b style={{ color: "var(--gold)" }}>{power.rec} W</b>
+            Recomendada: <b style={{ color: "var(--gold)" }}>{hasLoad ? `${power.rec} W` : "—"}</b>
           </span>
         </div>
       )}
