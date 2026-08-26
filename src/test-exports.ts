@@ -9,11 +9,11 @@ import { FILTERS, KEYSPECS } from "./lib/filters";
 import { REGIONS, searchTerm, storesFor } from "./lib/regions";
 import { queryCatalog } from "./lib/catalog-server";
 import { analyzeForgeBuild, calculateForgeScore, generateForgeInsights } from "./lib/forge-intelligence";
-import { createVisualBuildModel } from "./lib/visual-build";
+import { createVisualBuildModel, getInitialVisualPart } from "./lib/visual-build";
 
 export const __t = {
   P, gate, runPost, calcPower, CATS, CAT, GROUPS,
   FILTERS, KEYSPECS, PLATFORM, REGIONS, storesFor, searchTerm, queryCatalog,
   analyzeForgeBuild, calculateForgeScore, generateForgeInsights,
-  createVisualBuildModel,
+  createVisualBuildModel, getInitialVisualPart,
 };

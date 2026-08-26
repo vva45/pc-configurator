@@ -1,6 +1,6 @@
 # Forge Design System
 
-This document describes the visual system implemented through Phase 3. It is a reference for preserving Forge's identity, not a request to redesign the interface or implement the roadmap.
+This document describes the visual system implemented through Phase 4. It is a reference for preserving Forge's identity, not a request to redesign the interface or implement the roadmap.
 
 ## Design concept
 
@@ -145,6 +145,14 @@ Insights are compact, modular technical signals. Severity uses icon, text, and c
 - **success:** restrained positive state for confirmed readiness.
 
 Contextual actions use native buttons and the established Forge control language. Insight modules should remain scannable instrumentation, not become promotional cards or chat-style AI output.
+
+## Phase 4 Visual Build
+
+Phase 4 adds a lightweight SVG schematic of the machine without changing the catalog-first workstation hierarchy. Its zones communicate `empty`, `next`, `installed`, `warning`, and `conflict` states through the established semantic palette. The compact Build Control preview provides immediate assembly context; the inspector expands the same live model on desktop and mobile and lets each visual zone navigate to its existing catalog category.
+
+`VisualBuildModel` separates selected-build normalization from presentation. The SVG consumes this stable boundary today, and future renderers should consume it rather than interpreting the complete catalog in a visual component. Installed metadata, grouped categories, quantities, next-step guidance, and compatibility states therefore remain renderer-independent.
+
+The future destination is defined in [`docs/VISUAL_NORTH_STAR.md`](./VISUAL_NORTH_STAR.md). That direction expands Forge toward a more cinematic product experience; it does not replace the current PCB / FR-4 identity or authorize a future implementation by itself.
 
 ## Desktop
 

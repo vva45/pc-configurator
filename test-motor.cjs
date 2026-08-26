@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -8,6 +8,12 @@ const B=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Array.isArray(v)
 // Phase 4: BUILD → VISUAL MODEL remains pure and independent from the SVG renderer.
 const visualEmpty=createVisualBuildModel({}, {nextCategory:'cpu'});
 ok(visualEmpty.isEmpty&&visualEmpty.parts.cpu.state==='next'&&visualEmpty.parts.gpu.state==='empty','visual build vacío/ghost incorrecto');
+ok(getInitialVisualPart(visualEmpty).category==='cpu','inspector visual no prioriza NEXT');
+const groupedConflict=createVisualBuildModel({}, {conflicts:[{cat:'netwireless',reason:'Conflicto de red'}]});
+ok(groupedConflict.parts.expansion.state==='conflict'&&groupedConflict.parts.expansion.reason==='Conflicto de red','visual expansion pierde conflicto agrupado');
+const groupedWarning=createVisualBuildModel({}, {warnings:[{cat:'netwired',reason:'Aviso de red'}]});
+ok(groupedWarning.parts.expansion.state==='warning'&&groupedWarning.parts.expansion.reason==='Aviso de red','visual expansion pierde warning agrupado');
+ok(getInitialVisualPart(groupedWarning).category==='expansion','inspector visual no prioriza warning');
 const visualFixture=B({
   mbo:{cat:'mbo',id:'vm',brand:'Forge',name:'Board',form:'Micro-ATX',dimm:4},
   ram:{cat:'ram',id:'vr',brand:'Forge',name:'2×16 GB DDR5',kit:2,capGB:32,memType:'DDR5',qty:2},

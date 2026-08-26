@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 import type { CatId } from "@/data/parts/types";
-import type { VisualBuildModel, VisualCategory, VisualPart } from "@/lib/visual-build";
+import { getInitialVisualPart, type VisualBuildModel, type VisualCategory, type VisualPart } from "@/lib/visual-build";
 
 interface Props { model: VisualBuildModel; onOpenCategory: (category: CatId) => void; }
 
@@ -41,14 +41,15 @@ function PartShape({ part, active, onActivate, onInspect }: { part: VisualPart; 
 }
 
 function Renderer({ model, onOpenCategory, compact = false }: Props & { compact?: boolean }) {
-  const initial = model.parts.gpu || model.parts.mbo!;
-  const [inspected, setInspected] = useState<VisualPart>(initial);
+  const gridId = `visual-grid-${useId().replace(/:/g, "")}`;
+  const [inspectedCategory, setInspectedCategory] = useState<VisualCategory>(() => getInitialVisualPart(model).category);
+  const inspected = model.parts[inspectedCategory] || getInitialVisualPart(model);
   const order: VisualCategory[] = ["case", "mbo", "cpu", "ram", "storage", "expansion", "gpu", "psu", "fan", "rgb", "cooler"];
   return <div className={`visual-renderer${compact ? " is-compact" : ""}`}>
     <svg viewBox="0 0 340 262" aria-label="Representación técnica del montaje" preserveAspectRatio="xMidYMid meet">
-      <defs><pattern id="visual-grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" /></pattern></defs>
-      <rect className="visual-grid" x="1" y="1" width="338" height="260" />
-      {order.map((category) => { const part = model.parts[category]; return part ? <PartShape key={category} part={part} active={inspected.category === category} onInspect={() => setInspected(part)} onActivate={() => onOpenCategory(part.sourceCategory)} /> : null; })}
+      <defs><pattern id={gridId} width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" /></pattern></defs>
+      <rect className="visual-grid" style={{ fill: `url(#${gridId})` }} x="1" y="1" width="338" height="260" />
+      {order.map((category) => { const part = model.parts[category]; return part ? <PartShape key={category} part={part} active={inspected.category === category} onInspect={() => setInspectedCategory(part.category)} onActivate={() => onOpenCategory(part.sourceCategory)} /> : null; })}
       <text className="visual-axis" x="18" y="244">SYSTEM FRAME{" // "}{model.installedCount.toString().padStart(2, "0")} ZONES ONLINE</text>
     </svg>
     {!compact && <div className={`visual-inspector is-${inspected.state}`} aria-live="polite"><span>{inspected.label}{" // "}{inspected.state}</span><strong>{inspected.name || "Esperando componentes"}</strong><small>{details(inspected) || inspected.reason || "Selecciona esta zona para abrir su categoría."}</small>{inspected.reason && <em>{inspected.reason}</em>}</div>}
@@ -57,18 +58,37 @@ function Renderer({ model, onOpenCategory, compact = false }: Props & { compact?
 
 export default function VisualBuild({ model, onOpenCategory }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const openButton = useRef<HTMLButtonElement>(null);
+  const modal = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!expanded) return;
+    const opener = openButton.current;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setExpanded(false); };
-    window.addEventListener("keydown", close);
-    return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", close); };
+    closeButton.current?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setExpanded(false); return; }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(modal.current?.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') || [])
+        .filter((element) => !element.hasAttribute("disabled"));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", handleKey);
+      opener?.focus();
+    };
   }, [expanded]);
   return <section className="visual-build" aria-labelledby="visual-build-title">
-    <header><div><span className="eyebrow">Visual build</span><h2 id="visual-build-title">Forge digital twin</h2></div><button className="btn visual-expand" onClick={() => setExpanded(true)}><Maximize2 size={11} /> Inspeccionar</button></header>
+    <header><div><span className="eyebrow">Visual build</span><h2 id="visual-build-title">Forge digital twin</h2></div><button ref={openButton} className="btn visual-expand" onClick={() => setExpanded(true)}><Maximize2 size={11} /> Inspeccionar</button></header>
     <Renderer model={model} onOpenCategory={onOpenCategory} compact />
     <footer><span>{model.isEmpty ? "SYSTEM FRAME · Esperando componentes" : `${model.installedCount} zonas instaladas`}</span><i aria-hidden="true" /></footer>
-    {expanded && createPortal(<div className="visual-modal" role="dialog" aria-modal="true" aria-labelledby="visual-modal-title"><div className="visual-modal-card"><header><div><span className="eyebrow">Forge visual build</span><h2 id="visual-modal-title">System assembly · live</h2></div><button className="btn" onClick={() => setExpanded(false)} aria-label="Cerrar Visual Build"><X size={14} /> Cerrar</button></header><Renderer model={model} onOpenCategory={(cat) => { setExpanded(false); onOpenCategory(cat); }} /></div></div>, document.body)}
+    {expanded && createPortal(<div ref={modal} className="visual-modal" role="dialog" aria-modal="true" aria-labelledby="visual-modal-title"><div className="visual-modal-card"><header><div><span className="eyebrow">Forge visual build</span><h2 id="visual-modal-title">System assembly · live</h2></div><button ref={closeButton} className="btn" onClick={() => setExpanded(false)} aria-label="Cerrar Visual Build"><X size={14} /> Cerrar</button></header><Renderer model={model} onOpenCategory={(cat) => { setExpanded(false); onOpenCategory(cat); }} /></div></div>, document.body)}
   </section>;
 }

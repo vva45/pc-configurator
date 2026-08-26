@@ -39,12 +39,14 @@ src/app/
 src/components/configurator/
   Configurator.tsx         → orquestador del cliente
   ForgeIntelligence.tsx    → Forge Score, insights y acciones contextuales
+  VisualBuild.tsx          → preview SVG e inspector visual del montaje
   FilterPanel.tsx
   PowerGauge.tsx  PostLog.tsx  StoreSheet.tsx  ShoppingList.tsx  BuildSummary.tsx  PartCard.tsx
 src/lib/
   compat.ts                → gate, runPost, POST_CODES
   power.ts                 → calcPower, PSU_SIZES
   forge-intelligence.ts    → score y señales deterministas del montaje
+  visual-build.ts          → modelo visual normalizado, independiente del renderer
   filters.ts               → FILTERS, KEYSPECS, matches
   regions.ts               → REGIONS, storesFor, searchTerm
   catalog-server.ts        → consulta, facetas y paginación en servidor
@@ -60,7 +62,8 @@ compartirlo y restaurarlo en el servidor antes de revalidarlo en el cliente.
 Forge incluye además un **Forge Score de integridad**, insights deterministas y guidance
 contextual para el siguiente paso o la fuente recomendada. Esta capa reutiliza los motores
 existentes y no usa IA externa ni benchmarks; `PROJECT_STATE.md` y `DESIGN_SYSTEM.md` recogen
-el detalle funcional y visual.
+el detalle funcional y visual. Phase 4 incorpora además un Visual Build SVG alimentado por
+`VisualBuildModel`, que mantiene separada la normalización del montaje de su representación.
 
 ---
 
