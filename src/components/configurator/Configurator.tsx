@@ -97,6 +97,8 @@ export default function Configurator() {
   const warns = log.filter((l) => l.lvl === "warn").length;
   const total = useMemo(() => (Object.values(build) as Picked[][]).flat()
     .reduce((a, p) => a + (p.price || 0) * (p.qty || 1), 0), [build]);
+  const requiredCore = useMemo(() => CATS.filter((c) => c.group === "core" && c.req), []);
+  const coreDone = requiredCore.filter((c) => ((build[c.id] || []) as Picked[]).length > 0).length;
 
   /* ── Catálogo servido por /api/parts, paginado ──────────────────── */
   const buildQs = useMemo(() => buildToParams(build).toString(), [build]);
@@ -229,26 +231,30 @@ export default function Configurator() {
   const BuildPane = (
     <div className="scroll" style={{ padding: 12, height: "100%" }}>
       {GROUPS.map((g) => (
-        <div key={g.id} style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 7 }}>
-            <div className="eyebrow" style={{ color: "var(--gold-dim)" }}>{g.label}</div>
+        <div key={g.id} className={`build-group build-group-${g.id}`} style={{ marginBottom: 16 }}>
+          <div className="build-group-heading" style={{ marginBottom: 7 }}>
+            <div className="build-group-title"><div className="eyebrow" style={{ color: "var(--gold-dim)" }}>{g.label}</div>
             <div className="mono" style={{ fontSize: 9.5, color: "var(--silk-dim)" }}>{g.sub}</div>
+            </div>
+            {g.id === "core" && <div className="core-progress" aria-label={`${coreDone} de ${requiredCore.length} componentes requeridos seleccionados`}>
+              <div className="core-progress-copy"><span>Core build</span><strong>{coreDone} / {requiredCore.length}</strong></div>
+              <div className="core-progress-track" aria-hidden="true">
+                {requiredCore.map((c) => <i key={c.id} className={((build[c.id] || []) as Picked[]).length ? "done" : ""} />)}
+              </div>
+            </div>}
           </div>
           {CATS.filter((c) => c.group === g.id).map((c) => (
             <Slot key={c.id} cat={c} items={(build[c.id] || []) as Picked[]} active={cat === c.id} conflicts={conflicts}
               onOpen={(id) => { setCat(id); setTab("catalog"); }} onRemove={remove} onQty={qty} cur={cur} />
           ))}
           {g.id === "core" && (() => {
-            const done = CATS.filter((c) => c.group === "core" && c.req)
-              .filter((c) => ((build[c.id] || []) as Picked[]).length).length;
-            const need = CATS.filter((c) => c.group === "core" && c.req).length;
             return (
-              <button className={done ? "btn btn-gold" : "btn"} onClick={() => setSummary(true)}
-                disabled={!done} style={{ width: "100%", marginTop: 8, display: "flex",
+              <button className={coreDone ? "btn btn-gold" : "btn"} onClick={() => setSummary(true)}
+                disabled={!coreDone} style={{ width: "100%", marginTop: 8, display: "flex",
                   alignItems: "center", justifyContent: "center", gap: 7, padding: "9px 12px",
-                  opacity: done ? 1 : 0.4, cursor: done ? "pointer" : "not-allowed" }}>
+                  opacity: coreDone ? 1 : 0.4, cursor: coreDone ? "pointer" : "not-allowed" }}>
                 <ClipboardList size={13} /> Resumen de la torre
-                <span className="mono" style={{ fontSize: 10, opacity: 0.75 }}>{done}/{need}</span>
+                <span className="mono" style={{ fontSize: 10, opacity: 0.75 }}>{coreDone}/{requiredCore.length}</span>
               </button>
             );
           })()}

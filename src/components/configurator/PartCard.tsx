@@ -1,5 +1,5 @@
 /* Tarjeta de pieza */
-import { Check, XCircle } from "lucide-react";
+import { Check, ShoppingBag, XCircle } from "lucide-react";
 import type { Part } from "@/data/parts/types";
 import { keyspecsFor } from "@/lib/filters";
 import { eur } from "./format";
@@ -15,38 +15,39 @@ export default function PartCard({ part, blocked, reason, chosen, onPick, onBuy,
   cur: string;
 }) {
   const specs = keyspecsFor(part);
+  const state = blocked ? "blocked" : chosen ? "selected" : "compatible";
+  const stateLabel = blocked ? "Incompatible" : chosen ? "Seleccionada" : "Compatible";
   return (
-    <div className={`card ${blocked ? "blocked" : ""}`} tabIndex={0} role="button"
-      aria-disabled={blocked} title={blocked ? reason : undefined}
+    <article className={`card part-card part-card-${state}`} tabIndex={0} role="button"
+      aria-disabled={blocked || undefined} aria-pressed={chosen} aria-label={`${part.brand} ${part.name}: ${stateLabel}`}
       onClick={() => !blocked && onPick(part)}
-      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !blocked) { e.preventDefault(); onPick(part); } }}
-      style={chosen ? { borderColor: "var(--gold)" } : undefined}>
-      <PartArt part={part} />
+      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !blocked && e.target === e.currentTarget) { e.preventDefault(); onPick(part); } }}>
+      <div className="part-card-art"><PartArt part={part} /></div>
       {(part.museum || part.legacy) && <div className="mono" style={{ position: "absolute", right: 7, top: 7, fontSize: 9,
         letterSpacing: ".1em", color: "var(--copper)", border: "1px solid var(--copper)", padding: "1px 5px" }}>
         {part.museum ? "MUSEO" : "DESCAT."}</div>}
-      {chosen && <div style={{ position: "absolute", right: 7, top: 7, background: "var(--gold)",
-        color: "#0A1610", borderRadius: "50%", width: 19, height: 19, display: "grid", placeItems: "center" }}><Check size={12} /></div>}
-      <div style={{ padding: "9px 10px" }}>
-        <div style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.25, minHeight: 32 }}>{part.name}</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 3, margin: "7px 0 9px" }}>
+      <div className="part-card-body">
+        <div className="part-brand">{part.brand}</div>
+        <h3 className="part-name">{part.name}</h3>
+        <div className="part-specs">
           {specs.map((s, i) =>
             <span key={i} className="mono" style={{ fontSize: 9.5, color: "var(--silk-dim)",
               border: "1px solid var(--trace)", padding: "1.5px 5px" }}>{s}</span>)}
         </div>
-        {blocked ? (
-          <div className="mono" style={{ fontSize: 10, color: "var(--red)", display: "flex", gap: 5,
-            alignItems: "flex-start", lineHeight: 1.4 }}><XCircle size={11} style={{ flexShrink: 0, marginTop: 1 }} />{reason}</div>
-        ) : (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-            <span className="mono" style={{ fontSize: 13, color: "var(--gold)", fontWeight: 600 }}>
-              {part.price ? `${eur(part.price)} ${cur}` : "—"}
-            </span>
-            <button className="btn" style={{ padding: "4px 8px", fontSize: 9.5 }}
-              onClick={(e) => { e.stopPropagation(); onBuy(part); }}>Dónde comprar</button>
-          </div>
-        )}
+        <div className={`part-status part-status-${state}`}>
+          {blocked ? <XCircle size={11} /> : <Check size={11} />}
+          <span>{stateLabel}</span>
+        </div>
+        {blocked && reason && <div className="part-reason mono">{reason}</div>}
+        {!blocked && <div className="part-card-footer">
+          <div><span className="part-price-label">Precio</span><span className="part-price mono">
+            {part.price ? `${eur(part.price)} ${cur}` : "—"}
+          </span></div>
+          <button className="btn part-buy" onClick={(e) => { e.stopPropagation(); onBuy(part); }}>
+            <ShoppingBag size={11} /> Dónde comprar
+          </button>
+        </div>}
       </div>
-    </div>
+    </article>
   );
 }

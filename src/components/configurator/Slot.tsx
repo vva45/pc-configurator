@@ -1,5 +1,5 @@
 /* Fila de la lista de montaje */
-import { Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Trash2 } from "lucide-react";
 import type { Category } from "@/data/categories";
 import type { Picked } from "@/lib/compat";
 import type { CatId } from "@/data/parts/types";
@@ -19,16 +19,24 @@ export default function Slot({ cat, items, active, onOpen, onRemove, onQty, cur,
   const Icon = cat.icon;
   const filled = items.length > 0;
   const bad = items.some((i) => conflicts?.has(i._uid));
+  const state = bad ? "conflict" : active ? "active" : filled ? "selected" : cat.req ? "required" : "optional";
+  const stateLabel = bad ? "Conflicto" : active ? "Siguiente" : filled ? "Instalado" : cat.req ? "Requerido" : "Opcional";
   return (
-    <div style={{ marginBottom: 5 }}>
-      <button className={`slot ${active ? "active" : ""}`} onClick={() => onOpen(cat.id)}>
+    <div className="slot-wrap">
+      <button className={`slot slot-${state}`} onClick={() => onOpen(cat.id)}
+        aria-current={active ? "step" : undefined} aria-label={`${cat.label}: ${stateLabel}`}>
         <Fingers on={filled} tone={bad ? "bad" : ""} />
-        <Icon size={15} color={filled ? "var(--gold)" : "var(--silk-dim)"} style={{ flexShrink: 0, marginTop: 1 }} />
+        <Icon size={15} color={bad ? "var(--red)" : filled ? "var(--gold)" : "var(--silk-dim)"} style={{ flexShrink: 0, marginTop: 1 }} />
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="eyebrow" style={{ display: "block" }}>{cat.label}{cat.req && !filled ? " ·  requerido" : ""}</span>
+          <span className="slot-heading">
+            <span className="eyebrow">{cat.label}</span>
+            <span className={`slot-state slot-state-${state}`}>
+              {bad ? <AlertTriangle size={9} /> : filled && !active ? <Check size={9} /> : null}{stateLabel}
+            </span>
+          </span>
           <span className="trunc" style={{ display: "block", fontSize: 12.5, marginTop: 2,
             color: filled ? "var(--silk)" : "var(--silk-dim)" }}>
-            {filled ? items.map((i) => i.name).join(" + ") : "Sin elegir"}
+            {filled ? items.map((i) => i.name).join(" + ") : cat.req ? "Pendiente para completar el núcleo" : "Disponible si lo necesitas"}
           </span>
         </span>
         {filled && <span className="mono" style={{ fontSize: 11, color: "var(--gold)", whiteSpace: "nowrap" }}>
