@@ -83,7 +83,8 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
   }
 }
 
-export function aioGeometry(radiatorMm: unknown, _declaredFans?: unknown) {
+export function aioGeometry(radiatorMm: unknown, declaredFans?: unknown) {
+  void declaredFans;
   const size = typeof radiatorMm === "number" && Number.isFinite(radiatorMm) ? Math.min(420, Math.max(120, radiatorMm)) : 240;
   const fanSize = size === 280 || size === 420 ? 140 : 120;
   const canonicalFans = Math.max(1, Math.round(size / fanSize));

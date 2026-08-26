@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,aioGeometry,getAioSchematicGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions,getTabSwipeGestureOwner,isIntentionalTabSwipe}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,containsBox,validateVisual3DScene,aioGeometry,getAioSchematicGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions,getTabSwipeGestureOwner,isIntentionalTabSwipe}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -93,7 +93,7 @@ const shortGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'
 const longGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gl',brand:'Forge',name:'Long',len:360}})));
 ok(shortGpu.parts.find(x=>x.category==='gpu').scale[2]<longGpu.parts.find(x=>x.category==='gpu').scale[2],'3D GPU 170/360 no escala longitud');
 const mountedGpu=atx3d.parts.find(x=>x.category==='gpu');
-ok(mountedGpu.position.join(',')===atx3d.layout.pcie.join(',')&&mountedGpu.position[0]>mountedMbo.position[0],'GPU no nace en el anclaje PCIe interior');
+ok(Math.abs(mountedGpu.bounds.min[2]-atx3d.layout.anchors.pcieSlotAnchor[2])<.01&&mountedGpu.position[0]>mountedMbo.position[0],'GPU no nace en el anclaje PCIe interior');
 const ram2=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r2',brand:'Forge',name:'2 DIMM',kit:2}})));
 const ram4=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r4',brand:'Forge',name:'4 DIMM',kit:4}})));
 ok(ram2.parts.find(x=>x.category==='ram').instances===2&&ram4.parts.find(x=>x.category==='ram').instances===4,'3D RAM 2/4 módulos incorrecto');
@@ -109,12 +109,16 @@ ok(atxPsu.parts.find(x=>x.category==='psu').scale[0]>createVisual3DScene(visual)
 const mountedPsu=atxPsu.parts.find(x=>x.category==='psu');
 ok(mountedPsu.position.join(',')===atxPsu.layout.psuBay.join(',')&&mountedPsu.position[1]<0,'PSU no está anclada a la bahía inferior');
 const dual3d=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'o11',brand:'Lian Li',name:'O11 Dynamic',dims:'465×285×459 mm'},cooler:{cat:'cooler',id:'a36',brand:'Forge',name:'AIO 360',type:'Liquid',radSize:360}})));
-ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.radiatorMounts.side&&dual3d.parts.find(x=>x.category==='cooler').mount==='side','dual chamber no conserva montaje lateral preferente');
+ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.radiatorMounts.side&&dual3d.parts.find(x=>x.category==='cooler').mount==='top','dual chamber no aplica la heurística segura top/front/side');
 ok(atx3d.camera.minDistance<atx3d.camera.maxDistance&&atx3d.camera.fov>=35&&atx3d.camera.fov<=45,'encuadre 3D no mantiene límites útiles para desktop/mobile');
 for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
 ok(createVisual3DScene(visual).parts.find(x=>x.category==='ram').state==='conflict','3D conflict no se propaga');
 ok(empty3d.parts.find(x=>x.category==='cpu').state==='next','3D next no se propaga');
 ok(createVisual3DScene(createVisualBuildModel(removed)).parts.find(x=>x.category==='gpu').state==='empty','3D remove no vuelve a ghost');
+for (const [label, candidate] of [['air', atx3d], ['aio-240', aio240], ['aio-360-showcase', dual3d], ['compact', createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'mini',brand:'Forge',name:'NR200 Mini-ITX',dims:'376×185×292 mm'},mbo:{cat:'mbo',id:'itx2',brand:'Forge',name:'Mini ITX',form:'Mini-ITX'},cooler:{cat:'cooler',id:'air',brand:'Forge',name:'Air tower'}}))) ]]) {
+  ok(validateVisual3DScene(candidate).length===0,`3D ${label} placement inválido: ${validateVisual3DScene(candidate).join(',')}`);
+  for (const category of ['mbo','gpu','psu','storage']) ok(containsBox(candidate.layout.interior,candidate.parts.find(x=>x.category===category).bounds),`3D ${label} ${category} atraviesa el chasis`);
+}
 
 console.log('CATÁLOGO: '+P.length+' piezas');
 const byCat={}; P.forEach(p=>byCat[p.cat]=(byCat[p.cat]||0)+1);
