@@ -19,8 +19,10 @@ export default function Slot({ cat, items, active, onOpen, onRemove, onQty, cur,
   const Icon = cat.icon;
   const filled = items.length > 0;
   const bad = items.some((i) => conflicts?.has(i._uid));
-  const state = bad ? "conflict" : active ? "active" : filled ? "selected" : cat.req ? "required" : "optional";
-  const stateLabel = bad ? "Conflicto" : active ? "Siguiente" : filled ? "Instalado" : cat.req ? "Requerido" : "Opcional";
+  const state = bad ? "conflict" : active && filled ? "active-selected" : active ? "active"
+    : filled ? "selected" : cat.req ? "required" : "optional";
+  const stateLabel = bad ? "Conflicto" : active && filled ? "Editando" : active ? "Siguiente"
+    : filled ? "Instalado" : cat.req ? "Requerido" : "Opcional";
   return (
     <div className="slot-wrap">
       <button className={`slot slot-${state}`} onClick={() => onOpen(cat.id)}
@@ -31,7 +33,7 @@ export default function Slot({ cat, items, active, onOpen, onRemove, onQty, cur,
           <span className="slot-heading">
             <span className="eyebrow">{cat.label}</span>
             <span className={`slot-state slot-state-${state}`}>
-              {bad ? <AlertTriangle size={9} /> : filled && !active ? <Check size={9} /> : null}{stateLabel}
+              {bad ? <AlertTriangle size={10} /> : filled ? <Check size={10} /> : null}{stateLabel}
             </span>
           </span>
           <span className="trunc" style={{ display: "block", fontSize: 12.5, marginTop: 2,

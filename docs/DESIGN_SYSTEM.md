@@ -1,6 +1,6 @@
 # Forge Design System
 
-This document describes the visual system currently implemented by the Phase 1 CSS. It is a reference for preserving Forge's identity, not a request to redesign the interface or implement the roadmap.
+This document describes the visual system implemented through Phase 2. It is a reference for preserving Forge's identity, not a request to redesign the interface or implement the roadmap.
 
 ## Design concept
 
@@ -70,6 +70,38 @@ Power, consumption detail, POST, and actions read as related instrumentation mod
 ### Active / selected
 
 Active slots and selected cards use ENIG gold borders, contacts, and limited glow. Warnings use amber; errors and conflicts use red. Do not use gold as a generic background for every surface.
+
+## Guided build states
+
+`CORE BUILD n / N` measures only required CORE categories containing a selection. Its segments
+are generated from category metadata; optional CORE parts such as the GPU do not change `N`.
+
+Slots use one explicit state at a time:
+
+- **SIGUIENTE:** the active, empty category and strongest orientation signal;
+- **EDITANDO:** the active category already containing installed parts;
+- **INSTALADO:** a filled category that is not active;
+- **REQUERIDO:** an empty required category that is not active;
+- **OPCIONAL:** an empty optional category that is not active;
+- **CONFLICTO:** an installed part conflicts with the current build.
+
+Text, border/contact treatment, `aria-label`, and `aria-current` must describe the same state.
+Required is intentionally quieter than Next; conflict uses a limited red edge and badge rather
+than flooding the full build panel.
+
+## PartCard 2.0
+
+The information order is brand, name, key specifications, compatibility state, reason, price,
+and actions. PCB art supplies traces and the category icon without duplicating the brand.
+
+- **Compatible:** selectable and marked in cyan.
+- **Selected:** selectable, with restrained ENIG border and selected state.
+- **Blocked:** not selectable, marked incompatible, and accompanied by the real reason.
+
+Selection and “Dónde comprar” are separate native buttons: keyboard focus is visible, purchase
+does not select the part, and a blocked card cannot be activated. On mobile the same semantic
+classes—not positional child selectors—control a one-card-per-row hierarchy, readable reason,
+price, and full-width purchase action at narrow widths.
 
 ## Typography
 
