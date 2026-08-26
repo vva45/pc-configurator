@@ -1,18 +1,19 @@
 # Forge — Current Project State
 
-This document records the repository state verified during the Phase 3 documentation closeout on **2026-08-26**. It describes the current production baseline, not future implementation requirements. Revalidate changing facts such as the remote `main` commit, catalog size, and test counts before treating them as current in a later task.
+This document records the repository state verified during the Phase 4 final closeout on **2026-08-26**. It describes the current production baseline, not future implementation requirements. Revalidate changing facts such as the remote `main` commit, catalog size, and test counts before treating them as current in a later task.
 
 ## Current production baseline
 
 - Repository: `vva45/pc-configurator`
 - Official source of truth: GitHub `main`
-- Audited `origin/main` SHA: `17b74b808c6571ee0d240b8d5bd99711ec488bc4`
+- Audited `origin/main` SHA: `221a6ff61b13f717d81911da6014425419fa0aef`
 - PR #1: Phase 1 shell, merged through `6acd21bbae4fbb381180e0b02321ed4005b4c1c7`
 - PR #4: Phase 2 build flow, merged through `51d8857317e5dcecc7f232d47fdef2d13bbbe629`
 - PR #5: Phase 2 closeout, implementation commit `26f75b99116b950ac82f9dc295adf4325a541c42`, merged through `e94e7a54280ad03bc11ca57e364e33d2851e5825`
 - PR #6: Phase 3 Forge Intelligence, implementation commit `f6951d7ef9f91bb29847b1cd6d7bf126485af258`, merged through `17b74b808c6571ee0d240b8d5bd99711ec488bc4`
+- PR #8: Phase 4 Visual Build, merged through `221a6ff61b13f717d81911da6014425419fa0aef`
 
-GitHub Actions completed successfully for the audited `main` SHA. Its GitHub commit status also reports the Vercel deployment as successful. Phase 3 is therefore confirmed merged and published in production.
+GitHub Actions completed successfully for the audited `main` SHA. Its GitHub commit status also reports the Vercel deployment as successful. Phase 4 is therefore confirmed merged and published in production through PR #8.
 
 ## Phase status
 
@@ -21,17 +22,16 @@ GitHub Actions completed successfully for the audited `main` SHA. Its GitHub com
 | Phase 1 | Shell, responsive behavior, and Forge visual identity | **COMPLETE / APPROVED / MERGED / PRODUCTION** |
 | Phase 2 | Build Flow + Part Selection UX | **COMPLETE / APPROVED / MERGED / PRODUCTION** |
 | Phase 3 | Forge Intelligence: Score, Insight, and Guidance | **COMPLETE / APPROVED / MERGED / PRODUCTION** |
-| Phase 4 | Visual Build / digital twin foundation | **IMPLEMENTED / PENDING REVIEW** |
+| Phase 4 | Visual Build / Digital Twin Foundation | **COMPLETE / APPROVED / MERGED / PRODUCTION** |
 
-## Phase 4 preview architecture
+## Phase 4 architecture
 
 Phase 4 introduces a lightweight SVG/CSS visual build inside Build Control, with an internal
 expanded inspector for desktop and mobile. `src/lib/visual-build.ts` is the pure normalization
 boundary between the selected build and any renderer: it consumes real catalog metadata where
 available and supplies safe category-level fallbacks where it is absent. The current SVG renderer
 in `VisualBuild.tsx` can therefore be complemented or replaced by a future 3D renderer without
-moving catalog interpretation into the presentation layer. Phase 4 remains pending Preview review;
-it is not yet approved, merged, or in production.
+moving catalog interpretation into the presentation layer. The user approved the implementation, PR #8 merged it to `main`, CI passed, and the Vercel deployment for the merge commit succeeded. `VisualBuildModel` is the stable boundary intended for future renderers; the current SVG remains a useful lightweight fallback.
 
 ## Phase history
 
@@ -72,7 +72,8 @@ The audited production baseline provides:
 - Forge Score, prioritized Forge Insights, and contextual build/PSU guidance;
 - region/currency presentation, store links, per-part `StoreSheet`, and a whole-build shopping list;
 - build sharing through URL query parameters and server-assisted restoration through `/api/build`;
-- desktop, tablet, and tab-based mobile layouts.
+- desktop, tablet, and tab-based mobile layouts;
+- an SVG Visual Build preview and accessible expanded inspector driven by a renderer-independent model.
 
 These capabilities form the regression baseline. A later visual or UX phase must preserve them unless its explicit task says otherwise.
 
@@ -82,13 +83,13 @@ The 2026-08-26 closeout audit validated **16,458 catalog items with 0 problems**
 
 ## Current validation baseline
 
-Results recorded on 2026-08-26 from the Phase 3 production baseline:
+Results recorded on 2026-08-26 from the Phase 4 closeout branch after its hardening changes:
 
 | Check | Result |
 | --- | --- |
 | TypeScript (`tsc --noEmit`) | **PASS** |
 | ESLint | **PASS** |
-| Engine assertions | **4,482 PASS / 0 failures** |
+| Engine assertions | **4,497 PASS / 0 failures** |
 | Catalog audit | **16,458 items / 0 problems** |
 | `npm run verify` | **PASS** |
 | Next.js production build | **PASS** |

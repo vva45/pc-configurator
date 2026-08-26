@@ -40,6 +40,20 @@ const VISUAL_CATEGORIES: Array<[VisualCategory, CatId[]]> = [
   ["expansion", ["soundcard", "netwired", "netwireless"]],
 ];
 
+const INSPECTOR_ORDER: VisualCategory[] = [
+  "case", "mbo", "cpu", "ram", "storage", "expansion", "gpu", "psu", "fan", "rgb", "cooler",
+];
+
+/** Selects a deterministic, useful inspector target without coupling a renderer to build internals. */
+export function getInitialVisualPart(model: VisualBuildModel): VisualPart {
+  const available = INSPECTOR_ORDER.flatMap((category) => model.parts[category] ? [model.parts[category]] : []);
+  for (const state of ["conflict", "warning", "next", "installed"] satisfies VisualState[]) {
+    const match = available.find((part) => part.state === state);
+    if (match) return match;
+  }
+  return model.parts.mbo || model.parts.case || available[0]!;
+}
+
 const values = (part: Part): Record<string, unknown> => part as unknown as Record<string, unknown>;
 const text = (value: unknown) => typeof value === "string" ? value : undefined;
 const number = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : undefined;
@@ -78,9 +92,11 @@ export function createVisualBuildModel(build: AppBuild, options: VisualBuildOpti
   for (const [category, sources] of VISUAL_CATEGORIES) {
     const source = sources.find((id) => ((build[id] || []) as Picked[]).length) || sources[0];
     const selected = sources.flatMap((id) => (build[id] || []) as Picked[]);
-    const reason = sources.map((id) => conflictByCat.get(id)).find(Boolean) || sources.map((id) => warningByCat.get(id)).find(Boolean);
-    const state: VisualState = conflictByCat.has(source) ? "conflict"
-      : warningByCat.has(source) ? "warning"
+    const conflictSource = sources.find((id) => conflictByCat.has(id));
+    const warningSource = sources.find((id) => warningByCat.has(id));
+    const reason = conflictSource ? conflictByCat.get(conflictSource) : warningSource ? warningByCat.get(warningSource) : undefined;
+    const state: VisualState = conflictSource ? "conflict"
+      : warningSource ? "warning"
       : selected.length ? "installed"
       : options.nextCategory === source ? "next" : "empty";
     parts[category] = {
