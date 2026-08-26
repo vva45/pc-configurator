@@ -209,3 +209,15 @@ Current patterns include slight card lift, slot movement, contact glow, a power-
 - gratuitous animation;
 - making every border, label, and surface gold;
 - reducing technical status and compatibility information to decoration.
+
+## Phase 5 3D Workbench
+
+The expanded Visual Build inspector now offers a client-only **3D / Esquema** switch. The compact
+preview and resilient fallback remain the Phase 4 SVG. The 3D stage uses a restrained product-studio
+palette, generative geometry, bounded orbit/zoom controls, a deterministic Forge camera reset, and
+textual component inspection. Ghost, next, installed, warning, and conflict are communicated through
+material treatment as well as the inspector label; the canvas is never the only navigation surface.
+
+The 3D runtime is deliberately subordinate to the existing configurator: it is loaded only after the
+user opens the inspector and selects the 3D experience. Mobile uses the same stage with bounded DPR,
+lightweight geometry, no continuous autorotation, and no postprocessing.

@@ -107,3 +107,18 @@ These are current facts and review considerations, not automatic tasks and not a
 - Region selection changes the displayed currency symbol and store set; it does not perform live exchange-rate conversion.
 
 Do not “fix” any of these observations unless a future task explicitly includes that work.
+
+## Phase 5 implementation candidate
+
+Phase 5 — **IMPLEMENTED / PENDING REVIEW** on `v2-phase-5-3d-workbench`. This is not an approval,
+merge, or production declaration. The candidate adds a pure `VisualBuildModel` → `Visual3DScene`
+layout, a lazy client-only React Three Fiber renderer, procedural Forge chassis/components, bounded
+camera controls, contextual component navigation, WebGL/error fallback to the Phase 4 SVG, and pure
+layout regression tests. Phase 6's permanent central stage and shell redesign remain unimplemented.
+
+The justified 3D dependencies are `three` (scene/runtime), `@react-three/fiber` (React 19 renderer),
+and `@react-three/drei` (bounded orbit controls and lightweight contact shadows). At implementation
+time their stable releases declare compatibility with the repository's React 19.2 line. The dynamic
+import lives in the existing client inspector with SSR disabled, so the normal Forge route and compact
+SVG do not initialize WebGL; the 3D dependency graph is emitted as separate browser chunks and is
+requested only when the expanded 3D workbench mounts.
