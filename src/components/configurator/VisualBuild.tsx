@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { Box, Maximize2, X } from "lucide-react";
 import type { CatId } from "@/data/parts/types";
 import { getInitialVisualPart, type VisualBuildModel, type VisualCategory, type VisualPart } from "@/lib/visual-build";
+import { createVisualHardwareProfile, type VisualHardwareProfile } from "@/lib/visual-hardware-profile";
 
 interface Props { model: VisualBuildModel; onOpenCategory: (category: CatId) => void; }
 const ThreeWorkbench = dynamic(() => import("./three/ThreeWorkbench"), { ssr: false });
@@ -31,11 +32,11 @@ function details(part: VisualPart) {
   return entries.map(([key, value]) => `${key}: ${value}`).join(" · ");
 }
 
-function PartShape({ part, active, onActivate, onInspect }: { part: VisualPart; active: boolean; onActivate: () => void; onInspect: () => void }) {
+function PartShape({ part, profile, active, onActivate, onInspect }: { part: VisualPart; profile: VisualHardwareProfile; active: boolean; onActivate: () => void; onInspect: () => void }) {
   const z = ZONES[part.category];
   const installed = part.state !== "empty" && part.state !== "next";
   const cls = `visual-part visual-part-${part.category} is-${part.state}${active ? " is-active" : ""}`;
-  const common = { className: cls, role: "button", tabIndex: 0, "aria-label": `${part.label}: ${part.name || "vacío"}`, onClick: onActivate, onFocus: onInspect, onMouseEnter: onInspect, onKeyDown: (event: React.KeyboardEvent<SVGGElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onActivate(); } } };
+  const common = { className: cls, style: { "--hardware-primary": profile.primaryColor, "--hardware-secondary": profile.secondaryColor, "--hardware-accent": profile.accentColor } as React.CSSProperties, role: "button", tabIndex: 0, "aria-label": `${part.label}: ${part.name || "vacío"}`, onClick: onActivate, onFocus: onInspect, onMouseEnter: onInspect, onKeyDown: (event: React.KeyboardEvent<SVGGElement>) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onActivate(); } } };
   if (part.category === "fan") return <g {...common}>{[77, 137].map((cy) => <g key={cy}><circle cx="295" cy={cy} r="18" /><circle cx="295" cy={cy} r="5" /><path d={`M295 ${cy - 14}q12 8 0 14q-12-8 0-14M309 ${cy}q-8 12-14 0q8-12 14 0`} /></g>)}</g>;
   if (part.category === "gpu") {
     const length = typeof part.metadata.lengthMm === "number" ? Math.max(105, Math.min(185, 105 + (part.metadata.lengthMm - 170) * .28)) : z.w;
@@ -56,11 +57,12 @@ function Renderer({ model, onOpenCategory, compact = false }: Props & { compact?
   const [inspectedCategory, setInspectedCategory] = useState<VisualCategory>(() => getInitialVisualPart(model).category);
   const inspected = model.parts[inspectedCategory] || getInitialVisualPart(model);
   const order: VisualCategory[] = ["case", "mbo", "ram", "storage", "expansion", "gpu", "psu", "fan", "rgb", "cooler", "cpu"];
+  const motherboardProfile = createVisualHardwareProfile(model.parts.mbo!);
   return <div className={`visual-renderer${compact ? " is-compact" : ""}`}>
     <svg viewBox="0 0 340 262" aria-label="Representación técnica del montaje" preserveAspectRatio="xMidYMid meet">
       <defs><pattern id={gridId} width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" /></pattern></defs>
       <rect className="visual-grid" style={{ fill: `url(#${gridId})` }} x="1" y="1" width="338" height="260" />
-      {order.map((category) => { const part = model.parts[category]; return part ? <PartShape key={category} part={part} active={inspected.category === category} onInspect={() => setInspectedCategory(part.category)} onActivate={() => onOpenCategory(part.sourceCategory)} /> : null; })}
+      {order.map((category) => { const part = model.parts[category]; return part ? <PartShape key={category} part={part} profile={createVisualHardwareProfile(part, motherboardProfile)} active={inspected.category === category} onInspect={() => setInspectedCategory(part.category)} onActivate={() => onOpenCategory(part.sourceCategory)} /> : null; })}
       <text className="visual-axis" x="18" y="244">SYSTEM FRAME{" // "}{model.installedCount.toString().padStart(2, "0")} ZONES ONLINE</text>
     </svg>
     {!compact && <div className={`visual-inspector is-${inspected.state}`} aria-live="polite"><span>{inspected.label}{" // "}{inspected.state}</span><strong>{inspected.name || "Esperando componentes"}</strong><small>{details(inspected) || inspected.reason || "Selecciona esta zona para abrir su categoría."}</small>{inspected.reason && <em>{inspected.reason}</em>}</div>}

@@ -1,5 +1,7 @@
 import type { CatId, Part } from "@/data/parts/types";
 import type { AppBuild, Picked } from "@/lib/compat";
+import { aioGeometry, gpuFamilyLabel } from "@/lib/visual-hardware-profile";
+export { gpuFamilyLabel } from "@/lib/visual-hardware-profile";
 
 export type VisualState = "empty" | "installed" | "conflict" | "warning" | "next";
 export type VisualCategory = "case" | "mbo" | "cpu" | "ram" | "gpu" | "cooler" | "storage" | "psu" | "fan" | "rgb" | "expansion";
@@ -25,20 +27,6 @@ export interface VisualBuildModel {
 export function visualCapacityLabel(capacityGB: number): string {
   if (capacityGB >= 900) return `${Math.max(1, Math.round(capacityGB / 1000))} TB`;
   return `${Math.round(capacityGB)} GB`;
-}
-
-export function gpuFamilyLabel(part: Pick<Part, "brand" | "name">): { label: string; vendor: "nvidia" | "amd" | "generic" } {
-  const value = `${part.brand} ${part.name}`.toUpperCase();
-  if (/NVIDIA|GEFORCE|\bRTX\b|\bGTX\b/.test(value)) {
-    const family = /\bRTX\b/.test(value) ? "RTX" : /\bGTX\b/.test(value) ? "GTX" : /\bGT\b/.test(value) ? "GT" : "GPU";
-    return { label: `NVIDIA ${family}`, vendor: "nvidia" };
-  }
-  if (/AMD|RADEON|\bRX\b/.test(value)) {
-    const number = value.match(/\bRX\s*([4-9]\d{2,3})/i)?.[1] || "";
-    const series = number.length === 4 ? `${number[0]}000` : number.length === 3 ? `${number[0]}00` : "";
-    return { label: series ? `${number.length === 4 ? "RADEON" : "AMD"} RX${series}` : "AMD GPU", vendor: "amd" };
-  }
-  return { label: "GPU", vendor: "generic" };
 }
 
 export interface VisualBuildOptions {
@@ -93,7 +81,7 @@ function metadata(category: VisualCategory, selected: Picked[]): VisualPart["met
     case "cpu": return { socket: text(p.socket), cores: number(p.cores) };
     case "ram": return { modules: Math.min(8, selected.reduce((sum, item) => sum + (number(values(item).kit) || 1) * (item.qty || 1), 0)), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), type: text(p.memType) };
     case "gpu": { const family = gpuFamilyLabel(part); return { lengthMm: number(p.len), slots: number(p.slots), vramGB: number(p.vram), conn8: number(p.conn8) || 0, conn6: number(p.conn6) || 0, hpwr: Boolean(p.hpwr), family: family.label, vendor: family.vendor }; }
-    case "cooler": { const radiatorMm = number(p.radSize); return { mode: radiatorMm || /aio|liquid|líquid/i.test(text(p.type) || "") ? "aio" : "air", heightMm: number(p.height), radiatorMm, fans: number(p.fans) || (radiatorMm ? Math.max(1, Math.min(4, Math.round(radiatorMm / 120))) : 1) }; }
+    case "cooler": { const radiatorMm = number(p.radSize); const aio = aioGeometry(radiatorMm, number(p.fans)); return { mode: radiatorMm || /aio|liquid|líquid/i.test(text(p.type) || "") ? "aio" : "air", heightMm: number(p.height), radiatorMm, fans: radiatorMm ? aio.fanCount : number(p.fans) || 1, fanSizeMm: radiatorMm ? aio.fanSizeMm : number(p.fanSize), radiatorWidthMm: radiatorMm ? aio.widthMm : undefined, radiatorLengthMm: radiatorMm ? aio.lengthMm : undefined, radiatorThicknessMm: radiatorMm ? aio.thicknessMm : undefined }; }
     case "storage": { const drives = selected.flatMap((item) => Array.from({ length: item.qty || 1 }, () => ({ type: storageType(item), capacity: visualCapacityLabel(number(values(item).capGB) || 0) }))); return { type: storageType(part), count: Math.min(8, drives.length), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), drives: JSON.stringify(drives.slice(0, 8)) }; }
     case "psu": return { form: text(p.form), watt: number(p.watt), lengthMm: number(p.len) };
     case "fan": return { count: Math.min(12, selected.reduce((sum, item) => sum + (item.qty || 1), 0)), sizeMm: number(p.size) };

@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,aioGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -39,6 +39,22 @@ ok(gpuFamilyLabel({brand:'NVIDIA',name:'GeForce RTX 5070'}).label==='NVIDIA RTX'
 ok(gpuFamilyLabel({brand:'AMD',name:'Radeon RX 6650 XT'}).label==='RADEON RX6000','familia Radeon RX6000 incorrecta');
 ok(gpuFamilyLabel({brand:'AMD',name:'Radeon RX 580'}).label==='AMD RX500','familia AMD RX500 incorrecta');
 ok(visualCapacityLabel(960)==='1 TB'&&visualCapacityLabel(1830)==='2 TB','normalización visual de capacidad incorrecta');
+
+// Phase 5 fidelity: a shared deterministic hardware appearance profile.
+ok(parseCaseDimensions('465×285×459 mm').width===285&&parseCaseDimensions('376 x 185 x 292').height===376&&parseCaseDimensions('580*240*560').depth===560,'parser de dimensiones de caja incorrecto');
+const smallCase=createVisualBuildModel(B({case:{cat:'case',id:'small',brand:'Cooler Master',name:'NR200P Mini-ITX',dims:'376×185×292 mm'}})).parts.case;
+const largeCase=createVisualBuildModel(B({case:{cat:'case',id:'large',brand:'Forge',name:'Full tower',dims:'580×240×560 mm'}})).parts.case;
+ok(createVisualHardwareProfile(smallCase).dimensions.height!==createVisualHardwareProfile(largeCase).dimensions.height,'caja pequeña y grande comparten dimensiones');
+ok(inferCaseStyle({name:'Lian Li O11 Dynamic',metadata:{dimensions:'465×285×459 mm'}})==='WIDE_DUAL_CHAMBER'&&inferCaseStyle({name:'Mid tower',metadata:{dimensions:'453×230×466 mm'}})==='STANDARD_TOWER','perfiles dual chamber/standard incorrectos');
+const whiteMbo=createVisualHardwareProfile(createVisualBuildModel(B({mbo:{cat:'mbo',id:'mw',brand:'Gigabyte',name:'AERO G WHITE'}})).parts.mbo);
+const darkMbo=createVisualHardwareProfile(createVisualBuildModel(B({mbo:{cat:'mbo',id:'md',brand:'MSI',name:'Tomahawk'}})).parts.mbo);
+ok(whiteMbo.isLight&&!darkMbo.isLight,'resolver white/default motherboard incorrecto');
+ok(createVisualHardwareProfile(createVisualBuildModel(B({cpu:{cat:'cpu',id:'cp',brand:'AMD',name:'Ryzen'}})).parts.cpu).metalness>=.8,'CPU no usa perfil metálico');
+const whiteRamPart=createVisualBuildModel(B({ram:{cat:'ram',id:'rw',brand:'Corsair',name:'Vengeance White',kit:2}})).parts.ram;
+ok(createVisualHardwareProfile(whiteRamPart).isLight&&createVisualHardwareProfile(whiteRamPart,whiteMbo).primaryColor!==whiteMbo.primaryColor,'RAM blanca no contrasta sobre motherboard clara');
+const m2Profile=createVisualHardwareProfile(visual.parts.storage); ok(m2Profile.primaryColor==='#303634'&&m2Profile.accentColor==='#dfb85e','M.2 no usa gris + ENIG');
+ok(createVisualHardwareProfile(createVisualBuildModel(B({psu:{cat:'psu',id:'pw',brand:'Forge',name:'Snow White'}})).parts.psu).isLight&&!createVisualHardwareProfile(visual.parts.psu).isLight,'PSU white/default incorrecta');
+ok(aioGeometry(240).fanCount===2&&aioGeometry(240).widthMm>aioGeometry(240).fanSizeMm&&aioGeometry(360).fanCount===3,'geometría AIO 240/360 incorrecta');
 
 // Phase 5: pure VisualBuildModel → deterministic 3D scene layout.
 const empty3d=createVisual3DScene(visualEmpty);
