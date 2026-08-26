@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { Box, Maximize2, X } from "lucide-react";
 import type { CatId } from "@/data/parts/types";
+import { getAioSchematicGeometry } from "@/lib/aio-schematic";
 import { getInitialVisualPart, type VisualBuildModel, type VisualCategory, type VisualPart } from "@/lib/visual-build";
 import { createVisualHardwareProfile, type VisualHardwareProfile } from "@/lib/visual-hardware-profile";
 
@@ -51,11 +52,35 @@ function PartShape({ part, profile, active, onActivate, onInspect }: { part: Vis
     return <g {...common}>{Array.from({ length: modules }, (_, i) => <rect key={i} x={z.x + i * 9} y={z.y} width="6" height={z.h} rx="1" />)}</g>;
   }
   if (part.category === "cooler" && part.metadata.mode === "aio") {
-    const fans = Math.max(1, Math.min(3, Number(part.metadata.fans) || 2));
-    const radiator = { x: 263, y: 40, w: 62, h: 147 };
-    const fanRadius = fans === 1 ? 23 : fans === 2 ? 22 : 18;
-    const usableHeight = radiator.h - fanRadius * 2 - 12;
-    return <g {...common}><rect className="visual-radiator" x={radiator.x} y={radiator.y} width={radiator.w} height={radiator.h} rx="4" /><g className="visual-radiator-fins">{Array.from({length:13},(_,i)=><path key={i} d={`M${radiator.x + 5} ${radiator.y + 7 + i * 10.7}h${radiator.w - 10}`} />)}</g>{Array.from({length:fans},(_,i) => { const cy = radiator.y + 6 + fanRadius + (fans === 1 ? usableHeight / 2 : i * usableHeight / (fans - 1)); return <g className="visual-radiator-fan" key={i}><rect x={radiator.x + radiator.w / 2 - fanRadius - 2} y={cy - fanRadius - 2} width={(fanRadius + 2) * 2} height={(fanRadius + 2) * 2} rx="4"/><circle cx={radiator.x + radiator.w / 2} cy={cy} r={fanRadius}/><circle className="visual-fan-ring" cx={radiator.x + radiator.w / 2} cy={cy} r={fanRadius - 4}/>{[0,60,120,180,240,300].map(angle => <path key={angle} transform={`rotate(${angle} ${radiator.x + radiator.w / 2} ${cy})`} d={`M${radiator.x + radiator.w / 2} ${cy - 3}C${radiator.x + radiator.w / 2 + 5} ${cy - fanRadius + 5},${radiator.x + radiator.w / 2 + fanRadius - 3} ${cy - fanRadius / 2},${radiator.x + radiator.w / 2 + 5} ${cy + 1}Z`} />)}<circle className="visual-fan-hub" cx={radiator.x + radiator.w / 2} cy={cy} r="4"/></g>; })}<circle className="visual-pump" cx="139" cy="101" r="23" /><circle className="visual-pump" cx="139" cy="101" r="17" /><path className="visual-tube" d="M157 87C205 42 241 49 265 65M158 115c47 39 78 38 107 49" /><rect className="visual-hit" x="258" y="36" width="72" height="155" /></g>;
+    const geometry = getAioSchematicGeometry(part.metadata.radiatorMm);
+    // One physical scale is shared by every size and is limited by the 420 mm
+    // radiator. This preserves the visible 120/140 mm width difference.
+    const scale = 147 / getAioSchematicGeometry(420).radiatorLength;
+    const x = 294 - geometry.radiatorWidth * scale / 2;
+    const y = 113.5 - geometry.radiatorLength * scale / 2;
+    const portX = x;
+    const firstPortY = y + geometry.endTankMargin * scale * .35;
+    const secondPortY = y + geometry.endTankMargin * scale * .72;
+    const fanRadius = geometry.fanDiameter / 2;
+    const fins = Math.floor((geometry.radiatorLength - geometry.endTankMargin * 2) / 9);
+    return <g {...common}>
+      <g className="visual-aio" transform={`translate(${x} ${y}) scale(${scale})`}>
+        <rect className="visual-radiator" width={geometry.radiatorWidth} height={geometry.radiatorLength} rx="6" />
+        <g className="visual-radiator-fins">{Array.from({ length: fins }, (_, index) => <path key={index} d={`M5 ${geometry.endTankMargin + 4 + index * 9}h${geometry.radiatorWidth - 10}`} />)}</g>
+        <rect className="visual-end-tank" x="2" y="2" width={geometry.radiatorWidth - 4} height={geometry.endTankMargin - 2} rx="3" />
+        <rect className="visual-end-tank" x="2" y={geometry.radiatorLength - geometry.endTankMargin} width={geometry.radiatorWidth - 4} height={geometry.endTankMargin - 2} rx="3" />
+        {geometry.fanCenters.map((center) => <g className="visual-radiator-fan" key={center}>
+          <rect x="3" y={center - fanRadius} width={geometry.fanDiameter} height={geometry.fanDiameter} rx="7" />
+          <circle cx={geometry.radiatorWidth / 2} cy={center} r={fanRadius - 4} />
+          <circle className="visual-fan-ring" cx={geometry.radiatorWidth / 2} cy={center} r={fanRadius - 12} />
+          {[0, 60, 120, 180, 240, 300].map((angle) => <path key={angle} transform={`rotate(${angle} ${geometry.radiatorWidth / 2} ${center})`} d={`M${geometry.radiatorWidth / 2} ${center - 7}C${geometry.radiatorWidth / 2 + 13} ${center - fanRadius + 13},${geometry.radiatorWidth / 2 + fanRadius - 9} ${center - fanRadius / 2},${geometry.radiatorWidth / 2 + 10} ${center + 3}Z`} />)}
+          <circle className="visual-fan-hub" cx={geometry.radiatorWidth / 2} cy={center} r="10" />
+        </g>)}
+      </g>
+      <circle className="visual-pump" cx="139" cy="101" r="23" /><circle className="visual-pump" cx="139" cy="101" r="17" />
+      <path className="visual-tube" d={`M157 87C205 42 239 ${firstPortY} ${portX} ${firstPortY}M158 115C205 145 239 ${secondPortY} ${portX} ${secondPortY}`} />
+      <rect className="visual-hit" x="258" y="36" width="72" height="155" />
+    </g>;
   }
   if (part.category === "storage" && installed) { const drives = JSON.parse(String(part.metadata.drives || "[]")) as Array<{type:string;capacity:string}>; return <g {...common}>{drives.slice(0,4).map((drive,i) => drive.type === "M.2" ? <g className="visual-m2" key={i}><rect x={198-i*4} y={63+i*19} width="42" height="14" rx="1.5"/><circle cx={236-i*4} cy={70+i*19} r="1.7"/><path className="visual-m2-contact" d={`M${198-i*4} ${66+i*19}h6v8h-6z`}/><text className="visual-capacity" x={220-i*4} y={72+i*19} textAnchor="middle" textLength="20" lengthAdjust="spacingAndGlyphs">{drive.capacity}</text></g> : <g key={i}><rect x={207-i*4} y={64+i*20} width="33" height="18" rx="2"/><text className="visual-capacity" x={223.5-i*4} y={76+i*20} textAnchor="middle" textLength="22" lengthAdjust="spacingAndGlyphs">{drive.capacity}</text></g>)}</g>; }
   return <g {...common}><rect x={z.x} y={z.y} width={z.w} height={z.h} rx="2" />{part.category === "mbo" && <path d="M80 57h67v-7m68 12h18v62m-151 65h42v10m47-32h62" />}{part.category === "cpu" && <><path d="M124 86h30v30h-30zM118 101h42" /><circle cx="139" cy="101" r="4" /><rect className="visual-hit" x="120" y="82" width="38" height="38" /></>}{part.category === "psu" && <><circle cx="276" cy="221" r="15" /><circle cx="276" cy="221" r="10"/><path d="M261 221h30m-15-15v30M229 210h20v10h-20zM232 225h13v7h-13z" /></>}{part.category === "storage" && <path d="M222 75v43m0-32h12m-12 12h12m-12 12h12" />}</g>;
