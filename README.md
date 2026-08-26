@@ -40,6 +40,7 @@ src/components/configurator/
   Configurator.tsx         → orquestador del cliente
   ForgeIntelligence.tsx    → Forge Score, insights y acciones contextuales
   VisualBuild.tsx          → preview SVG e inspector visual del montaje
+  three/                   → workbench 3D procedural, client-only y lazy
   FilterPanel.tsx
   PowerGauge.tsx  PostLog.tsx  StoreSheet.tsx  ShoppingList.tsx  BuildSummary.tsx  PartCard.tsx
 src/lib/
@@ -47,6 +48,7 @@ src/lib/
   power.ts                 → calcPower, PSU_SIZES
   forge-intelligence.ts    → score y señales deterministas del montaje
   visual-build.ts          → modelo visual normalizado, independiente del renderer
+  visual-3d.ts             → layout 3D puro y determinista desde VisualBuildModel
   filters.ts               → FILTERS, KEYSPECS, matches
   regions.ts               → REGIONS, storesFor, searchTerm
   catalog-server.ts        → consulta, facetas y paginación en servidor

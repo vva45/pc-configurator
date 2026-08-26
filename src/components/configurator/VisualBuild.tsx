@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { Component, useEffect, useId, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
-import { Maximize2, X } from "lucide-react";
+import { Box, Maximize2, X } from "lucide-react";
 import type { CatId } from "@/data/parts/types";
 import { getInitialVisualPart, type VisualBuildModel, type VisualCategory, type VisualPart } from "@/lib/visual-build";
 
 interface Props { model: VisualBuildModel; onOpenCategory: (category: CatId) => void; }
+const ThreeWorkbench = dynamic(() => import("./three/ThreeWorkbench"), { ssr: false });
+class ThreeBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error("Forge 3D renderer failed", error, info.componentStack); }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
+function supportsWebGL() { try { const canvas = document.createElement("canvas"); return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl")); } catch { return false; } }
 
 const ZONES: Record<VisualCategory, { x: number; y: number; w: number; h: number }> = {
   case: { x: 12, y: 10, w: 316, h: 240 }, mbo: { x: 72, y: 47, w: 170, h: 160 },
@@ -58,6 +67,8 @@ function Renderer({ model, onOpenCategory, compact = false }: Props & { compact?
 
 export default function VisualBuild({ model, onOpenCategory }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [mode, setMode] = useState<"3d" | "schema">("3d");
+  const [webgl, setWebgl] = useState<boolean>();
   const openButton = useRef<HTMLButtonElement>(null);
   const modal = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -86,9 +97,9 @@ export default function VisualBuild({ model, onOpenCategory }: Props) {
     };
   }, [expanded]);
   return <section className="visual-build" aria-labelledby="visual-build-title">
-    <header><div><span className="eyebrow">Visual build</span><h2 id="visual-build-title">Forge digital twin</h2></div><button ref={openButton} className="btn visual-expand" onClick={() => setExpanded(true)}><Maximize2 size={11} /> Inspeccionar</button></header>
+    <header><div><span className="eyebrow">Visual build</span><h2 id="visual-build-title">Forge digital twin</h2></div><button ref={openButton} className="btn visual-expand" onClick={() => { setWebgl(supportsWebGL()); setExpanded(true); }}><Maximize2 size={11} /> Inspeccionar</button></header>
     <Renderer model={model} onOpenCategory={onOpenCategory} compact />
     <footer><span>{model.isEmpty ? "SYSTEM FRAME · Esperando componentes" : `${model.installedCount} zonas instaladas`}</span><i aria-hidden="true" /></footer>
-    {expanded && createPortal(<div ref={modal} className="visual-modal" role="dialog" aria-modal="true" aria-labelledby="visual-modal-title"><div className="visual-modal-card"><header><div><span className="eyebrow">Forge visual build</span><h2 id="visual-modal-title">System assembly · live</h2></div><button ref={closeButton} className="btn" onClick={() => setExpanded(false)} aria-label="Cerrar Visual Build"><X size={14} /> Cerrar</button></header><Renderer model={model} onOpenCategory={(cat) => { setExpanded(false); onOpenCategory(cat); }} /></div></div>, document.body)}
+    {expanded && createPortal(<div ref={modal} className="visual-modal" role="dialog" aria-modal="true" aria-labelledby="visual-modal-title"><div className="visual-modal-card"><header><div><span className="eyebrow">Forge visual build</span><h2 id="visual-modal-title">3D Workbench · live</h2></div><div className="visual-modal-actions" role="group" aria-label="Modo de visualización"><button className={`btn${mode === "3d" ? " is-active" : ""}`} aria-pressed={mode === "3d"} onClick={() => setMode("3d")}><Box size={13}/> 3D</button><button className={`btn${mode === "schema" ? " is-active" : ""}`} aria-pressed={mode === "schema"} onClick={() => setMode("schema")}>Esquema</button><button ref={closeButton} className="btn" onClick={() => setExpanded(false)} aria-label="Cerrar Visual Build"><X size={14} /> Cerrar</button></div></header>{mode === "3d" && webgl ? <ThreeBoundary fallback={<div className="three-fallback"><p>Vista 3D no disponible en este dispositivo.</p><Renderer model={model} onOpenCategory={onOpenCategory} /></div>}><ThreeWorkbench model={model} onOpenCategory={(cat) => { setExpanded(false); onOpenCategory(cat); }} /></ThreeBoundary> : <div className={mode === "3d" ? "three-fallback" : undefined}>{mode === "3d" && <p>Vista 3D no disponible en este dispositivo.</p>}<Renderer model={model} onOpenCategory={(cat) => { setExpanded(false); onOpenCategory(cat); }} /></div>}</div></div>, document.body)}
   </section>;
 }

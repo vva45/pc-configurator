@@ -1,0 +1,27 @@
+"use client";
+import { ContactShadows, OrbitControls } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import type { Visual3DPart, Visual3DScene } from "@/lib/visual-3d";
+import type { VisualCategory } from "@/lib/visual-build";
+
+const stateColor = { empty: "#315543", installed: "#4f9d78", next: "#dfb85e", warning: "#e3a83c", conflict: "#e05a48" } as const;
+function PartMaterial({ part, active }: { part: Visual3DPart; active: boolean }) { const ghost = part.state === "empty" || part.state === "next"; return <meshStandardMaterial color={active ? "#dfb85e" : stateColor[part.state]} metalness={part.kind === "chassis" || part.kind === "gpu" ? .65 : .2} roughness={.45} transparent={ghost} opacity={ghost ? .25 : 1} wireframe={part.state === "empty"} emissive={active || part.state === "next" ? "#8a6725" : "#000000"} emissiveIntensity={active ? .35 : .12} />; }
+function Interactive({ part, children, onSelect, onHover }: { part: Visual3DPart; children: React.ReactNode; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void }) { return <group position={part.position} rotation={part.rotation} scale={part.scale} onClick={(e) => { e.stopPropagation(); onSelect(part); }} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; onHover(part); }} onPointerOut={() => { document.body.style.cursor = ""; onHover(); }}>{children}</group>; }
+function Fan({ part, active }: { part: Visual3DPart; active: boolean }) { return <group><mesh><cylinderGeometry args={[.34, .34, .12, 20]} /><PartMaterial part={part} active={active} /></mesh><mesh position={[0, 0, .08]}><torusGeometry args={[.22, .035, 8, 20]} /><meshStandardMaterial color="#93aa9d" metalness={.5} roughness={.5} /></mesh></group>; }
+function ComponentMesh({ part, active }: { part: Visual3DPart; active: boolean }) {
+  if (part.kind === "fan") return <>{Array.from({ length: part.instances }, (_, i) => <group key={i} position={[0, (i - (part.instances - 1) / 2) * .78, 0]} rotation={[0, Math.PI / 2, 0]}><Fan part={part} active={active} /></group>)}</>;
+  if (part.kind === "ram") return <>{Array.from({ length: part.instances }, (_, i) => <mesh key={i} position={[(i - 1.5) * .15, 0, 0]}><boxGeometry args={[.09, 1.05, .3]} /><PartMaterial part={part} active={active} /></mesh>)}</>;
+  if (part.kind === "gpu") return <group><mesh><boxGeometry args={[2.8, .58, .72]} /><PartMaterial part={part} active={active} /></mesh>{[0,1,2].map(i => <group key={i} position={[-.82 + i * .82, 0, .38]} rotation={[Math.PI / 2, 0, 0]}><Fan part={part} active={active} /></group>)}</group>;
+  if (part.kind === "air-cooler") return <group><mesh><boxGeometry args={[.82, 1.25, .82]} /><PartMaterial part={part} active={active} /></mesh><group position={[0,0,.48]}><Fan part={part} active={active} /></group></group>;
+  if (part.kind === "aio") return <group><mesh scale={[1.9,.48,.18]}><boxGeometry /><PartMaterial part={part} active={active} /></mesh>{[-.62,0,.62].map((x) => <group key={x} position={[x,0,.2]}><Fan part={part} active={active} /></group>)}</group>;
+  const sizes: Partial<Record<Visual3DPart["kind"], [number,number,number]>> = { motherboard:[2.45,2.9,.12], cpu:[1,1,1], psu:[1.45,1.15,1.45], m2:[.75,.18,.08], "drive-25":[.75,1.05,.16], "drive-35":[1.05,1.45,.25], expansion:[1.65,.28,.38], rgb:[.08,3.7,.08] };
+  return <mesh><boxGeometry args={sizes[part.kind] || [.5,.5,.5]} /><PartMaterial part={part} active={active} /></mesh>;
+}
+function Chassis() { const bars: Array<[[number,number,number],[number,number,number]]> = [[[0,-2.25,0],[3.8,.12,2]],[[0,2.25,0],[3.8,.12,2]],[[-1.84,0,0],[.12,4.5,2]],[[1.84,0,0],[.12,4.5,2]],[[-0,0,-.98],[3.7,4.4,.08]]]; return <group>{bars.map(([position,scale],i)=><mesh key={i} position={position} scale={scale}><boxGeometry /><meshStandardMaterial color="#151c19" metalness={.8} roughness={.32} /></mesh>)}<mesh position={[0,0,1.02]}><boxGeometry args={[3.75,4.4,.04]} /><meshPhysicalMaterial color="#173725" transparent opacity={.1} roughness={.1} transmission={.2} /></mesh></group>; }
+export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number }) {
+  const controls = useRef<OrbitControlsImpl>(null); const { camera, invalidate } = useThree();
+  useEffect(() => { camera.position.set(...scene.camera.position); controls.current?.target.set(...scene.camera.target); controls.current?.update(); invalidate(); }, [camera, invalidate, resetSignal, scene.camera]);
+  return <><hemisphereLight args={["#9ccbb4", "#07100b", .9]} /><directionalLight position={[5,7,6]} intensity={2.2} color="#f2e3bc" /><directionalLight position={[-4,1,4]} intensity={1.1} color="#4fb9a5" /><pointLight position={[0,0,-2]} intensity={1.5} color="#315e49" /><Chassis />{scene.parts.map(part => <Interactive key={part.id} part={part} onSelect={onSelect} onHover={onHover}><ComponentMesh part={part} active={active === part.category} /></Interactive>)}<ContactShadows position={[0,-2.32,0]} opacity={.45} scale={9} blur={2.5} far={5} frames={1} /><OrbitControls ref={controls} makeDefault target={scene.camera.target} minDistance={scene.camera.minDistance} maxDistance={scene.camera.maxDistance} minPolarAngle={.45} maxPolarAngle={1.65} enablePan={false} onChange={() => invalidate()} /></>;
+}

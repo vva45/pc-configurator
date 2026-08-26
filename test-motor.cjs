@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,createVisual3DScene}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -35,6 +35,29 @@ const aio=createVisualBuildModel(B({cooler:{cat:'cooler',id:'va',brand:'Forge',n
 ok(aio.parts.cooler.metadata.mode==='aio'&&aio.parts.cooler.metadata.radiatorMm===360,'visual AIO pierde radiador');
 const removed={...visualFixture}; delete removed.gpu;
 ok(createVisualBuildModel(removed).parts.gpu.state==='empty','visual GPU no desaparece al eliminarla');
+
+// Phase 5: pure VisualBuildModel → deterministic 3D scene layout.
+const empty3d=createVisual3DScene(visualEmpty);
+ok(empty3d.parts.length===10&&empty3d.parts.every(x=>x.state==='empty'||x.state==='next'),'3D empty model no produce ghost layout válido');
+const atx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'atx',brand:'Forge',name:'ATX',form:'ATX'}})));
+const itx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'itx',brand:'Forge',name:'ITX',form:'Mini-ITX'}})));
+ok(atx3d.parts.find(x=>x.category==='mbo').scale[0]>itx3d.parts.find(x=>x.category==='mbo').scale[0],'3D ATX/Mini-ITX no escala distinto');
+const shortGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gs',brand:'Forge',name:'Short',len:170}})));
+const longGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gl',brand:'Forge',name:'Long',len:360}})));
+ok(shortGpu.parts.find(x=>x.category==='gpu').scale[0]<longGpu.parts.find(x=>x.category==='gpu').scale[0],'3D GPU 170/360 no escala longitud');
+const ram2=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r2',brand:'Forge',name:'2 DIMM',kit:2}})));
+const ram4=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r4',brand:'Forge',name:'4 DIMM',kit:4}})));
+ok(ram2.parts.find(x=>x.category==='ram').instances===2&&ram4.parts.find(x=>x.category==='ram').instances===4,'3D RAM 2/4 módulos incorrecto');
+ok(createVisual3DScene(visual).parts.find(x=>x.category==='cooler').kind==='air-cooler','3D air cooler descriptor incorrecto');
+const aio240=createVisual3DScene(createVisualBuildModel(B({cooler:{cat:'cooler',id:'a24',brand:'Forge',name:'AIO 240',type:'Liquid',radSize:240}})));
+const aio360=createVisual3DScene(aio);
+ok(aio240.parts.find(x=>x.category==='cooler').kind==='aio'&&aio240.parts.find(x=>x.category==='cooler').scale[0]<aio360.parts.find(x=>x.category==='cooler').scale[0],'3D AIO 240/360 incorrecto');
+const atxPsu=createVisual3DScene(createVisualBuildModel(B({psu:{cat:'psu',id:'pa',brand:'Forge',name:'ATX',form:'ATX'}})));
+ok(atxPsu.parts.find(x=>x.category==='psu').scale[0]>createVisual3DScene(visual).parts.find(x=>x.category==='psu').scale[0],'3D ATX/SFX PSU no escala distinto');
+for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
+ok(createVisual3DScene(visual).parts.find(x=>x.category==='ram').state==='conflict','3D conflict no se propaga');
+ok(empty3d.parts.find(x=>x.category==='cpu').state==='next','3D next no se propaga');
+ok(createVisual3DScene(createVisualBuildModel(removed)).parts.find(x=>x.category==='gpu').state==='empty','3D remove no vuelve a ghost');
 
 console.log('CATÁLOGO: '+P.length+' piezas');
 const byCat={}; P.forEach(p=>byCat[p.cat]=(byCat[p.cat]||0)+1);
