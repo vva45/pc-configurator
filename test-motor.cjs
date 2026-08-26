@@ -1,5 +1,5 @@
 const {__t}=require('./.test-build/t.cjs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,createVisual3DScene}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -35,6 +35,10 @@ const aio=createVisualBuildModel(B({cooler:{cat:'cooler',id:'va',brand:'Forge',n
 ok(aio.parts.cooler.metadata.mode==='aio'&&aio.parts.cooler.metadata.radiatorMm===360,'visual AIO pierde radiador');
 const removed={...visualFixture}; delete removed.gpu;
 ok(createVisualBuildModel(removed).parts.gpu.state==='empty','visual GPU no desaparece al eliminarla');
+ok(gpuFamilyLabel({brand:'NVIDIA',name:'GeForce RTX 5070'}).label==='NVIDIA RTX','familia NVIDIA RTX incorrecta');
+ok(gpuFamilyLabel({brand:'AMD',name:'Radeon RX 6650 XT'}).label==='RADEON RX6000','familia Radeon RX6000 incorrecta');
+ok(gpuFamilyLabel({brand:'AMD',name:'Radeon RX 580'}).label==='AMD RX500','familia AMD RX500 incorrecta');
+ok(visualCapacityLabel(960)==='1 TB'&&visualCapacityLabel(1830)==='2 TB','normalización visual de capacidad incorrecta');
 
 // Phase 5: pure VisualBuildModel → deterministic 3D scene layout.
 const empty3d=createVisual3DScene(visualEmpty);
