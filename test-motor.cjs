@@ -89,6 +89,8 @@ const itx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'itx
 ok(atx3d.parts.find(x=>x.category==='mbo').scale[1]>itx3d.parts.find(x=>x.category==='mbo').scale[1],'3D ATX/Mini-ITX no escala distinto');
 const mountedMbo=atx3d.parts.find(x=>x.category==='mbo');
 ok(mountedMbo.position[0]>atx3d.bounds.min[0]&&mountedMbo.position[0]===atx3d.layout.motherboard[0]&&mountedMbo.position[0]<0,'motherboard queda fuera de la bandeja interior');
+const mountedCpu=atx3d.parts.find(x=>x.category==='cpu'), mountedRam=atx3d.parts.find(x=>x.category==='ram');
+ok(mountedCpu.position.join(',')===atx3d.layout.anchors.cpuSocketAnchor.join(',')&&mountedRam.position[2]>mountedCpu.position[2],'CPU/RAM no respetan socket y banco DIMM canónicos');
 const shortGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gs',brand:'Forge',name:'Short',len:170}})));
 const longGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gl',brand:'Forge',name:'Long',len:360}})));
 ok(shortGpu.parts.find(x=>x.category==='gpu').scale[2]<longGpu.parts.find(x=>x.category==='gpu').scale[2],'3D GPU 170/360 no escala longitud');
@@ -104,6 +106,7 @@ ok(aio240.parts.find(x=>x.category==='cooler').kind==='aio'&&aio240.parts.find(x
 const mountedAio=aio240.parts.find(x=>x.category==='cooler');
 ok(['top','front','side'].includes(mountedAio.mount)&&mountedAio.position===aio240.layout.radiatorMounts[mountedAio.mount],'AIO usa un montaje de radiador no permitido');
 ok(mountedAio.connectionTarget.join(',')===aio240.layout.cpuSocket.join(','),'AIO no conecta radiador y bloque CPU');
+ok(mountedAio.tubePaths.flat().every(point=>point.every((value,axis)=>value>=aio240.layout.interior.min[axis]&&value<=aio240.layout.interior.max[axis])),'tubos AIO abandonan el interior del chasis');
 const atxPsu=createVisual3DScene(createVisualBuildModel(B({psu:{cat:'psu',id:'pa',brand:'Forge',name:'ATX',form:'ATX'}})));
 ok(atxPsu.parts.find(x=>x.category==='psu').scale[0]>createVisual3DScene(visual).parts.find(x=>x.category==='psu').scale[0],'3D ATX/SFX PSU no escala distinto');
 const mountedPsu=atxPsu.parts.find(x=>x.category==='psu');
@@ -112,6 +115,8 @@ const dual3d=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'
 ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.archetype==='DUAL_CHAMBER_SHOWCASE'&&dual3d.layout.radiatorMounts.side&&dual3d.parts.find(x=>x.category==='cooler').mount==='side','dual chamber no prioriza el montaje lateral canónico');
 ok(atx3d.camera.minDistance<atx3d.camera.maxDistance&&atx3d.camera.fov>=35&&atx3d.camera.fov<=45,'encuadre 3D no mantiene límites útiles para desktop/mobile');
 for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
+const mountedM2=createVisual3DScene({...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type:'M.2'}}}});
+ok(mountedM2.parts.find(x=>x.category==='storage').position.join(',')===mountedM2.layout.anchors.m2Anchors[0].join(','),'M.2 no permanece anclado a la placa');
 ok(createVisual3DScene(visual).parts.find(x=>x.category==='ram').state==='conflict','3D conflict no se propaga');
 ok(empty3d.parts.find(x=>x.category==='cpu').state==='next','3D next no se propaga');
 ok(createVisual3DScene(createVisualBuildModel(removed)).parts.find(x=>x.category==='gpu').state==='empty','3D remove no vuelve a ghost');

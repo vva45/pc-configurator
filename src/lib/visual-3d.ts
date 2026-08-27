@@ -37,7 +37,7 @@ export interface ChassisLayout {
   m2: Vector3Tuple[]; psuBay: Vector3Tuple; storageBay: Vector3Tuple; expansionSlots: Vector3Tuple;
   radiatorMounts: Record<RadiatorMount, Vector3Tuple | undefined>; radiatorCapacity: Record<RadiatorMount, number>; preferredRadiatorMount: RadiatorMount;
 }
-export interface Visual3DPart { id: string; kind: Visual3DKind; category: VisualCategory; source: VisualPart; state: VisualState; position: Vector3Tuple; rotation: Vector3Tuple; scale: Vector3Tuple; size: Vector3Tuple; bounds: Box3Tuple; instances: number; metadata: VisualPart["metadata"]; profile: VisualHardwareProfile; connectionTarget?: Vector3Tuple; tubeEndpoints?: [Vector3Tuple, Vector3Tuple]; mount?: RadiatorMount; }
+export interface Visual3DPart { id: string; kind: Visual3DKind; category: VisualCategory; source: VisualPart; state: VisualState; position: Vector3Tuple; rotation: Vector3Tuple; scale: Vector3Tuple; size: Vector3Tuple; bounds: Box3Tuple; instances: number; metadata: VisualPart["metadata"]; profile: VisualHardwareProfile; connectionTarget?: Vector3Tuple; tubeEndpoints?: [Vector3Tuple, Vector3Tuple]; tubePaths?: [Vector3Tuple[], Vector3Tuple[]]; mount?: RadiatorMount; }
 export interface Visual3DScene { chassis: Visual3DPart; parts: Visual3DPart[]; layout: ChassisLayout; focusTarget: Vector3Tuple; bounds: Box3Tuple; camera: { position: Vector3Tuple; target: Vector3Tuple; fov: number; minDistance: number; maxDistance: number }; }
 
 const finite = (value: unknown, fallback: number) => typeof value === "number" && Number.isFinite(value) ? value : fallback;
@@ -65,15 +65,21 @@ export function createChassisLayout(profile: VisualHardwareProfile): ChassisLayo
   const size: Vector3Tuple = measured ? [clamp(measured.width / 100, base.size[0], 2.1, 3.15), clamp(measured.height / 100, base.size[1], 4.05, 5.5), clamp(measured.depth / 100, base.size[2], 3.85, 5.35)] : base.size;
   const [w, h, d] = size; const shell: Box3Tuple = { min: [-w / 2, -h / 2, -d / 2], max: [w / 2, h / 2, d / 2] };
   const interior: Box3Tuple = { min: [shell.min[0] + .12, shell.min[1] + .12, shell.min[2] + .12], max: [shell.max[0] - .12, shell.max[1] - .12, shell.max[2] - .12] };
-  const tray = normalized(interior, .035, .54, .44); const boardCenter: Vector3Tuple = [tray[0] + .055, tray[1], tray[2]];
-  const cpu = [boardCenter[0] + .12, boardCenter[1] + .48, boardCenter[2] - .22] as Vector3Tuple;
+  // The board's rear edge sits at the rear I/O plane and its component face sits
+  // immediately in front of the tray. These anchors are the assembly grammar;
+  // renderers must not invent per-product offsets.
+  const tray = normalized(interior, .035, .62, .3); const boardCenter: Vector3Tuple = [tray[0] + .055, tray[1], tray[2]];
+  const cpu = [boardCenter[0] + .12, boardCenter[1] + .4, boardCenter[2] - .2] as Vector3Tuple;
   const ram = [cpu[0] + .02, cpu[1], cpu[2] + .66] as Vector3Tuple; const pcie = [boardCenter[0] + .31, boardCenter[1] - .67, interior.min[2] + .18] as Vector3Tuple;
   const storage = family === "dual-chamber" ? normalized(interior, .13, .25, .78) : normalized(interior, .87, .25, .82);
-  const psu = family === "dual-chamber" ? normalized(interior, .5, .15, .72) : normalized(interior, .5, .15, .25);
+  // Reserve an ATX-sized lower bay even when the selected unit is SFX. This
+  // keeps every fallback inside the chassis and makes dual-chamber PSUs read as
+  // rear-chamber hardware rather than a box floating at center.
+  const psu: Vector3Tuple = [family === "dual-chamber" ? interior.min[0] + .78 : 0, interior.min[1] + .62, family === "dual-chamber" ? normalized(interior, .5, .15, .7)[2] : interior.min[2] + .8];
   const top: MountPlane = { mount: "top", center: normalized(interior, .55, .955, .54), normal: [0, -1, 0], longAxis: "z", capacityMm: family === "compact" ? 240 : d >= 4.5 ? 360 : 280 };
   const front: MountPlane = { mount: "front", center: normalized(interior, .55, .55, .975), normal: [0, 0, -1], longAxis: "y", capacityMm: family === "compact" ? 240 : h >= 4.7 ? 360 : 280 };
   const side: MountPlane | undefined = family === "dual-chamber" ? { mount: "side", center: normalized(interior, .12, .55, .7), normal: [1, 0, 0], longAxis: "y", capacityMm: 360 } : undefined;
-  const m2: Vector3Tuple[] = [[cpu[0] + .015, boardCenter[1] - .22, boardCenter[2] - .05], [cpu[0] + .015, boardCenter[1] - .52, boardCenter[2] + .42]];
+  const m2: Vector3Tuple[] = [[cpu[0] + .015, boardCenter[1] - .28, boardCenter[2] - .02], [cpu[0] + .015, boardCenter[1] - .55, boardCenter[2] + .38]];
   const sata: Vector3Tuple[] = [storage, [storage[0], storage[1] + .42, storage[2]]];
   const anchors: ChassisAnchors = {
     caseInnerBounds: interior, motherboardTrayPlane: tray, rearIoZone: [boardCenter[0], boardCenter[1] + .62, interior.min[2] + .02], rearPcieZone: pcie,
@@ -100,12 +106,15 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   const mboProfile = createVisualHardwareProfile(p.mbo!); const profile = (part: VisualPart) => createVisualHardwareProfile(part, mboProfile);
   const ff = formFactor(p.mbo?.metadata.form); const boardSize: Vector3Tuple = [.11, Math.min(ff.h, layout.size[1] - .75), Math.min(ff.d, layout.size[2] - .65)];
   const maxGpu = (layout.interior.max[2] - layout.anchors.gpuPcieAnchor[2] - .08) * 100; const gpuLength = clamp(p.gpu?.metadata.lengthMm, 280, 170, Math.min(400, maxGpu)) / 100;
-  const gpuPosition: Vector3Tuple = [layout.anchors.gpuPcieAnchor[0] + .32, layout.anchors.gpuPcieAnchor[1], layout.anchors.gpuPcieAnchor[2] + gpuLength / 2];
+  // The GPU touches the PCIe face without occupying the board slab, and grows
+  // from the rear bracket toward the front (+Z).
+  const gpuWidth = .62;
+  const gpuPosition: Vector3Tuple = [layout.motherboard[0] + .055 + gpuWidth / 2, layout.anchors.gpuPcieAnchor[1], layout.anchors.gpuPcieAnchor[2] + gpuLength / 2];
   const parts: Visual3DPart[] = [
     desc(p.mbo!, "motherboard", layout.motherboard, mboProfile, boardSize, [1, boardSize[1] / 2.9, boardSize[2] / 2.45]),
     desc(p.cpu!, "cpu", layout.anchors.cpuSocketAnchor, profile(p.cpu!), [.16, .48, .48]),
     desc(p.ram!, "ram", layout.anchors.ramBankAnchor, profile(p.ram!), [.14, 1.02, .62], [1, 1, 1], Math.round(clamp(p.ram?.metadata.modules, 2, 1, 4))),
-    desc(p.gpu!, "gpu", gpuPosition, profile(p.gpu!), [.68, .72, gpuLength], [1, 1, gpuLength / 2.75]),
+    desc(p.gpu!, "gpu", gpuPosition, profile(p.gpu!), [gpuWidth, .68, gpuLength], [1, 1, gpuLength / 2.75]),
   ];
   const aio = aioGeometry(p.cooler?.metadata.radiatorMm, p.cooler?.metadata.fans);
   if (p.cooler?.metadata.mode === "aio") {
@@ -113,8 +122,17 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     const length = Math.min(aio.lengthMm / 100, (plane.longAxis === "y" ? layout.interior.max[1] - layout.interior.min[1] : layout.interior.max[2] - layout.interior.min[2]) - .18);
     const radiatorSize: Vector3Tuple = mount === "top" ? [aio.widthMm / 100, aio.thicknessMm / 100, length] : mount === "front" ? [aio.widthMm / 100, length, aio.thicknessMm / 100] : [aio.thicknessMm / 100, length, aio.widthMm / 100];
     const cooler = desc(p.cooler!, "aio", plane.center, profile(p.cooler!), radiatorSize, [length / 2.7, aio.widthMm / 126, aio.thicknessMm / 30], aio.fanCount); cooler.mount = mount; cooler.connectionTarget = layout.anchors.aioBlockAnchor;
-    const inset = .12; const tubeBase: Vector3Tuple = mount === "top" ? [plane.center[0], plane.center[1] - radiatorSize[1] / 2 - inset, plane.center[2] - radiatorSize[2] / 2 + .22] : mount === "front" ? [plane.center[0], plane.center[1] - radiatorSize[1] / 2 + .24, plane.center[2] - radiatorSize[2] / 2 - inset] : [plane.center[0] + radiatorSize[0] / 2 + inset, plane.center[1] - radiatorSize[1] / 2 + .24, plane.center[2]];
-    cooler.tubeEndpoints = [tubeBase, layout.anchors.aioBlockAnchor]; parts.push(cooler);
+    const inset = .1; const tubeBase: Vector3Tuple = mount === "top" ? [plane.center[0] + .18, plane.center[1] - radiatorSize[1] / 2 - inset, plane.center[2] - radiatorSize[2] / 2 + .24] : mount === "front" ? [plane.center[0] + .18, plane.center[1] - radiatorSize[1] / 2 + .24, plane.center[2] - radiatorSize[2] / 2 - inset] : [plane.center[0] + radiatorSize[0] / 2 + inset, plane.center[1] - radiatorSize[1] / 2 + .24, plane.center[2]];
+    const block = layout.anchors.aioBlockAnchor;
+    cooler.tubeEndpoints = [tubeBase, block];
+    cooler.tubePaths = [-.075, .075].map((offset) => {
+      const start = [tubeBase[0], tubeBase[1], tubeBase[2] + offset] as Vector3Tuple;
+      const end = [block[0] + .18, block[1], block[2] + offset] as Vector3Tuple;
+      const bendX = Math.min(layout.interior.max[0] - .12, Math.max(start[0], end[0]) + .28);
+      const bendY = clamp((start[1] + end[1]) / 2, 0, layout.interior.min[1] + .15, layout.interior.max[1] - .15);
+      return [start, [bendX, bendY, start[2]], [bendX, bendY, end[2]], end] as Vector3Tuple[];
+    }) as [Vector3Tuple[], Vector3Tuple[]];
+    parts.push(cooler);
   } else parts.push(desc(p.cooler!, "air-cooler", [layout.anchors.cpuSocketAnchor[0] + .52, layout.anchors.cpuSocketAnchor[1], layout.anchors.cpuSocketAnchor[2]], profile(p.cooler!), [1.02, 1.28, .9]));
   const psuForm = String(p.psu?.metadata.form || "ATX").toLowerCase(); const psuScale = psuForm.includes("sfx") ? (psuForm.includes("-l") ? .82 : .72) : 1;
   const psuSize: Vector3Tuple = [Math.min(1.42 * psuScale, layout.interior.max[0] - layout.interior.min[0] - .12), 1.12 * psuScale, 1.48 * psuScale];
@@ -122,9 +140,12 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   const storageType = String(p.storage?.metadata.type || "M.2"); const storageKind: Visual3DKind = storageType.includes("3.5") ? "drive-35" : storageType.includes("2.5") ? "drive-25" : "m2";
   const storagePosition = storageKind === "m2" ? layout.anchors.m2Anchors[0] : layout.anchors.sataAnchors[0]; const storageSize: Vector3Tuple = storageKind === "m2" ? [.12, .24, .82] : storageKind === "drive-25" ? [.18, 1, .72] : [.28, 1.35, 1];
   parts.push(desc(p.storage!, storageKind, storagePosition, profile(p.storage!), storageSize, [1, 1, 1], Math.round(clamp(p.storage?.metadata.count, 1, 1, 2))));
-  parts.push(desc(p.fan!, "fan", layout.anchors.frontRadiatorMount.center, profile(p.fan!), [.2, 2.2, .7], [1, 1, 1], Math.round(clamp(p.fan?.metadata.count, 2, 1, 3))));
+  const caseFanCount = Math.round(clamp(p.fan?.metadata.count, 2, 1, 3));
+  const caseFanCenter: Vector3Tuple = [layout.anchors.frontRadiatorMount.center[0], layout.anchors.frontRadiatorMount.center[1], layout.interior.max[2] - .09];
+  parts.push(desc(p.fan!, "fan", caseFanCenter, profile(p.fan!), [.16, caseFanCount * .72, .16], [1, 1, 1], caseFanCount));
   parts.push(desc(p.rgb!, "rgb", normalized(layout.interior, .07, .5, .55), profile(p.rgb!), [.08, 3.5, .08], [1, 1, 1], Math.round(clamp(p.rgb?.metadata.count, 1, 1, 3))));
-  parts.push(desc(p.expansion!, "expansion", layout.expansionSlots, profile(p.expansion!), [.32, .26, 1.5], [1, 1, 1], Math.round(clamp(p.expansion?.metadata.count, 1, 1, 3))));
+  const expansionPosition: Vector3Tuple = [layout.expansionSlots[0], layout.expansionSlots[1], layout.anchors.rearPcieZone[2] + .75];
+  parts.push(desc(p.expansion!, "expansion", expansionPosition, profile(p.expansion!), [.32, .26, 1.5], [1, 1, 1], Math.round(clamp(p.expansion?.metadata.count, 1, 1, 3))));
   const radius = Math.hypot(...layout.size) / 2; const target: Vector3Tuple = [.1, .05, 0]; const chassis = desc(p.case!, "chassis", [0, 0, 0], caseProfile, layout.size, layout.size);
   return { chassis, parts, layout, focusTarget: target, bounds: layout.shell, camera: { position: [radius * 1.2, radius * .64, radius * 1.38], target, fov: 38, minDistance: radius * 1.08, maxDistance: radius * 3.2 } };
 }
@@ -135,12 +156,14 @@ const pointIn = (box: Box3Tuple, point: Vector3Tuple, epsilon = .001) => point.e
 /** Assertions shared by tests and development diagnostics for the physical mounting contract. */
 export function validateVisual3DScene(scene: Visual3DScene): string[] {
   const errors: string[] = []; const by = (category: VisualCategory) => scene.parts.find(part => part.category === category)!;
-  for (const category of ["mbo", "cpu", "ram", "gpu", "cooler", "psu", "storage"] as VisualCategory[]) if (!containsBox(scene.layout.interior, by(category).bounds)) errors.push(`${category}:outside-interior`);
+  for (const part of scene.parts) if (!containsBox(scene.layout.interior, part.bounds)) errors.push(`${part.category}:outside-interior`);
   const mbo = by("mbo"); for (const category of ["cpu", "ram"] as VisualCategory[]) { const part = by(category); if (!pointIn(mbo.bounds, [mbo.position[0], part.position[1], part.position[2]])) errors.push(`${category}:outside-motherboard`); }
   if (Math.abs(mbo.bounds.min[0] - scene.layout.anchors.motherboardTrayPlane[0]) > .02) errors.push("motherboard:detached-from-tray");
+  const cpu = by("cpu"); if (cpu.position.join() !== scene.layout.anchors.cpuSocketAnchor.join()) errors.push("cpu:off-socket");
+  const ram = by("ram"); if (ram.position.join() !== scene.layout.anchors.ramBankAnchor.join() || ram.position[2] <= cpu.position[2]) errors.push("ram:wrong-side-of-cpu");
   const storage = by("storage"); if (storage.kind === "m2" && !pointIn(mbo.bounds, [mbo.position[0], storage.position[1], storage.position[2]])) errors.push("m2:outside-motherboard");
-  const gpu = by("gpu"); if (Math.abs(gpu.bounds.min[2] - scene.layout.anchors.gpuPcieAnchor[2]) > .01 || gpu.position[0] <= mbo.position[0]) errors.push("gpu:detached-from-pcie");
+  const gpu = by("gpu"); if (Math.abs(gpu.bounds.min[2] - scene.layout.anchors.gpuPcieAnchor[2]) > .01 || Math.abs(gpu.bounds.min[0] - mbo.bounds.max[0]) > .01) errors.push("gpu:detached-from-pcie");
   const psu = by("psu"); if (psu.position[1] > scene.layout.interior.min[1] + (scene.layout.interior.max[1] - scene.layout.interior.min[1]) * .3) errors.push("psu:outside-bay");
-  const cooler = by("cooler"); if (cooler.kind === "aio") { const plane = cooler.mount === "top" ? scene.layout.anchors.topRadiatorMount : cooler.mount === "front" ? scene.layout.anchors.frontRadiatorMount : scene.layout.anchors.sideRadiatorMount; if (!plane || cooler.position.join() !== plane.center.join()) errors.push("aio:radiator-off-mount"); if (cooler.connectionTarget?.join() !== scene.layout.anchors.cpuSocketAnchor.join() || cooler.tubeEndpoints?.[1].join() !== scene.layout.anchors.aioBlockAnchor.join() || cooler.tubeEndpoints.some(point => !pointIn(scene.layout.interior, point))) errors.push("aio:invalid-loop"); }
+  const cooler = by("cooler"); if (cooler.kind === "aio") { const plane = cooler.mount === "top" ? scene.layout.anchors.topRadiatorMount : cooler.mount === "front" ? scene.layout.anchors.frontRadiatorMount : scene.layout.anchors.sideRadiatorMount; if (!plane || cooler.position.join() !== plane.center.join() || scene.layout.radiatorCapacity[cooler.mount!] < Number(cooler.metadata.radiatorMm || 240)) errors.push("aio:radiator-off-mount"); const tubePoints = cooler.tubePaths?.flat() || []; if (cooler.connectionTarget?.join() !== scene.layout.anchors.cpuSocketAnchor.join() || cooler.tubeEndpoints?.[1].join() !== scene.layout.anchors.aioBlockAnchor.join() || !tubePoints.length || tubePoints.some(point => !pointIn(scene.layout.interior, point))) errors.push("aio:invalid-loop"); }
   return errors;
 }
