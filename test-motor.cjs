@@ -96,6 +96,9 @@ const longGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'g
 ok(shortGpu.parts.find(x=>x.category==='gpu').scale[2]<longGpu.parts.find(x=>x.category==='gpu').scale[2],'3D GPU 170/360 no escala longitud');
 const mountedGpu=atx3d.parts.find(x=>x.category==='gpu');
 ok(Math.abs(mountedGpu.bounds.min[2]-atx3d.layout.anchors.pcieSlotAnchor[2])<.01&&mountedGpu.position[0]>mountedMbo.position[0],'GPU no nace en el anclaje PCIe interior');
+const gpuOneSlot=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'g1s',brand:'Forge',name:'Single slot',len:220,slots:1}}))).parts.find(x=>x.category==='gpu');
+const gpuFourSlot=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'g4s',brand:'Forge',name:'Four slot',len:340,slots:4}}))).parts.find(x=>x.category==='gpu');
+ok(gpuFourSlot.size[0]===gpuOneSlot.size[0]*4&&gpuFourSlot.size[2]>gpuOneSlot.size[2]&&gpuFourSlot.size[1]>=1.1,'GPU no respeta longitud, slots y altura legible');
 const ram2=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r2',brand:'Forge',name:'2 DIMM',kit:2}})));
 const ram4=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r4',brand:'Forge',name:'4 DIMM',kit:4}})));
 ok(ram2.parts.find(x=>x.category==='ram').instances===2&&ram4.parts.find(x=>x.category==='ram').instances===4,'3D RAM 2/4 módulos incorrecto');
@@ -113,6 +116,9 @@ const mountedPsu=atxPsu.parts.find(x=>x.category==='psu');
 ok(mountedPsu.position.join(',')===atxPsu.layout.psuBay.join(',')&&mountedPsu.position[1]<0,'PSU no está anclada a la bahía inferior');
 const dual3d=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'o11',brand:'Lian Li',name:'O11 Dynamic',dims:'465×285×459 mm'},cooler:{cat:'cooler',id:'a36',brand:'Forge',name:'AIO 360',type:'Liquid',radSize:360}})));
 ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.archetype==='DUAL_CHAMBER_SHOWCASE'&&dual3d.layout.radiatorMounts.side&&dual3d.parts.find(x=>x.category==='cooler').mount==='side','dual chamber no prioriza el montaje lateral canónico');
+const specifiedCase=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'spec-case',brand:'Forge',name:'Measured showcase',dims:'600×300×550 mm',side:'Cristal templado doble',psuPos:'Trasera',gpuLen:450,rad:{top:240,side:360}}})));
+ok(specifiedCase.layout.size.join(',')==='3,6,5.5'&&specifiedCase.layout.family==='dual-chamber','chasis no respeta dimensiones y paneles declarados');
+ok(specifiedCase.layout.radiatorCapacity.top===240&&specifiedCase.layout.radiatorCapacity.front===0&&specifiedCase.layout.radiatorCapacity.side===360&&specifiedCase.layout.psuBay[0]<0,'anclajes de caja ignoran radiadores o cámara PSU declarados');
 ok(atx3d.camera.minDistance<atx3d.camera.maxDistance&&atx3d.camera.fov>=35&&atx3d.camera.fov<=45,'encuadre 3D no mantiene límites útiles para desktop/mobile');
 for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
 const mountedM2=createVisual3DScene({...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type:'M.2'}}}});
