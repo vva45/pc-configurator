@@ -3,6 +3,7 @@ import type { VisualCategory, VisualPart } from "@/lib/visual-build";
 
 export type CaseStyle = "STANDARD_TOWER" | "COMPACT_TOWER" | "WIDE_DUAL_CHAMBER" | "AQUARIUM" | "MINI_TOWER" | "OPEN_FRAME" | "HTPC" | "GENERIC";
 export interface CaseDimensions { height: number; width: number; depth: number; }
+export interface CaseFeatures { sidePanel?: string; psuPosition?: string; gpuClearanceMm?: number; radiatorMounts?: Partial<Record<"top" | "front" | "side" | "bottom" | "rear", number>> }
 export interface VisualHardwareProfile {
   category: VisualCategory;
   family?: string;
@@ -16,6 +17,7 @@ export interface VisualHardwareProfile {
   dimensions?: CaseDimensions;
   isLight: boolean;
   label: string;
+  caseFeatures?: CaseFeatures;
 }
 
 const DARK = "#171b1a";
@@ -70,7 +72,11 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
     case "case": {
       const dimensions = parseCaseDimensions(part.metadata.dimensions);
       const caseLight = /\b(WHITE|BLANCO|SNOW)\b/.test(value) && !/NEGRO\s*\/\s*BLANCO/.test(value);
-      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style: inferCaseStyle(part, dimensions), isLight: caseLight };
+      let radiatorMounts: CaseFeatures["radiatorMounts"];
+      if (part.metadata.radiatorMounts) {
+        try { radiatorMounts = JSON.parse(String(part.metadata.radiatorMounts)); } catch { radiatorMounts = undefined; }
+      }
+      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style: inferCaseStyle(part, dimensions), isLight: caseLight, caseFeatures: { sidePanel: String(part.metadata.sidePanel || ""), psuPosition: String(part.metadata.psuPosition || ""), gpuClearanceMm: typeof part.metadata.gpuClearanceMm === "number" ? part.metadata.gpuClearanceMm : undefined, radiatorMounts } };
     }
     case "mbo": return { ...base, primaryColor: light ? "#d8dcd8" : "#171b1a", secondaryColor: light ? "#8f9792" : "#505653", material: "pcb", metalness: .35, roughness: .42, isLight: light };
     case "cpu": return { ...base, primaryColor: "#c6cbc7", secondaryColor: "#313633", material: "metal", metalness: .9, roughness: .22, isLight: true };

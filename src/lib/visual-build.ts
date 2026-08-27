@@ -76,7 +76,12 @@ function metadata(category: VisualCategory, selected: Picked[]): VisualPart["met
   const part = selected[0] as Part;
   const p = values(part);
   switch (category) {
-    case "case": return { form: Array.isArray(p.form) ? p.form.join(" / ") : undefined, dimensions: text(p.dims), volumeL: number(p.vol) };
+    case "case": return {
+      form: Array.isArray(p.form) ? p.form.join(" / ") : undefined,
+      dimensions: text(p.dims), volumeL: number(p.vol), gpuClearanceMm: number(p.gpuLen),
+      psuPosition: text(p.psuPos), sidePanel: text(p.side),
+      radiatorMounts: p.rad && typeof p.rad === "object" ? JSON.stringify(p.rad) : undefined,
+    };
     case "mbo": return { form: text(p.form), dimmSlots: number(p.dimm) };
     case "cpu": return { socket: text(p.socket), cores: number(p.cores) };
     case "ram": return { modules: Math.min(8, selected.reduce((sum, item) => sum + (number(values(item).kit) || 1) * (item.qty || 1), 0)), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), type: text(p.memType) };
