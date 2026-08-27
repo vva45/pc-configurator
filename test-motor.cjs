@@ -117,7 +117,9 @@ ok(empty3d.parts.find(x=>x.category==='cpu').state==='next','3D next no se propa
 ok(createVisual3DScene(createVisualBuildModel(removed)).parts.find(x=>x.category==='gpu').state==='empty','3D remove no vuelve a ghost');
 for (const [label, candidate] of [['air', atx3d], ['aio-240', aio240], ['aio-360-showcase', dual3d], ['compact', createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'mini',brand:'Forge',name:'NR200 Mini-ITX',dims:'376×185×292 mm'},mbo:{cat:'mbo',id:'itx2',brand:'Forge',name:'Mini ITX',form:'Mini-ITX'},cooler:{cat:'cooler',id:'air',brand:'Forge',name:'Air tower'}}))) ]]) {
   ok(validateVisual3DScene(candidate).length===0,`3D ${label} placement inválido: ${validateVisual3DScene(candidate).join(',')}`);
-  for (const category of ['mbo','gpu','psu','storage']) ok(containsBox(candidate.layout.interior,candidate.parts.find(x=>x.category===category).bounds),`3D ${label} ${category} atraviesa el chasis`);
+  for (const part of candidate.parts) ok(containsBox(candidate.layout.interior,part.bounds),`3D ${label} ${part.category} atraviesa el chasis`);
+  const liquid=candidate.parts.find(x=>x.kind==='aio');
+  if(liquid) ok(liquid.tubePath.length>=3&&liquid.tubePath.every(point=>point.every((value,axis)=>value>=candidate.layout.interior.min[axis]&&value<=candidate.layout.interior.max[axis])),`3D ${label} deja salir los tubos AIO`);
 }
 
 console.log('CATÁLOGO: '+P.length+' piezas');
