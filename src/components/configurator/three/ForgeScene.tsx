@@ -2,7 +2,7 @@
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3 } from "three";
+import { CanvasTexture, CatmullRomCurve3, LinearFilter, MathUtils, PerspectiveCamera, Vector3 } from "three";
 import type { Group } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { Visual3DPart, Visual3DScene } from "@/lib/visual-3d";

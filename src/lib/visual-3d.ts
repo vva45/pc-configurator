@@ -62,7 +62,7 @@ export function createChassisLayout(profile: VisualHardwareProfile): ChassisLayo
     "dual-chamber": { name: "DUAL_CHAMBER_SHOWCASE", size: [2.95, 4.7, 4.65] }, compact: { name: "COMPACT_TOWER", size: [2.15, 4.15, 3.9] },
   };
   const base = archetypes[family]; const measured = profile.dimensions;
-  const size: Vector3Tuple = measured ? [clamp(measured.width / 100, base.size[0], 2.1, 3.15), clamp(measured.height / 100, base.size[1], 4.05, 5.5), clamp(measured.depth / 100, base.size[2], 3.85, 5.35)] : base.size;
+  const size: Vector3Tuple = measured ? [clamp(measured.width / 100, base.size[0], 1.2, 4.5), clamp(measured.height / 100, base.size[1], 3, 7.8), clamp(measured.depth / 100, base.size[2], 2.4, 7)] : base.size;
   const [w, h, d] = size; const shell: Box3Tuple = { min: [-w / 2, -h / 2, -d / 2], max: [w / 2, h / 2, d / 2] };
   const interior: Box3Tuple = { min: [shell.min[0] + .12, shell.min[1] + .12, shell.min[2] + .12], max: [shell.max[0] - .12, shell.max[1] - .12, shell.max[2] - .12] };
   // The board's rear edge sits at the rear I/O plane and its component face sits
@@ -89,7 +89,7 @@ export function createChassisLayout(profile: VisualHardwareProfile): ChassisLayo
     gpuBodyAnchor: [pcie[0] + .32, pcie[1], pcie[2]], sataTrayAnchors: sata, frontMountAnchor: front.center, topMountAnchor: top.center,
     sideMountAnchor: side?.center, storageCageAnchor: storage,
   };
-  const radiatorMounts = { top: top.center, front: front.center, side: side?.center }; const radiatorCapacity = { top: top.capacityMm, front: front.capacityMm, side: side?.capacityMm || 0 };
+  const radiatorMounts = { top: top.capacityMm ? top.center : undefined, front: front.capacityMm ? front.center : undefined, side: side?.center }; const radiatorCapacity = { top: top.capacityMm, front: front.capacityMm, side: side?.capacityMm || 0 };
   const order: RadiatorMount[] = family === "dual-chamber" ? ["side", "top", "front"] : ["top", "front", "side"];
   const preferredRadiatorMount = order.find(m => radiatorMounts[m] && radiatorCapacity[m] >= 240) ?? order.find(m => radiatorMounts[m])!;
   return { archetype: base.name, family, size, shell, interior, anchors, tray, motherboard: boardCenter, rearIo: anchors.rearIoZone, cpuSocket: cpu, ramSlots: ram, pcie, m2, psuBay: psu, storageBay: storage, expansionSlots: [pcie[0], pcie[1] - .4, pcie[2]], radiatorMounts, radiatorCapacity, preferredRadiatorMount };
