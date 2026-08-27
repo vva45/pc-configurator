@@ -3,7 +3,14 @@ import type { VisualCategory, VisualPart } from "@/lib/visual-build";
 
 export type CaseStyle = "STANDARD_TOWER" | "COMPACT_TOWER" | "WIDE_DUAL_CHAMBER" | "AQUARIUM" | "MINI_TOWER" | "OPEN_FRAME" | "HTPC" | "GENERIC";
 export interface CaseDimensions { height: number; width: number; depth: number; }
-export interface CaseFeatures { sidePanel?: string; psuPosition?: string; gpuClearanceMm?: number; radiatorMounts?: Partial<Record<"top" | "front" | "side" | "bottom" | "rear", number>> }
+export type CasePanelMaterial = "glass" | "mesh" | "solid";
+export interface CaseFeatures {
+  sidePanel?: string;
+  psuPosition?: string;
+  gpuClearanceMm?: number;
+  radiatorMounts?: Partial<Record<"top" | "front" | "side" | "bottom" | "rear", number>>;
+  panels: { window: CasePanelMaterial; front: CasePanelMaterial; rear: "solid" };
+}
 export interface VisualHardwareProfile {
   category: VisualCategory;
   family?: string;
@@ -49,6 +56,16 @@ export function inferCaseStyle(part?: Pick<VisualPart, "name" | "metadata">, dim
   return dimensions ? "STANDARD_TOWER" : "GENERIC";
 }
 
+/** Derives visible panels from the catalog's per-case enclosure description. */
+export function inferCasePanels(part: Pick<VisualPart, "name" | "metadata">, style: CaseStyle): CaseFeatures["panels"] {
+  const description = String(part.metadata.sidePanel || "").toUpperCase();
+  const name = (part.name || "").toUpperCase();
+  const window = /CRISTAL|GLASS/.test(description) ? "glass" : /MALLA|MESH/.test(description) ? "mesh" : "solid";
+  const panoramic = style === "AQUARIUM" || style === "WIDE_DUAL_CHAMBER" || /DOBLE|TRES CARAS/.test(description);
+  const airflowFront = /AIRFLOW|MESH|TORRENT|500DX|LANCOOL|POP AIR|MESHIFY/.test(name);
+  return { window, front: panoramic ? "glass" : airflowFront ? "mesh" : "solid", rear: "solid" };
+}
+
 export function gpuFamilyLabel(part: Pick<Part, "brand" | "name">): { label: string; vendor: "nvidia" | "amd" | "generic" } {
   const value = `${part.brand} ${part.name}`.toUpperCase();
   if (/NVIDIA|GEFORCE|\bRTX\b|\bGTX\b/.test(value)) {
@@ -71,12 +88,13 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
   switch (part.category) {
     case "case": {
       const dimensions = parseCaseDimensions(part.metadata.dimensions);
+      const style = inferCaseStyle(part, dimensions);
       const caseLight = /\b(WHITE|BLANCO|SNOW)\b/.test(value) && !/NEGRO\s*\/\s*BLANCO/.test(value);
       let radiatorMounts: CaseFeatures["radiatorMounts"];
       if (part.metadata.radiatorMounts) {
         try { radiatorMounts = JSON.parse(String(part.metadata.radiatorMounts)); } catch { radiatorMounts = undefined; }
       }
-      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style: inferCaseStyle(part, dimensions), isLight: caseLight, caseFeatures: { sidePanel: String(part.metadata.sidePanel || ""), psuPosition: String(part.metadata.psuPosition || ""), gpuClearanceMm: typeof part.metadata.gpuClearanceMm === "number" ? part.metadata.gpuClearanceMm : undefined, radiatorMounts } };
+      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style, isLight: caseLight, caseFeatures: { sidePanel: String(part.metadata.sidePanel || ""), psuPosition: String(part.metadata.psuPosition || ""), gpuClearanceMm: typeof part.metadata.gpuClearanceMm === "number" ? part.metadata.gpuClearanceMm : undefined, radiatorMounts, panels: inferCasePanels(part, style) } };
     }
     case "mbo": return { ...base, primaryColor: light ? "#d8dcd8" : "#171b1a", secondaryColor: light ? "#8f9792" : "#505653", material: "pcb", metalness: .35, roughness: .42, isLight: light };
     case "cpu": return { ...base, primaryColor: "#c6cbc7", secondaryColor: "#313633", material: "metal", metalness: .9, roughness: .22, isLight: true };
