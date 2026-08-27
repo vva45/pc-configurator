@@ -68,22 +68,17 @@ export function createChassisLayout(profile: VisualHardwareProfile): ChassisLayo
   // The board's rear edge sits at the rear I/O plane and its component face sits
   // immediately in front of the tray. These anchors are the assembly grammar;
   // renderers must not invent per-product offsets.
-  const tray = normalized(interior, .035, .62, .33); const boardCenter: Vector3Tuple = [tray[0] + .055, tray[1], tray[2]];
+  const tray = normalized(interior, .035, .62, .3); const boardCenter: Vector3Tuple = [tray[0] + .055, tray[1], tray[2]];
   const cpu = [boardCenter[0] + .12, boardCenter[1] + .4, boardCenter[2] - .2] as Vector3Tuple;
   const ram = [cpu[0] + .02, cpu[1], cpu[2] + .66] as Vector3Tuple; const pcie = [boardCenter[0] + .31, boardCenter[1] - .67, interior.min[2] + .18] as Vector3Tuple;
   const storage = family === "dual-chamber" ? normalized(interior, .13, .25, .78) : normalized(interior, .87, .25, .82);
   // Reserve an ATX-sized lower bay even when the selected unit is SFX. This
   // keeps every fallback inside the chassis and makes dual-chamber PSUs read as
   // rear-chamber hardware rather than a box floating at center.
-  const rearPsu = /TRASERA|REAR/i.test(profile.caseFeatures?.psuPosition || "");
-  const psu: Vector3Tuple = [rearPsu ? interior.min[0] + .78 : 0, interior.min[1] + .62, rearPsu ? normalized(interior, .5, .15, .7)[2] : interior.min[2] + .8];
-  const specifiedRadiators = profile.caseFeatures?.radiatorMounts;
-  const topCapacity = specifiedRadiators ? specifiedRadiators.top || 0 : family === "compact" ? 240 : d >= 4.5 ? 360 : 280;
-  const frontCapacity = specifiedRadiators ? specifiedRadiators.front || 0 : family === "compact" ? 240 : h >= 4.7 ? 360 : 280;
-  const sideCapacity = specifiedRadiators ? specifiedRadiators.side || 0 : family === "dual-chamber" ? 360 : 0;
-  const top: MountPlane = { mount: "top", center: normalized(interior, .55, .955, .54), normal: [0, -1, 0], longAxis: "z", capacityMm: topCapacity };
-  const front: MountPlane = { mount: "front", center: normalized(interior, .55, .55, .975), normal: [0, 0, -1], longAxis: "y", capacityMm: frontCapacity };
-  const side: MountPlane | undefined = sideCapacity ? { mount: "side", center: normalized(interior, .12, .55, .7), normal: [1, 0, 0], longAxis: "y", capacityMm: sideCapacity } : undefined;
+  const psu: Vector3Tuple = [family === "dual-chamber" ? interior.min[0] + .78 : 0, interior.min[1] + .62, family === "dual-chamber" ? normalized(interior, .5, .15, .7)[2] : interior.min[2] + .8];
+  const top: MountPlane = { mount: "top", center: normalized(interior, .55, .955, .54), normal: [0, -1, 0], longAxis: "z", capacityMm: family === "compact" ? 240 : d >= 4.5 ? 360 : 280 };
+  const front: MountPlane = { mount: "front", center: normalized(interior, .55, .55, .975), normal: [0, 0, -1], longAxis: "y", capacityMm: family === "compact" ? 240 : h >= 4.7 ? 360 : 280 };
+  const side: MountPlane | undefined = family === "dual-chamber" ? { mount: "side", center: normalized(interior, .12, .55, .7), normal: [1, 0, 0], longAxis: "y", capacityMm: 360 } : undefined;
   const m2: Vector3Tuple[] = [[cpu[0] + .015, boardCenter[1] - .28, boardCenter[2] - .02], [cpu[0] + .015, boardCenter[1] - .55, boardCenter[2] + .38]];
   const sata: Vector3Tuple[] = [storage, [storage[0], storage[1] + .42, storage[2]]];
   const anchors: ChassisAnchors = {
@@ -110,20 +105,16 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   const p = model.parts; const caseProfile = createVisualHardwareProfile(p.case!); const layout = createChassisLayout(caseProfile);
   const mboProfile = createVisualHardwareProfile(p.mbo!); const profile = (part: VisualPart) => createVisualHardwareProfile(part, mboProfile);
   const ff = formFactor(p.mbo?.metadata.form); const boardSize: Vector3Tuple = [.11, Math.min(ff.h, layout.size[1] - .75), Math.min(ff.d, layout.size[2] - .65)];
-  const interiorGpuMm = (layout.interior.max[2] - layout.anchors.gpuPcieAnchor[2] - .08) * 100;
-  const caseGpuMm = caseProfile.caseFeatures?.gpuClearanceMm || interiorGpuMm;
-  const gpuLength = clamp(p.gpu?.metadata.lengthMm, 280, 150, Math.min(520, interiorGpuMm, caseGpuMm)) / 100;
+  const maxGpu = (layout.interior.max[2] - layout.anchors.gpuPcieAnchor[2] - .08) * 100; const gpuLength = clamp(p.gpu?.metadata.lengthMm, 280, 170, Math.min(400, maxGpu)) / 100;
   // The GPU touches the PCIe face without occupying the board slab, and grows
   // from the rear bracket toward the front (+Z).
-  const gpuSlots = clamp(p.gpu?.metadata.slots, 2.5, 1, 4.5);
-  const gpuWidth = gpuSlots * .2;
-  const gpuHeight = 1.16;
+  const gpuWidth = .62;
   const gpuPosition: Vector3Tuple = [layout.motherboard[0] + .055 + gpuWidth / 2, layout.anchors.gpuPcieAnchor[1], layout.anchors.gpuPcieAnchor[2] + gpuLength / 2];
   const parts: Visual3DPart[] = [
     desc(p.mbo!, "motherboard", layout.motherboard, mboProfile, boardSize, [1, boardSize[1] / 2.9, boardSize[2] / 2.45]),
     desc(p.cpu!, "cpu", layout.anchors.cpuSocketAnchor, profile(p.cpu!), [.16, .48, .48]),
     desc(p.ram!, "ram", layout.anchors.ramBankAnchor, profile(p.ram!), [.14, 1.02, .62], [1, 1, 1], Math.round(clamp(p.ram?.metadata.modules, 2, 1, 4))),
-    desc(p.gpu!, "gpu", gpuPosition, profile(p.gpu!), [gpuWidth, gpuHeight, gpuLength], [gpuWidth / .5, gpuHeight / 1.16, gpuLength / 2.75]),
+    desc(p.gpu!, "gpu", gpuPosition, profile(p.gpu!), [gpuWidth, .68, gpuLength], [1, 1, gpuLength / 2.75]),
   ];
   const aio = aioGeometry(p.cooler?.metadata.radiatorMm, p.cooler?.metadata.fans);
   if (p.cooler?.metadata.mode === "aio") {
