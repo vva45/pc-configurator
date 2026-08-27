@@ -75,7 +75,15 @@ export function createChassisLayout(profile: VisualHardwareProfile): ChassisLayo
   // Reserve an ATX-sized lower bay even when the selected unit is SFX. This
   // keeps every fallback inside the chassis and makes dual-chamber PSUs read as
   // rear-chamber hardware rather than a box floating at center.
-  const psu: Vector3Tuple = [family === "dual-chamber" ? interior.min[0] + .78 : 0, interior.min[1] + .62, family === "dual-chamber" ? normalized(interior, .5, .15, .7)[2] : interior.min[2] + .8];
+  const psuPosition = String(profile.caseFeatures?.psuPosition || "").toLowerCase();
+  const rearChamberPsu = family === "dual-chamber" || /trasera|rear/.test(psuPosition);
+  const sidePsu = /lateral|side/.test(psuPosition);
+  const topPsu = /torrent/.test(profile.label);
+  const psu: Vector3Tuple = rearChamberPsu
+    ? [interior.min[0] + .78, interior.min[1] + .62, normalized(interior, .5, .15, .7)[2]]
+    : sidePsu
+      ? [interior.min[0] + .72, interior.min[1] + .82, interior.max[2] - .82]
+      : [0, topPsu ? interior.max[1] - .62 : interior.min[1] + .62, interior.min[2] + .8];
   const declaredRadiators = profile.caseFeatures?.radiatorMounts;
   const topCapacity = declaredRadiators ? finite(declaredRadiators.top, 0) : family === "compact" ? 240 : d >= 4.5 ? 360 : 280;
   const frontCapacity = declaredRadiators ? finite(declaredRadiators.front, 0) : family === "compact" ? 240 : h >= 4.7 ? 360 : 280;

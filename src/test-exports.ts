@@ -11,7 +11,7 @@ import { queryCatalog } from "./lib/catalog-server";
 import { analyzeForgeBuild, calculateForgeScore, generateForgeInsights } from "./lib/forge-intelligence";
 import { createVisualBuildModel, getInitialVisualPart, gpuFamilyLabel, visualCapacityLabel } from "./lib/visual-build";
 import { containsBox, createVisual3DScene, validateVisual3DScene } from "./lib/visual-3d";
-import { aioGeometry, createVisualHardwareProfile, inferCaseStyle, parseCaseDimensions } from "./lib/visual-hardware-profile";
+import { aioGeometry, createVisualHardwareProfile, inferCasePanels, inferCaseStyle, parseCaseDimensions } from "./lib/visual-hardware-profile";
 import { getAioSchematicGeometry } from "./lib/aio-schematic";
 import { getTabSwipeGestureOwner, isIntentionalTabSwipe } from "./lib/tab-swipe";
 
@@ -20,6 +20,6 @@ export const __t = {
   FILTERS, KEYSPECS, PLATFORM, REGIONS, storesFor, searchTerm, queryCatalog,
   analyzeForgeBuild, calculateForgeScore, generateForgeInsights,
   createVisualBuildModel, getInitialVisualPart, gpuFamilyLabel, visualCapacityLabel, createVisual3DScene, containsBox, validateVisual3DScene,
-  aioGeometry, getAioSchematicGeometry, createVisualHardwareProfile, inferCaseStyle, parseCaseDimensions,
+  aioGeometry, getAioSchematicGeometry, createVisualHardwareProfile, inferCasePanels, inferCaseStyle, parseCaseDimensions,
   getTabSwipeGestureOwner, isIntentionalTabSwipe,
 };

@@ -1,6 +1,6 @@
 const {__t}=require('./.test-build/t.cjs');
 const {readFileSync}=require('node:fs');
-const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,containsBox,validateVisual3DScene,aioGeometry,getAioSchematicGeometry,createVisualHardwareProfile,inferCaseStyle,parseCaseDimensions,getTabSwipeGestureOwner,isIntentionalTabSwipe}=__t;
+const {P,gate,runPost,calcPower,CATS,CAT,FILTERS,KEYSPECS,REGIONS,storesFor,searchTerm,calculateForgeScore,generateForgeInsights,createVisualBuildModel,getInitialVisualPart,gpuFamilyLabel,visualCapacityLabel,createVisual3DScene,containsBox,validateVisual3DScene,aioGeometry,getAioSchematicGeometry,createVisualHardwareProfile,inferCasePanels,inferCaseStyle,parseCaseDimensions,getTabSwipeGestureOwner,isIntentionalTabSwipe}=__t;
 let pass=0,fail=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  ✗ '+m));};
 const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)throw new Error('no existe: '+cat+' '+n); return p;};
@@ -64,6 +64,9 @@ const smallCase=createVisualBuildModel(B({case:{cat:'case',id:'small',brand:'Coo
 const largeCase=createVisualBuildModel(B({case:{cat:'case',id:'large',brand:'Forge',name:'Full tower',dims:'580×240×560 mm'}})).parts.case;
 ok(createVisualHardwareProfile(smallCase).dimensions.height!==createVisualHardwareProfile(largeCase).dimensions.height,'caja pequeña y grande comparten dimensiones');
 ok(inferCaseStyle({name:'Lian Li O11 Dynamic',metadata:{dimensions:'465×285×459 mm'}})==='WIDE_DUAL_CHAMBER'&&inferCaseStyle({name:'Mid tower',metadata:{dimensions:'453×230×466 mm'}})==='STANDARD_TOWER','perfiles dual chamber/standard incorrectos');
+ok(inferCasePanels({name:'Pure Base 500DX',metadata:{sidePanel:'Cristal templado'}},'STANDARD_TOWER').front==='mesh'&&inferCasePanels({name:'Pure Base 500DX',metadata:{sidePanel:'Cristal templado'}},'STANDARD_TOWER').window==='glass','Pure Base 500DX no conserva frontal mallado y una sola ventana lateral');
+ok(inferCasePanels({name:'Workstation',metadata:{sidePanel:'Acero'}},'STANDARD_TOWER').window==='solid','caja de acero se representa como cristal');
+ok(inferCasePanels({name:'O11 Dynamic',metadata:{sidePanel:'Cristal templado doble'}},'WIDE_DUAL_CHAMBER').front==='glass','showcase de doble cristal pierde el panel frontal');
 const whiteMbo=createVisualHardwareProfile(createVisualBuildModel(B({mbo:{cat:'mbo',id:'mw',brand:'Gigabyte',name:'AERO G WHITE'}})).parts.mbo);
 const darkMbo=createVisualHardwareProfile(createVisualBuildModel(B({mbo:{cat:'mbo',id:'md',brand:'MSI',name:'Tomahawk'}})).parts.mbo);
 ok(whiteMbo.isLight&&!darkMbo.isLight,'resolver white/default motherboard incorrecto');
@@ -130,6 +133,7 @@ const specifiedCase=createVisual3DScene(createVisualBuildModel(B({case:{cat:'cas
 ok(specifiedCase.layout.size.join(',')==='3,6,5.5'&&specifiedCase.layout.family==='dual-chamber','chasis no respeta dimensiones y paneles declarados');
 ok(specifiedCase.layout.radiatorCapacity.top===240&&specifiedCase.layout.radiatorCapacity.front===0&&specifiedCase.layout.radiatorCapacity.side===360&&specifiedCase.layout.psuBay[0]<0,'anclajes de caja ignoran radiadores o cámara PSU declarados');
 ok(atx3d.camera.minDistance<atx3d.camera.maxDistance&&atx3d.camera.fov>=35&&atx3d.camera.fov<=45,'encuadre 3D no mantiene límites útiles para desktop/mobile');
+ok(atx3d.camera.position[0]>0&&atx3d.camera.position[2]>0&&readFileSync('src/components/configurator/three/ThreeWorkbench.tsx','utf8').includes('scaleX(-1)'),'cámara inicial no presenta trasera/PSU a la izquierda y frontal a la derecha');
 for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
 const mountedM2=createVisual3DScene({...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type:'M.2'}}}});
 ok(mountedM2.parts.find(x=>x.category==='storage').position.join(',')===mountedM2.layout.anchors.m2Anchors[0].join(','),'M.2 no permanece anclado a la placa');
