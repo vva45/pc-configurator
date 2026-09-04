@@ -1,36 +1,387 @@
 "use client";
+/* ═══════════════════════════════════════════════════════════════════
+   RENDERIZADOR 3D — da forma a cada pieza de la escena
+
+   Recibe la escena ya colocada por visual-3d.ts (posiciones y tamaños en
+   unidades de 100 mm) y construye cada componente con la geometría que
+   tiene de verdad: un PCB con sus zócalos, una gráfica con su carcasa,
+   ventiladores y soporte, un disipador con aletas y heatpipes, un
+   radiador con depósitos. Nada de cajas lisas.
+
+   La iluminación viene de un entorno de estudio generado en el momento
+   (RoomEnvironment), sin descargar nada: sin él, los materiales metálicos
+   se ven negros, que era el mal de la versión anterior.
+   ═══════════════════════════════════════════════════════════════════ */
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3 } from "three";
-import type { Group } from "three";
+import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import type { Visual3DPart, Visual3DScene } from "@/lib/visual-3d";
+import type { Vector3Tuple, Visual3DPart, Visual3DScene } from "@/lib/visual-3d";
 import type { VisualCategory } from "@/lib/visual-build";
 
-const accents = { empty: "#315543", installed: "#000000", next: "#dfb85e", warning: "#e3a83c", conflict: "#e05a48" } as const;
-function Material({ part, active, color = part.profile.primaryColor, metalness = part.profile.metalness, roughness = part.profile.roughness }: { part: Visual3DPart; active: boolean; color?: string; metalness?: number; roughness?: number }) {
- const ghost = part.state === "empty" || part.state === "next"; const accent = active ? "#dfb85e" : accents[part.state];
- return <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} transparent={ghost} opacity={ghost ? .2 : 1} wireframe={part.state === "empty"} emissive={accent} emissiveIntensity={active ? .28 : part.state === "installed" ? .015 : .14}/>;
+/* ── Materiales ──────────────────────────────────────────────────────── */
+type Mat = { color: string; metalness: number; roughness: number; emissive?: string; emissiveIntensity?: number; transparent?: boolean; opacity?: number };
+const M = {
+  steel: { color: "#262b29", metalness: 0.45, roughness: 0.55 },
+  steelLight: { color: "#d4d8d4", metalness: 0.4, roughness: 0.5 },
+  tray: { color: "#2b312e", metalness: 0.5, roughness: 0.58 },
+  pcb: { color: "#16261c", metalness: 0.15, roughness: 0.75 },
+  pcbLight: { color: "#cfd4cf", metalness: 0.2, roughness: 0.7 },
+  alu: { color: "#b6bab6", metalness: 0.85, roughness: 0.38 },
+  aluDark: { color: "#3b403e", metalness: 0.8, roughness: 0.42 },
+  aluMid: { color: "#6e7572", metalness: 0.8, roughness: 0.4 },
+  plastic: { color: "#181c1a", metalness: 0.1, roughness: 0.62 },
+  plasticLight: { color: "#e2e5e1", metalness: 0.05, roughness: 0.55 },
+  copper: { color: "#b87333", metalness: 0.95, roughness: 0.3 },
+  gold: { color: "#dfb85e", metalness: 0.9, roughness: 0.32 },
+  ihs: { color: "#c9cdc9", metalness: 0.95, roughness: 0.22 },
+  fanFrame: { color: "#121614", metalness: 0.15, roughness: 0.65 },
+  blade: { color: "#0c100e", metalness: 0.1, roughness: 0.5, transparent: true, opacity: 0.88 },
+  rubber: { color: "#0d100f", metalness: 0.05, roughness: 0.9 },
+  wood: { color: "#5b3a24", metalness: 0, roughness: 0.82 },
+  black: { color: "#0a0d0b", metalness: 0.3, roughness: 0.6 },
+} satisfies Record<string, Mat>;
+
+const STATE = { empty: "#5f7d6a", installed: "#000000", next: "#dfb85e", warning: "#e3a83c", conflict: "#e05a48" } as const;
+
+/** Material PBR con el estado de la pieza encima: fantasma si falta, dorado si es la siguiente, rojo si hay conflicto. */
+function Skin({ part, active, base, tint }: { part: Visual3DPart; active?: boolean; base: Mat; tint?: string }) {
+  const ghost = part.state === "empty" || part.state === "next";
+  const accent = active ? "#dfb85e" : STATE[part.state];
+  const intensity = active ? 0.22 : part.state === "installed" ? 0 : part.state === "next" ? 0.35 : part.state === "empty" ? 0.12 : 0.3;
+  return <meshStandardMaterial color={ghost ? (part.state === "next" ? "#8a7a4a" : "#3f5a4b") : tint || base.color} metalness={ghost ? 0.1 : base.metalness} roughness={ghost ? 0.7 : base.roughness}
+    transparent={ghost || base.transparent} opacity={ghost ? (part.state === "next" ? 0.28 : 0.16) : base.opacity ?? 1} depthWrite={!ghost}
+    emissive={accent} emissiveIntensity={intensity} />;
 }
-function Interactive({ part, children, onSelect, onHover }: { part: Visual3DPart; children: React.ReactNode; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void }) {
- return <group position={part.position} onClick={e=>{e.stopPropagation();onSelect(part)}} onPointerOver={e=>{e.stopPropagation();document.body.style.cursor="pointer";onHover(part)}} onPointerOut={()=>{document.body.style.cursor="";onHover()}}>{children}</group>;
+
+/* ── Primitivas ──────────────────────────────────────────────────────── */
+type V3 = Vector3Tuple;
+const AXIS: Record<"x" | "y" | "z", V3> = { x: [0, 0, -Math.PI / 2], y: [0, 0, 0], z: [Math.PI / 2, 0, 0] };
+
+function Box({ size, at = [0, 0, 0], mat, part, active, tint, shadow = true }: { size: V3; at?: V3; mat: Mat; part?: Visual3DPart; active?: boolean; tint?: string; shadow?: boolean }) {
+  return <mesh position={at} castShadow={shadow} receiveShadow={shadow}><boxGeometry args={size} />{part ? <Skin part={part} active={active} base={mat} tint={tint} /> : <meshStandardMaterial {...mat} />}</mesh>;
 }
-function Fan({ part, active, radius=.32 }: {part:Visual3DPart;active:boolean;radius?:number}) { return <group><mesh rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[radius,radius,.1,24]}/><Material part={part} active={active} color="#202622"/></mesh><mesh rotation={[0,Math.PI/2,0]} position={[.06,0,0]}><torusGeometry args={[radius*.67,.026,8,24]}/><meshStandardMaterial color="#87928c" metalness={.5} roughness={.45}/></mesh></group>; }
-function Tubes({part,active}:{part:Visual3DPart;active:boolean}) { const paths=part.tubePaths!; const curves=useMemo(()=>paths.map(path=>new CatmullRomCurve3(path.map(point=>new Vector3(point[0]-part.position[0],point[1]-part.position[1],point[2]-part.position[2])))),[part.position,paths]); return <>{curves.map((curve,i)=><mesh key={i}><tubeGeometry args={[curve,32,.045,9,false]}/><Material part={part} active={active} color="#111714" roughness={.82}/></mesh>)}</>; }
-type Vector3TupleLike=[number,number,number];
-function Radiator({part,active}:{part:Visual3DPart;active:boolean}) { const [w,h,d]=part.size, vertical=part.mount!=="top", long=vertical?h:d, spacing=long/part.instances; return <group><mesh><boxGeometry args={part.size}/><Material part={part} active={active} color="#252c28"/></mesh>{Array.from({length:part.instances},(_,i)=>{const offset=(i-(part.instances-1)/2)*spacing; const position:Vector3TupleLike=part.mount==="top"?[0,-h/2-.055,offset]:part.mount==="front"?[0,offset,-d/2-.055]:[w/2+.055,offset,0]; const rotation:Vector3TupleLike=part.mount==="top"?[0,0,-Math.PI/2]:part.mount==="front"?[0,Math.PI/2,0]:[0,0,0]; return <group key={i} position={position} rotation={rotation}><Fan part={part} active={active} radius={Math.min(.55,spacing*.42)}/></group>})}</group>; }
-function Component({part,active}:{part:Visual3DPart;active:boolean}) {
- if(part.kind==="motherboard") { const [w,h,d]=part.size; return <group><mesh><boxGeometry args={part.size}/><Material part={part} active={active}/></mesh><mesh position={[w/2+.035,h*.25,-d*.28]}><boxGeometry args={[.06,h*.2,d*.24]}/><Material part={part} active={active} color={part.profile.secondaryColor}/></mesh></group>; }
- if(part.kind==="cpu") return <mesh><boxGeometry args={part.size}/><Material part={part} active={active} color="#d9dedb" metalness={.92} roughness={.18}/></mesh>;
- if(part.kind==="ram") return <>{Array.from({length:part.instances},(_,i)=><mesh key={i} position={[0,0,(i-(part.instances-1)/2)*.16]}><boxGeometry args={[part.size[0],part.size[1],.1]}/><Material part={part} active={active}/></mesh>)}</>;
- if(part.kind==="gpu") { const connectors=part.metadata.hpwr?1:Math.max(1,Math.min(3,Number(part.metadata.conn8||0)+Number(part.metadata.conn6||0))); const [w,h,d]=part.size; return <group><mesh><boxGeometry args={part.size}/><Material part={part} active={active}/></mesh><mesh position={[-w/2-.04,-.05,-d/2+.06]}><boxGeometry args={[.08,h*.9,.12]}/><meshStandardMaterial color="#aeb6b1" metalness={.8}/></mesh><mesh position={[w/2+.006,0,0]}><boxGeometry args={[.012,h*.5,d*.55]}/><meshStandardMaterial color={part.profile.accentColor} metalness={.55} roughness={.4}/></mesh>{Array.from({length:connectors},(_,i)=><mesh key={i} position={[0,h/2+.05,d*.28-i*.25]}><boxGeometry args={[.28,.1,.18]}/><meshStandardMaterial color="#090c0a"/></mesh>)}</group>; }
- if(part.kind==="air-cooler") return <group><mesh><boxGeometry args={[part.size[0]-.12,part.size[1],part.size[2]]}/><Material part={part} active={active} color="#59625d"/></mesh><group position={[part.size[0]/2-.04,0,0]}><Fan part={part} active={active}/></group></group>;
- if(part.kind==="aio") return <><Radiator part={part} active={active}/><Tubes part={part} active={active}/><group position={part.connectionTarget!.map((v,i)=>v-part.position[i]) as Vector3TupleLike}><mesh rotation={[0,Math.PI/2,0]}><cylinderGeometry args={[.27,.27,.18,24]}/><Material part={part} active={active}/></mesh></group></>;
- if(part.kind==="m2") return <>{Array.from({length:part.instances},(_,i)=><group key={i} position={[.1,-i*.3,i*.16]}><mesh><boxGeometry args={[.1,.22,.82]}/><Material part={part} active={active} color="#244936"/></mesh><mesh position={[.06,0,-.36]}><boxGeometry args={[.02,.2,.09]}/><meshStandardMaterial color="#dfb85e" metalness={.75}/></mesh></group>)}</>;
- if(part.kind==="psu") return <group><mesh><boxGeometry args={part.size}/><Material part={part} active={active}/></mesh><group position={[part.size[0]/2+.055,0,0]}><Fan part={part} active={active} radius={Math.min(.38,part.size[1]*.32)}/></group></group>;
- if(part.kind==="fan") return <>{Array.from({length:part.instances},(_,i)=><group key={i} position={[0,(i-(part.instances-1)/2)*.76,0]}><Fan part={part} active={active}/></group>)}</>;
- const sizes:Partial<Record<Visual3DPart["kind"],Vector3TupleLike>>={"drive-25":[.18,1.0,.72],"drive-35":[.28,1.35,1.0],expansion:[.32,.26,1.5],rgb:[.08,3.5,.08]}; return <mesh><boxGeometry args={sizes[part.kind]||[.5,.5,.5]}/><Material part={part} active={active}/></mesh>;
+function Cyl({ r, h, axis = "y", at = [0, 0, 0], mat, part, active, seg = 28 }: { r: number; h: number; axis?: "x" | "y" | "z"; at?: V3; mat: Mat; part?: Visual3DPart; active?: boolean; seg?: number }) {
+  return <mesh position={at} rotation={AXIS[axis]} castShadow receiveShadow><cylinderGeometry args={[r, r, h, seg]} />{part ? <Skin part={part} active={active} base={mat} /> : <meshStandardMaterial {...mat} />}</mesh>;
 }
-function Chassis({scene}:{scene:Visual3DScene}) { const {size}=scene.layout; const [w,h,d]=size; const t=.08; const panels=scene.chassis.profile.caseFeatures?.panels || {window:"glass",front:"solid",rear:"solid"}; const glass=(color="#7ba18d")=><meshPhysicalMaterial color={color} transparent opacity={.1} roughness={.12} transmission={.55}/>; const panel=(kind:"glass"|"mesh"|"solid")=>kind==="glass"?glass():kind==="mesh"?<meshStandardMaterial color="#40544a" wireframe transparent opacity={.48} roughness={.5}/>:<meshStandardMaterial color="#303a35" metalness={.72} roughness={.46}/>; return <group><mesh position={[scene.layout.tray[0],0,0]}><boxGeometry args={[t,h*.91,d*.9]}/><meshStandardMaterial color="#26352d" roughness={.64}/></mesh><mesh position={[0,-h/2+t/2,0]}><boxGeometry args={[w,t,d]}/><meshStandardMaterial color="#36413c" metalness={.7}/></mesh><mesh position={[0,h/2-t/2,0]}><boxGeometry args={[w,t,d]}/><meshStandardMaterial color="#36413c" metalness={.7}/></mesh><mesh position={[0,0,-d/2+t/2]}><boxGeometry args={[w,h,t]}/>{panel("solid")}</mesh><mesh position={[0,0,d/2-t/2]}><boxGeometry args={[w,h,t]}/>{panel(panels.front)}</mesh>{scene.layout.family==="dual-chamber"&&<mesh position={[-w*.23,-h*.29,0]}><boxGeometry args={[w*.42,h*.32,d*.9]}/><meshStandardMaterial color="#1d2822" roughness={.5}/></mesh>}<mesh position={[w/2-t/2,0,0]}><boxGeometry args={[t,h*.94,d*.94]}/>{panel(panels.window)}</mesh></group>; }
-export default function ForgeScene({scene,active,onSelect,onHover,resetSignal}:{scene:Visual3DScene;active?:VisualCategory;onSelect:(p:Visual3DPart)=>void;onHover:(p?:Visual3DPart)=>void;resetSignal:number}) { const controls=useRef<OrbitControlsImpl>(null), assembly=useRef<Group>(null); const {camera,size,invalidate}=useThree(); const cameraRef=useRef(camera); const visibleParts=scene.parts.filter(part=>part.state!=="empty"); useEffect(()=>{const fitted=cameraRef.current; if(!(fitted instanceof PerspectiveCamera))return; const [w,h,d]=scene.layout.size; const radius=Math.hypot(w,h,d)/2; const vfov=MathUtils.degToRad(fitted.fov); const hfov=2*Math.atan(Math.tan(vfov/2)*fitted.aspect); const distance=radius/Math.sin(Math.min(vfov,hfov)/2)*1.03; const direction=new Vector3(1,.48,1.18).normalize(); fitted.position.copy(new Vector3(...scene.focusTarget)).addScaledVector(direction,distance); fitted.near=Math.max(.05,distance-radius*1.4); fitted.far=distance+radius*5; fitted.updateProjectionMatrix(); controls.current?.target.set(...scene.focusTarget); controls.current?.update(); invalidate()},[invalidate,resetSignal,scene,size.width,size.height]); return <><ambientLight intensity={1.5} color="#e8f2eb"/><hemisphereLight args={["#d9eee4","#294536",1.9]}/><directionalLight position={[5,7,6]} intensity={3} color="#ffe9bd"/><directionalLight position={[-4,2,5]} intensity={2.1} color="#79cbb7"/><pointLight position={[1,1,0]} intensity={2.4} distance={8} color="#a7d3bd"/><group ref={assembly}><Chassis scene={scene}/>{visibleParts.map(part=><Interactive key={part.id} part={part} onSelect={onSelect} onHover={onHover}><Component part={part} active={active===part.category}/></Interactive>)}</group><ContactShadows position={[0,scene.bounds.min[1]-.05,0]} opacity={.3} scale={8} blur={2.8} far={6} frames={1}/><OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} maxDistance={scene.camera.maxDistance} minPolarAngle={.42} maxPolarAngle={1.62} minAzimuthAngle={-.4} maxAzimuthAngle={2.25} enablePan={false} onChange={()=>invalidate()}/></>; }
+
+/** Ventilador: marco cuadrado, aro, siete palas y buje. `axis` es la dirección en la que sopla. */
+function Fan({ size, axis, at = [0, 0, 0], part, active, light }: { size: number; axis: "x" | "y" | "z"; at?: V3; part?: Visual3DPart; active?: boolean; light?: boolean }) {
+  const r = size / 2 - 0.05, blades = 7;
+  const rot = AXIS[axis];
+  const frame = light ? M.plasticLight : M.fanFrame;
+  return <group position={at} rotation={rot}>
+    <mesh castShadow receiveShadow><boxGeometry args={[size, 0.25, size]} />{part ? <Skin part={part} active={active} base={frame} /> : <meshStandardMaterial {...frame} />}</mesh>
+    <mesh position={[0, 0.13, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[r - 0.02, 0.018, 8, 40]} /><meshStandardMaterial {...M.aluDark} /></mesh>
+    <mesh position={[0, 0.02, 0]}><cylinderGeometry args={[r, r, 0.03, 40]} /><meshStandardMaterial color="#080b0a" metalness={0.2} roughness={0.7} transparent opacity={0.55} /></mesh>
+    {Array.from({ length: blades }, (_, i) => <mesh key={i} rotation={[0, (i / blades) * Math.PI * 2, 0]} position={[0, 0.07, 0]}><mesh position={[r * 0.55, 0, 0]} rotation={[0.55, 0, 0]}><boxGeometry args={[r * 0.75, 0.012, r * 0.42]} /><meshStandardMaterial {...M.blade} /></mesh></mesh>)}
+    <mesh position={[0, 0.1, 0]}><cylinderGeometry args={[r * 0.3, r * 0.3, 0.12, 24]} /><meshStandardMaterial {...M.plastic} /></mesh>
+  </group>;
+}
+
+/* ── Piezas ──────────────────────────────────────────────────────────── */
+const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+
+function Motherboard({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const B = part.board!; const [t, h, d] = part.size;
+  const light = part.profile.isLight;
+  /* (u, v, alt) de tablero → posición relativa al centro del PCB. */
+  const on = (u: number, v: number, alt: number): V3 => [t / 2 + alt / 100, h / 2 - v / 100, d / 2 - u / 100];
+  return <group>
+    <Box size={[t, h, d]} mat={light ? M.pcbLight : M.pcb} part={part} active={active} />
+    {/* bloque de puertos traseros, atravesando el escudo I/O */}
+    <Box size={[0.4, (B.ioV[1] - B.ioV[0]) / 100, 0.18]} at={on(9, (B.ioV[0] + B.ioV[1]) / 2, 20)} mat={M.aluDark} />
+    {/* disipadores VRM: arriba del zócalo y a su lado trasero */}
+    <Box size={[0.3, 0.22, 0.72]} at={on(B.socket[0] + 10, 18, 15)} mat={light ? M.alu : M.aluMid} />
+    <Box size={[0.3, 1.0, 0.3]} at={on(B.socket[0] - 62, B.socket[1] + 12, 15)} mat={light ? M.alu : M.aluMid} />
+    {/* zócalos DIMM */}
+    {Array.from({ length: B.dimm }, (_, i) => <Box key={i} size={[0.075, B.ramLen / 100, 0.06]} at={on(B.ramU0 + i * B.ramPitch, B.ramV0 + B.ramLen / 2, 3.75)} mat={light ? M.plasticLight : M.plastic} />)}
+    {/* ranuras de expansión: la ×16 principal y las secundarias */}
+    <Box size={[0.11, 0.075, B.pcieLen / 100]} at={on(B.pcieU0 + B.pcieLen / 2, B.pcieV, 5.5)} mat={M.plastic} />
+    {B.slots > 1 && <Box size={[0.11, 0.075, 0.25]} at={on(B.pcieU0 + 12.5, B.pcieV - 20.32, 5.5)} mat={M.plastic} />}
+    {B.slots > 3 && <Box size={[0.11, 0.075, B.slots > 4 ? 0.89 : 0.4]} at={on(B.pcieU0 + (B.slots > 4 ? 44.5 : 20), B.pcieV + 3 * 20.32, 5.5)} mat={M.plastic} />}
+    {/* chipset y conector de 24 pines */}
+    <Box size={[0.12, 0.42, 0.42]} at={on(B.chipset[0], B.chipset[1], 6)} mat={light ? M.alu : M.aluMid} />
+    <Box size={[0.2, 0.52, 0.1]} at={on(B.d - 9, B.socket[1] + 40, 10)} mat={M.plastic} />
+    {/* huecos M.2 libres, marcados con el tornillo dorado */}
+    {B.m2.map((m, i) => <Box key={i} size={[0.02, 0.06, 0.06]} at={on(m[0] - 40, m[1], 1.5)} mat={M.gold} shadow={false} />)}
+  </group>;
+}
+
+function Cpu({ part, active }: { part: Visual3DPart; active: boolean }) {
+  return <group>
+    <Box size={[0.03, 0.45, 0.45]} at={[-0.02, 0, 0]} mat={M.plastic} part={part} active={active} />
+    <Box size={[0.035, 0.39, 0.39]} at={[0.0125, 0, 0]} mat={M.ihs} part={part} active={active} />
+  </group>;
+}
+
+function Ram({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const [ht, len, th] = part.size; const light = part.profile.isLight; const rgb = Boolean(part.detail.rgb);
+  return <>{part.units.map((u, i) => <group key={i} position={[u.position[0] - part.position[0], u.position[1] - part.position[1], u.position[2] - part.position[2]]}>
+    <Box size={[ht, len, th]} mat={light ? M.plasticLight : M.aluDark} part={part} active={active} />
+    <Box size={[0.02, len - 0.1, th + 0.004]} at={[-ht / 2 + 0.01, 0, 0]} mat={M.pcb} />
+    {rgb && <mesh position={[ht / 2 + 0.006, 0, 0]}><boxGeometry args={[0.012, len - 0.16, th - 0.02]} /><meshStandardMaterial color="#c8f0ff" emissive="#7fd8ff" emissiveIntensity={0.9} /></mesh>}
+  </group>)}</>;
+}
+
+function Gpu({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const [H, T, L] = part.size; const fans = num(part.detail.fans, 2);
+  const hpwr = Boolean(part.detail.hpwr); const plugs = hpwr ? 1 : Math.max(1, Math.min(3, num(part.detail.conn8, 0) + num(part.detail.conn6, 0)));
+  const fanD = Math.min(0.96, (L - 0.3) / fans - 0.06);
+  const accent = part.profile.accentColor;
+  return <group>
+    <Box size={[H - 0.02, T - 0.02, L - 0.03]} mat={M.plastic} part={part} active={active} />
+    {/* placa trasera arriba, cara de aluminio */}
+    <Box size={[H - 0.05, 0.012, L - 0.08]} at={[0, T / 2 - 0.004, 0]} mat={M.aluDark} />
+    {/* ventiladores en la cara inferior, mirando al suelo */}
+    {Array.from({ length: fans }, (_, i) => <Fan key={i} size={fanD} axis="y" at={[0.02, -T / 2 - 0.02, L / 2 - 0.2 - fanD / 2 - i * (fanD + 0.05)]} part={part} active={active} />)}
+    {/* soporte de chapa en la trasera, con sus pestañas por ranura */}
+    <Box size={[1.12, T + 0.06, 0.02]} at={[-H / 2 + 0.58, 0, L / 2 + 0.01]} mat={M.alu} />
+    <Box size={[0.16, 0.05, 0.03]} at={[-H / 2 + 1.12 + 0.02, T / 2 + 0.05, L / 2 + 0.01]} mat={M.alu} />
+    {/* dedos del conector PCIe, dorados */}
+    <Box size={[0.025, 0.016, 0.89]} at={[-H / 2 + 0.05, T / 2 - 0.045, L / 2 - 0.5 - 0.445]} mat={M.gold} shadow={false} />
+    {/* conectores de alimentación en el canto que mira al cristal */}
+    {Array.from({ length: plugs }, (_, i) => <Box key={i} size={[0.09, 0.085, hpwr ? 0.26 : 0.19]} at={[H / 2 + 0.04, T / 2 - 0.07, L / 2 - 0.6 - i * 0.22]} mat={M.black} />)}
+    {/* tira de acento del fabricante, discreta */}
+    <mesh position={[H / 2 + 0.004, T / 2 - 0.16, 0]}><boxGeometry args={[0.005, 0.02, L * 0.42]} /><meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} /></mesh>
+  </group>;
+}
+
+function AirCooler({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const [X, W, D] = part.size; const kind = String(part.detail.kind || "tower"); const fanSize = num(part.detail.fanSize, 120) / 100; const fans = num(part.detail.fans, 1);
+  const rel: V3 = part.connectionTarget ? [part.connectionTarget[0] - part.position[0], part.connectionTarget[1] - part.position[1], part.connectionTarget[2] - part.position[2]] : [-X / 2, 0, 0];
+  const light = part.profile.isLight;
+  const finMat = light ? M.steelLight : M.alu;
+  if (kind === "stock") return <group><Cyl r={0.42} h={X - 0.04} axis="x" at={[0, rel[1], rel[2]]} mat={M.aluDark} part={part} active={active} /><Fan size={0.8} axis="x" at={[X / 2 - 0.1, rel[1], rel[2]]} part={part} active={active} /></group>;
+  if (kind === "top-flow") return <group>
+    <Box size={[0.24, 0.42, 0.42]} at={[-X / 2 + 0.12, rel[1], rel[2]]} mat={M.copper} part={part} active={active} />
+    {Array.from({ length: 22 }, (_, i) => <Box key={i} size={[0.004, W, D - 0.3]} at={[-X / 2 + 0.26 + i * ((X - 0.55) / 22), rel[1], rel[2]]} mat={finMat} shadow={i % 4 === 0} />)}
+    <Fan size={fanSize} axis="x" at={[X / 2 - 0.13, rel[1], rel[2]]} part={part} active={active} light={light} />
+  </group>;
+  /* Torre: base de cobre, aletas apiladas a lo largo de Z, heatpipes atravesándolas y ventiladores de 27 mm delante. */
+  const towers = kind === "dual-tower" ? 2 : 1; const stack = 0.5; const finH = X - 0.34; const finCount = 26;
+  const stackZ = towers === 2 ? [rel[2] + 0.385, rel[2] - 0.385] : [rel[2]];
+  const fanZ = towers === 2 ? [rel[2], rel[2] - 0.77] : [rel[2] - 0.385];
+  const pipes = towers === 2 ? [-0.42, -0.25, -0.08, 0.08, 0.25, 0.42] : [-0.3, -0.1, 0.1, 0.3];
+  return <group>
+    <Box size={[0.28, 0.42, 0.42]} at={[-X / 2 + 0.14, rel[1], rel[2]]} mat={M.copper} part={part} active={active} />
+    {stackZ.map((z, s) => <group key={s}>
+      {Array.from({ length: finCount }, (_, i) => <Box key={i} size={[finH, W - 0.08, 0.005]} at={[-X / 2 + 0.34 + finH / 2, rel[1], z - stack / 2 + 0.02 + i * ((stack - 0.04) / (finCount - 1))]} mat={finMat} part={i % 5 === 0 ? part : undefined} active={active} shadow={i % 3 === 0} />)}
+      <Box size={[0.03, W - 0.06, stack]} at={[X / 2 - 0.015, rel[1], z]} mat={finMat} />
+      {pipes.map((py, i) => <Cyl key={i} r={0.03} h={X - 0.2} axis="x" at={[0.02, rel[1] + py, z]} mat={M.copper} seg={12} />)}
+    </group>)}
+    {fanZ.slice(0, Math.max(1, fans)).map((z, i) => <Fan key={i} size={fanSize} axis="z" at={[-X / 2 + 0.34 + finH / 2, rel[1], z]} part={part} active={active} light={light} />)}
+  </group>;
+}
+
+function Aio({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const [sx, sy, sz] = part.size; const fans = num(part.detail.fans, 2); const fanSize = num(part.detail.fanSize, 120) / 100; const radT = num(part.detail.radT, 30) / 100;
+  const along = part.detail.along === "z" ? "z" : "y"; const mount = String(part.mount || "top");
+  const long = along === "z" ? sz : sy;
+  const normal: V3 = mount === "top" ? [0, -1, 0] : mount === "bottom" ? [0, 1, 0] : mount === "rear" ? [0, 0, -1] : [0, 0, 1];
+  const fanAxis: "x" | "y" | "z" = normal[1] ? "y" : "z";
+  const fanOff: V3 = [normal[0] * (radT / 2 + 0.13), normal[1] * (radT / 2 + 0.13), normal[2] * (radT / 2 + 0.13)];
+  const fins = 34;
+  const light = part.profile.isLight;
+  const rel: V3 = part.connectionTarget ? [part.connectionTarget[0] - part.position[0], part.connectionTarget[1] - part.position[1], part.connectionTarget[2] - part.position[2]] : [0, 0, 0];
+  const curves = useMemo(() => (part.tubePaths || []).map((path) => new THREE.CatmullRomCurve3(path.map((pt) => new THREE.Vector3(pt[0] - part.position[0], pt[1] - part.position[1], pt[2] - part.position[2])), false, "catmullrom", 0.6)), [part.position, part.tubePaths]);
+  return <group>
+    {/* núcleo del radiador y sus dos depósitos */}
+    <Box size={[sx - 0.02, sy - 0.02, sz - 0.02]} mat={M.aluDark} part={part} active={active} />
+    {Array.from({ length: fins }, (_, i) => { const t = -long / 2 + 0.16 + i * ((long - 0.32) / (fins - 1)); return <Box key={i} size={along === "z" ? [sx - 0.06, radT - 0.06, 0.004] : [sx - 0.06, 0.004, radT - 0.06]} at={along === "z" ? [0, 0, t] : [0, t, 0]} mat={M.alu} shadow={false} />; })}
+    {[-1, 1].map((s) => <Box key={s} size={along === "z" ? [sx, radT + 0.012, 0.15] : [sx, 0.15, radT + 0.012]} at={along === "z" ? [0, 0, s * (long / 2 - 0.075)] : [0, s * (long / 2 - 0.075), 0]} mat={M.plastic} part={part} active={active} />)}
+    {/* ventiladores en la cara que mira al interior */}
+    {Array.from({ length: fans }, (_, i) => { const t = -long / 2 + 0.06 + fanSize / 2 + i * fanSize; return <Fan key={i} size={fanSize} axis={fanAxis} at={along === "z" ? [fanOff[0], fanOff[1], t] : [fanOff[0], t, fanOff[2]]} part={part} active={active} light={light} />; })}
+    {/* bomba sobre la CPU y tubos */}
+    <group position={rel}>
+      <Cyl r={0.33} h={0.42} axis="x" at={[0.21, 0, 0]} mat={light ? M.plasticLight : M.plastic} part={part} active={active} />
+      <mesh position={[0.43, 0, 0]} rotation={AXIS.x}><cylinderGeometry args={[0.27, 0.27, 0.02, 32]} /><meshStandardMaterial color="#9fe3ff" emissive="#5cc8f0" emissiveIntensity={0.6} metalness={0.4} roughness={0.2} /></mesh>
+      <Box size={[0.06, 0.42, 0.42]} at={[0.03, 0, 0]} mat={M.copper} />
+    </group>
+    {curves.map((curve, i) => <mesh key={i} castShadow><tubeGeometry args={[curve, 40, 0.055, 10, false]} /><Skin part={part} active={active} base={M.rubber} /></mesh>)}
+  </group>;
+}
+
+function Psu({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const [sx, sy, sz] = part.size; const vertical = Boolean(part.detail.vertical); const top = Boolean(part.detail.top);
+  const light = part.profile.isLight;
+  /* El ventilador mira al suelo (o al techo) en las horizontales y al cristal en las verticales. */
+  const fanAxis: "x" | "y" = vertical ? "x" : "y"; const fanAt: V3 = vertical ? [sx / 2 + 0.005, 0, 0] : [0, top ? sy / 2 + 0.005 : -sy / 2 - 0.005, 0];
+  const fanD = Math.min(vertical ? sy : sx, sz) - 0.2;
+  return <group>
+    <Box size={[sx, sy, sz]} mat={light ? M.steelLight : M.steel} part={part} active={active} />
+    <group position={fanAt} rotation={fanAxis === "x" ? AXIS.x : top ? [Math.PI, 0, 0] : AXIS.y}>
+      <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[fanD / 2 - 0.04, 0.02, 8, 48]} /><meshStandardMaterial {...M.aluDark} /></mesh>
+      {[0, 1, 2, 3].map((i) => <mesh key={i} rotation={[0, (i / 4) * Math.PI, 0]}><boxGeometry args={[fanD - 0.08, 0.012, 0.03]} /><meshStandardMaterial {...M.aluDark} /></mesh>)}
+      <mesh position={[0, -0.02, 0]}><cylinderGeometry args={[fanD / 2 - 0.06, fanD / 2 - 0.06, 0.02, 40]} /><meshStandardMaterial {...M.black} /></mesh>
+    </group>
+    {/* fila de conectores modulares en la cara delantera, mirando al frontal */}
+    {Array.from({ length: 6 }, (_, i) => <Box key={i} size={[0.14, 0.11, 0.03]} at={[-sx / 2 + 0.2 + i * 0.19 * (vertical ? 0.5 : 1), vertical ? -sy / 2 + 0.2 + i * 0.19 : -sy / 2 + 0.22, -sz / 2 - 0.015]} mat={M.black} />)}
+    <Box size={[sx * 0.55, 0.004, sz * 0.5]} at={[0, vertical ? 0 : (top ? -sy / 2 - 0.002 : sy / 2 + 0.002), 0]} mat={light ? M.aluDark : M.aluDark} shadow={false} />
+  </group>;
+}
+
+function Drives({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const [sx, sy, sz] = part.size;
+  return <>{part.units.map((u, i) => <group key={i} position={[u.position[0] - part.position[0], u.position[1] - part.position[1], u.position[2] - part.position[2]]}>
+    <Box size={[sx, sy, sz]} mat={part.kind === "drive-35" ? M.aluDark : M.plastic} part={part} active={active} />
+    <Box size={[sx > sy ? sx * 0.7 : 0.004, sx > sy ? 0.004 : sy * 0.7, sz * 0.72]} at={[sx > sy ? 0 : sx / 2 + 0.002, sx > sy ? sy / 2 + 0.002 : 0, 0]} mat={M.steelLight} shadow={false} />
+  </group>)}</>;
+}
+
+function M2({ part, active }: { part: Visual3DPart; active: boolean }) {
+  return <>{part.units.map((u, i) => <group key={i} position={[u.position[0] - part.position[0], u.position[1] - part.position[1], u.position[2] - part.position[2]]}>
+    <Box size={[0.016, 0.22, 0.8]} mat={M.pcb} part={part} active={active} />
+    <Box size={[0.014, 0.16, 0.22]} at={[0.015, 0, 0.12]} mat={M.black} />
+    <Box size={[0.014, 0.16, 0.22]} at={[0.015, 0, -0.14]} mat={M.black} />
+    <Box size={[0.02, 0.18, 0.06]} at={[-0.002, 0, 0.37]} mat={M.gold} shadow={false} />
+  </group>)}</>;
+}
+
+function CaseFans({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const size = num(part.detail.size, 120) / 100;
+  return <>{part.units.map((u, i) => { const n = u.normal || [0, 0, 1]; const axis: "x" | "y" | "z" = n[0] ? "x" : n[1] ? "y" : "z"; return <group key={i} position={[u.position[0] - part.position[0], u.position[1] - part.position[1], u.position[2] - part.position[2]]}><Fan size={size} axis={axis} part={part} active={active} light={part.profile.isLight} /></group>; })}</>;
+}
+
+function Rgb({ part, active }: { part: Visual3DPart; active: boolean }) {
+  return <>{part.units.map((u, i) => <mesh key={i} position={[u.position[0] - part.position[0], u.position[1] - part.position[1], u.position[2] - part.position[2]]}><boxGeometry args={part.size} /><meshStandardMaterial color="#ffe2a8" emissive={active ? "#ffd27a" : "#e8b95a"} emissiveIntensity={part.state === "installed" || active ? 1.1 : 0.3} transparent={part.state === "empty"} opacity={part.state === "empty" ? 0.2 : 1} /></mesh>)}</>;
+}
+
+function Expansion({ part, active }: { part: Visual3DPart; active: boolean }) {
+  const [sx, , sz] = part.size;
+  return <>{part.units.map((u, i) => <group key={i} position={[u.position[0] - part.position[0], u.position[1] - part.position[1], u.position[2] - part.position[2]]}>
+    <Box size={[sx, 0.016, sz]} mat={M.pcb} part={part} active={active} />
+    <Box size={[0.2, 0.05, 0.4]} at={[0.05, 0.03, 0]} mat={M.black} />
+    <Box size={[1.12, 0.2, 0.02]} at={[-sx / 2 + 0.56, 0.06, sz / 2 + 0.01]} mat={M.alu} />
+  </group>)}</>;
+}
+
+function Component({ part, active }: { part: Visual3DPart; active: boolean }) {
+  switch (part.kind) {
+    case "motherboard": return <Motherboard part={part} active={active} />;
+    case "cpu": return <Cpu part={part} active={active} />;
+    case "ram": return <Ram part={part} active={active} />;
+    case "gpu": return <Gpu part={part} active={active} />;
+    case "air-cooler": return <AirCooler part={part} active={active} />;
+    case "aio": return <Aio part={part} active={active} />;
+    case "psu": return <Psu part={part} active={active} />;
+    case "m2": return <M2 part={part} active={active} />;
+    case "drive-25": case "drive-35": return <Drives part={part} active={active} />;
+    case "fan": return <CaseFans part={part} active={active} />;
+    case "rgb": return <Rgb part={part} active={active} />;
+    case "expansion": return <Expansion part={part} active={active} />;
+    default: return <Box size={part.size} mat={M.plastic} part={part} active={active} />;
+  }
+}
+
+/* ── Chasis ──────────────────────────────────────────────────────────── */
+function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) {
+  const L = scene.layout; const U = 0.01;
+  const sh = { min: L.shell.min.map((v) => v * U) as V3, max: L.shell.max.map((v) => v * U) as V3 };
+  const int = { min: L.interior.min.map((v) => v * U) as V3, max: L.interior.max.map((v) => v * U) as V3 };
+  const W = sh.max[0] - sh.min[0], H = sh.max[1] - sh.min[1], D = sh.max[2] - sh.min[2];
+  const cx = (sh.min[0] + sh.max[0]) / 2, cy = (sh.min[1] + sh.max[1]) / 2, cz = (sh.min[2] + sh.max[2]) / 2;
+  const light = scene.chassis.profile.isLight;
+  const steel = light ? M.steelLight : M.steel;
+  const trayX = L.trayX * U; const B = L.board;
+  const ioTop = (L.boardTopY - B.ioV[0]) * U, ioBot = (L.boardTopY - B.ioV[1]) * U;
+  const front = L.panels.front; const window = L.panels.window;
+  const glassMat = <meshPhysicalMaterial color="#bfdccb" metalness={0} roughness={0.05} transparent opacity={0.14} clearcoat={1} clearcoatRoughness={0.05} depthWrite={false} side={THREE.DoubleSide} />;
+  const meshMat = <meshStandardMaterial color="#141917" metalness={0.3} roughness={0.7} transparent opacity={0.62} depthWrite={false} side={THREE.DoubleSide} />;
+  const e = explode; const slats = Math.max(6, Math.round(W / 0.17));
+  return <group>
+    {/* suelo, techo, panel ciego detrás de la bandeja y la bandeja misma */}
+    <Box size={[W, 0.012, D]} at={[cx, int.min[1] - 0.006, cz]} mat={steel} />
+    <group position={[0, e * 0.9, 0]}><Box size={[W, 0.012, D]} at={[cx, sh.max[1] - 0.006, cz]} mat={steel} /></group>
+    <Box size={[0.012, H - 0.02, D]} at={[sh.min[0] + 0.006, cy, cz]} mat={steel} />
+    <Box size={[0.014, int.max[1] - int.min[1], int.max[2] - int.min[2] - 0.05]} at={[trayX - 0.007, (int.min[1] + int.max[1]) / 2, (int.min[2] + int.max[2]) / 2 + 0.025]} mat={M.tray} />
+    {/* pasacables en el canto delantero de la bandeja */}
+    {[0.3, 0.55, 0.8].map((f) => <Box key={f} size={[0.02, 0.22, 0.05]} at={[trayX - 0.002, int.min[1] + (int.max[1] - int.min[1]) * f, (L.boardRearZ - B.d) * U - 0.06]} mat={M.rubber} shadow={false} />)}
+    {/* panel trasero con el escudo I/O, las pestañas de expansión y la rejilla del ventilador */}
+    <group position={[0, 0, e * 0.6]}>
+      <Box size={[W, H - 0.02, 0.012]} at={[cx, cy, sh.max[2] - 0.006]} mat={steel} />
+      <Box size={[0.42, ioTop - ioBot + 0.02, 0.014]} at={[L.boardFaceX * U + 0.21, (ioTop + ioBot) / 2, sh.max[2] + 0.002]} mat={M.black} shadow={false} />
+      {Array.from({ length: B.slots }, (_, i) => <Box key={i} size={[1.12, 0.18, 0.014]} at={[L.boardFaceX * U + 0.06 + 0.56, (L.boardTopY - (160 + 10.16 + i * 20.32)) * U, sh.max[2] + 0.002]} mat={light ? M.steelLight : M.aluDark} shadow={false} />)}
+      <mesh position={[L.boardFaceX * U + 0.62, (L.boardTopY - 62) * U, sh.max[2] + 0.004]}><torusGeometry args={[0.56, 0.015, 8, 48]} /><meshStandardMaterial {...M.aluDark} /></mesh>
+    </group>
+    {/* frontal: madera con lamas, malla, cristal o chapa */}
+    <group position={[0, 0, -e * 0.8]}>
+      {front === "wood" ? <>
+        <Box size={[W, H - 0.02, 0.016]} at={[cx, cy, sh.min[2] + 0.008]} mat={M.wood} />
+        {Array.from({ length: slats }, (_, i) => <Box key={i} size={[W / slats - 0.03, H - 0.16, 0.024]} at={[sh.min[0] + (i + 0.5) * (W / slats), cy, sh.min[2] - 0.004]} mat={{ ...M.wood, color: i % 2 ? "#6a4529" : "#5b3a24" }} />)}
+      </> : front === "glass" ? <mesh position={[cx, cy, sh.min[2] + 0.004]}><boxGeometry args={[W - 0.04, H - 0.06, 0.006]} />{glassMat}</mesh>
+        : front === "mesh" ? <>
+          <mesh position={[cx, cy, sh.min[2] + 0.006]}><boxGeometry args={[W - 0.06, H - 0.1, 0.008]} />{meshMat}</mesh>
+          <Box size={[W, H - 0.02, 0.01]} at={[cx, cy, sh.min[2] + 0.014]} mat={{ ...steel, transparent: true, opacity: 0.0 }} shadow={false} />
+          {[0, 1, 2, 3].map((i) => <Box key={i} size={i % 2 ? [0.03, H - 0.02, 0.012] : [W, 0.03, 0.012]} at={i % 2 ? [i === 1 ? sh.min[0] + 0.02 : sh.max[0] - 0.02, cy, sh.min[2] + 0.006] : [cx, i === 0 ? sh.max[1] - 0.02 : sh.min[1] + 0.02, sh.min[2] + 0.006]} mat={steel} />)}
+        </> : <Box size={[W, H - 0.02, 0.016]} at={[cx, cy, sh.min[2] + 0.008]} mat={steel} />}
+    </group>
+    {/* cubierta de la fuente */}
+    {L.shroud && <group>
+      <Box size={[(L.shroud.max[0] - L.shroud.min[0]) * U, 0.012, (L.shroud.max[2] - L.shroud.min[2]) * U]} at={[(L.shroud.min[0] + L.shroud.max[0]) / 2 * U, L.shroud.max[1] * U, (L.shroud.min[2] + L.shroud.max[2]) / 2 * U]} mat={steel} />
+      <Box size={[(L.shroud.max[0] - L.shroud.min[0]) * U, (L.shroud.max[1] - L.shroud.min[1]) * U, 0.012]} at={[(L.shroud.min[0] + L.shroud.max[0]) / 2 * U, (L.shroud.min[1] + L.shroud.max[1]) / 2 * U, L.shroud.min[2] * U]} mat={steel} />
+    </group>}
+    {/* ventiladores que trae la caja */}
+    {scene.chassisFans.map((f, i) => { const axis: "x" | "y" | "z" = f.normal[0] ? "x" : f.normal[1] ? "y" : "z"; return <Fan key={i} size={f.size / 100} axis={axis} at={f.position} light={light} />; })}
+    {/* cristal lateral con su marco */}
+    <group position={[e * 1.1, 0, 0]}>
+      {window === "solid" ? <Box size={[0.012, H - 0.02, D]} at={[sh.max[0] - 0.006, cy, cz]} mat={steel} />
+        : <mesh position={[sh.max[0] - 0.004, cy, cz]}><boxGeometry args={[0.006, H - 0.08, D - 0.08]} />{window === "glass" ? glassMat : meshMat}</mesh>}
+      {[0, 1, 2, 3].map((i) => <Box key={i} size={i % 2 ? [0.014, H - 0.02, 0.04] : [0.014, 0.04, D]} at={i % 2 ? [sh.max[0] - 0.007, cy, i === 1 ? sh.min[2] + 0.02 : sh.max[2] - 0.02] : [sh.max[0] - 0.007, i === 0 ? sh.max[1] - 0.02 : sh.min[1] + 0.02, cz]} mat={steel} />)}
+    </group>
+    {/* pies */}
+    {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([a, b], i) => <Box key={i} size={[0.07, 0.018, 0.07]} at={[cx + a * (W / 2 - 0.1), sh.min[1] + 0.009, cz + b * (D / 2 - 0.12)]} mat={M.rubber} />)}
+  </group>;
+}
+
+/* ── Entorno e iluminación ───────────────────────────────────────────── */
+const setEnvironment = (target: THREE.Scene, env: THREE.Texture | null) => { target.environment = env; target.environmentIntensity = 0.9; };
+function Studio() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    setEnvironment(scene, env);
+    return () => { setEnvironment(scene, null); env.dispose(); pmrem.dispose(); };
+  }, [gl, scene]);
+  return null;
+}
+
+function Interactive({ part, explode, children, onSelect, onHover }: { part: Visual3DPart; explode: number; children: React.ReactNode; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void }) {
+  const pos: V3 = [part.position[0] + part.explode.dir[0] * part.explode.distance * explode, part.position[1] + part.explode.dir[1] * part.explode.distance * explode, part.position[2] + part.explode.dir[2] * part.explode.distance * explode];
+  return <group position={pos} onClick={(e) => { e.stopPropagation(); onSelect(part); }} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; onHover(part); }} onPointerOut={() => { document.body.style.cursor = ""; onHover(); }}>{children}</group>;
+}
+
+export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal, explode = 0 }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number; explode?: number }) {
+  const controls = useRef<OrbitControlsImpl>(null);
+  const { camera, size, invalidate } = useThree();
+  const cameraRef = useRef(camera);
+  const visible = scene.parts.filter((p) => p.state !== "empty");
+  const radius = scene.camera.radius;
+  useEffect(() => {
+    const cam = cameraRef.current; if (!(cam instanceof THREE.PerspectiveCamera)) return;
+    const vfov = THREE.MathUtils.degToRad(cam.fov); const hfov = 2 * Math.atan(Math.tan(vfov / 2) * cam.aspect);
+    const distance = (radius / Math.sin(Math.min(vfov, hfov) / 2)) * 1.0;
+    const dir = new THREE.Vector3(...scene.camera.direction).normalize();
+    cam.position.copy(new THREE.Vector3(...scene.focusTarget)).addScaledVector(dir, distance);
+    cam.near = Math.max(0.05, distance - radius * 1.6); cam.far = distance + radius * 6; cam.updateProjectionMatrix();
+    controls.current?.target.set(...scene.focusTarget); controls.current?.update(); invalidate();
+  }, [invalidate, resetSignal, scene, radius, size.width, size.height]);
+  const shadowSize = radius * 1.4;
+  return <>
+    <Studio />
+    <hemisphereLight args={["#e6efe9", "#1b2620", 0.55]} />
+    <directionalLight position={[radius * 1.4, radius * 2.2, -radius * 1.6]} intensity={2.4} color="#fff3dc" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0003} shadow-normalBias={0.02}
+      shadow-camera-left={-shadowSize} shadow-camera-right={shadowSize} shadow-camera-top={shadowSize} shadow-camera-bottom={-shadowSize} shadow-camera-near={0.2} shadow-camera-far={radius * 8} />
+    <directionalLight position={[-radius * 1.5, radius * 0.8, radius * 1.2]} intensity={0.7} color="#a9d6c4" />
+    <pointLight position={[radius * 0.6, radius * 0.3, -radius * 0.9]} intensity={radius * 1.2} distance={radius * 5} color="#dfe9e3" />
+    <group>
+      <Chassis scene={scene} explode={explode} />
+      {visible.map((part) => <Interactive key={part.id} part={part} explode={explode} onSelect={onSelect} onHover={onHover}><Component part={part} active={active === part.category} /></Interactive>)}
+    </group>
+    <ContactShadows position={[0, scene.bounds.min[1] - 0.01, 0]} opacity={0.5} scale={radius * 4} blur={2.2} far={radius * 2} frames={1} />
+    <OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} maxDistance={scene.camera.maxDistance} minPolarAngle={0.2} maxPolarAngle={1.55} enablePan={false} onChange={() => invalidate()} />
+  </>;
+}

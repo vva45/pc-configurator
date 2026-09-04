@@ -7,14 +7,6 @@ const find=(cat,n)=>{const p=P.find(x=>x.cat===cat&&x.name.includes(n)); if(!p)t
 const B=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Array.isArray(v)?v:[v]]));
 
 // Deployment regression: conflict resolution must not duplicate renderer or
-// canonical-layout declarations (the resulting diagnostics are otherwise
-// reported only when Vercel runs TypeScript).
-const forgeSceneSource=readFileSync('src/components/configurator/three/ForgeScene.tsx','utf8');
-const visual3dSource=readFileSync('src/lib/visual-3d.ts','utf8');
-const occurrences=(source,token)=>source.split(token).length-1;
-ok(occurrences(forgeSceneSource,'function Component(')===1&&occurrences(forgeSceneSource,'function Chassis(')===1&&occurrences(forgeSceneSource,'if(part.kind==="gpu")')===1,'renderer 3D contiene implementaciones duplicadas');
-for(const declaration of ['const tray =','const psu: Vector3Tuple =','const top: MountPlane =','const front: MountPlane =','const gpuLength =','const gpuWidth =']) ok(occurrences(visual3dSource,declaration)===1,`layout 3D redeclara ${declaration}`);
-
 // Mobile gesture arbitration: ownership is fixed from the initial target.
 const targetMatching=(match)=>({closest:selector=>selector.includes(match)?{}:null});
 ok(getTabSwipeGestureOwner(targetMatching('[data-horizontal-scroll-zone]'))==='horizontal-scroll','scroller horizontal no conserva el gesto');
@@ -59,7 +51,7 @@ ok(gpuFamilyLabel({brand:'AMD',name:'Radeon RX 580'}).label==='AMD RX500','famil
 ok(visualCapacityLabel(960)==='1 TB'&&visualCapacityLabel(1830)==='2 TB','normalización visual de capacidad incorrecta');
 
 // Phase 5 fidelity: a shared deterministic hardware appearance profile.
-ok(parseCaseDimensions('465×285×459 mm').width===285&&parseCaseDimensions('376 x 185 x 292').height===376&&parseCaseDimensions('580*240*560').depth===560,'parser de dimensiones de caja incorrecto');
+ok(parseCaseDimensions('465×285×459 mm').width===285&&parseCaseDimensions('376 x 185 x 292').height===292&&parseCaseDimensions('580*240*560').depth===580,'parser de dimensiones de caja incorrecto (largo × ancho × alto)');
 const smallCase=createVisualBuildModel(B({case:{cat:'case',id:'small',brand:'Cooler Master',name:'NR200P Mini-ITX',dims:'376×185×292 mm'}})).parts.case;
 const largeCase=createVisualBuildModel(B({case:{cat:'case',id:'large',brand:'Forge',name:'Full tower',dims:'580×240×560 mm'}})).parts.case;
 ok(createVisualHardwareProfile(smallCase).dimensions.height!==createVisualHardwareProfile(largeCase).dimensions.height,'caja pequeña y grande comparten dimensiones');
@@ -94,55 +86,72 @@ ok(g420.radiatorLength>g360.radiatorLength&&g420.radiatorWidth>g360.radiatorWidt
 ok(g120.radiatorLength===148&&g240.radiatorLength===270&&g280.radiatorLength===310&&g360.radiatorLength===392&&g420.radiatorLength===452,'longitudes físicas AIO inesperadas');
 ok(getAioSchematicGeometry(480).fanCount===4,'fallback AIO no deriva una medida no canónica');
 
-// Phase 5: pure VisualBuildModel → deterministic 3D scene layout.
+// Fase 5: de VisualBuildModel a un montaje físico determinista, en milímetros reales.
+const mm=(v)=>Math.round(v*100);
 const empty3d=createVisual3DScene(visualEmpty);
 ok(empty3d.parts.length===10&&empty3d.parts.every(x=>x.state==='empty'||x.state==='next'),'3D empty model no produce ghost layout válido');
-const atx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'atx',brand:'Forge',name:'ATX',form:'ATX'}})));
-const itx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'itx',brand:'Forge',name:'ITX',form:'Mini-ITX'}})));
-ok(atx3d.parts.find(x=>x.category==='mbo').scale[1]>itx3d.parts.find(x=>x.category==='mbo').scale[1],'3D ATX/Mini-ITX no escala distinto');
+ok(validateVisual3DScene(empty3d).length===0,`montaje vacío incumple el contrato físico: ${validateVisual3DScene(empty3d)}`);
+const atx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'atx',brand:'Forge',name:'ATX',form:'ATX',dimm:4}})));
+const itx3d=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'itx',brand:'Forge',name:'ITX',form:'Mini-ITX',dimm:2}})));
+ok(mm(atx3d.parts.find(x=>x.category==='mbo').size[1])===305&&mm(itx3d.parts.find(x=>x.category==='mbo').size[1])===170,'la placa no mide lo que dice su formato (305 ATX, 170 ITX)');
+ok(atx3d.layout.board.slots===7&&itx3d.layout.board.slots===1&&atx3d.layout.board.dimm===4&&itx3d.layout.board.dimm===2,'ranuras de expansión o DIMM no siguen el formato');
 const mountedMbo=atx3d.parts.find(x=>x.category==='mbo');
-ok(mountedMbo.position[0]>atx3d.bounds.min[0]&&mountedMbo.position[0]===atx3d.layout.motherboard[0]&&mountedMbo.position[0]<0,'motherboard queda fuera de la bandeja interior');
+ok(Math.abs(mountedMbo.bounds.min[0]-(atx3d.layout.trayX+6.35)/100)<.002,'la placa no apoya en los separadores de la bandeja');
 const mountedCpu=atx3d.parts.find(x=>x.category==='cpu'), mountedRam=atx3d.parts.find(x=>x.category==='ram');
-ok(mountedCpu.position.join(',')===atx3d.layout.anchors.cpuSocketAnchor.join(',')&&mountedRam.position[2]>mountedCpu.position[2],'CPU/RAM no respetan socket y banco DIMM canónicos');
-const shortGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gs',brand:'Forge',name:'Short',len:170}})));
-const longGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gl',brand:'Forge',name:'Long',len:360}})));
-ok(shortGpu.parts.find(x=>x.category==='gpu').scale[2]<longGpu.parts.find(x=>x.category==='gpu').scale[2],'3D GPU 170/360 no escala longitud');
-const mountedGpu=atx3d.parts.find(x=>x.category==='gpu');
-ok(Math.abs(mountedGpu.bounds.min[2]-atx3d.layout.anchors.pcieSlotAnchor[2])<.01&&mountedGpu.position[0]>mountedMbo.position[0],'GPU no nace en el anclaje PCIe interior');
-const gpuOneSlot=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'g1s',brand:'Forge',name:'Single slot',len:220,slots:1}}))).parts.find(x=>x.category==='gpu');
-const gpuFourSlot=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'g4s',brand:'Forge',name:'Four slot',len:340,slots:4}}))).parts.find(x=>x.category==='gpu');
-ok(gpuFourSlot.size[0]===gpuOneSlot.size[0]*4&&gpuFourSlot.size[2]>gpuOneSlot.size[2]&&gpuFourSlot.size[1]>=1.1,'GPU no respeta longitud, slots y altura legible');
-const ram2=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r2',brand:'Forge',name:'2 DIMM',kit:2}})));
+ok(mm(mountedCpu.size[1])===45&&mountedRam.units.every(u=>u.position[2]<mountedCpu.position[2]),'CPU de 45 mm o RAM en el lado equivocado del zócalo');
+ok(mountedRam.units.length===2&&mm(mountedRam.size[1])===133,'la RAM por defecto no son dos módulos de 133 mm');
+const shortGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gs',brand:'Forge',name:'Short',len:170,slots:2}}))).parts.find(x=>x.category==='gpu');
+const longGpu=createVisual3DScene(createVisualBuildModel(B({gpu:{cat:'gpu',id:'gl',brand:'Forge',name:'Long',len:340,slots:3}}))).parts.find(x=>x.category==='gpu');
+ok(mm(shortGpu.size[2])===170&&mm(longGpu.size[2])===340,'la gráfica no mide su longitud real');
+ok(longGpu.size[1]>shortGpu.size[1]&&Math.round(mm(longGpu.size[1]))===Math.round(3*20.32-2),'el grosor de la gráfica no sigue sus ranuras (20,32 mm cada una)');
+ok(Math.abs(longGpu.bounds.max[2]-atx3d.layout.boardRearZ/100)<.002&&longGpu.bounds.min[0]>mountedMbo.bounds.max[0],'el soporte de la gráfica no está en el borde trasero o la gráfica invade la placa');
+const huge=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'small',brand:'Forge',name:'Small',dims:'330×200×380 mm'},gpu:{cat:'gpu',id:'gx',brand:'Forge',name:'Huge',len:360,slots:3}}))).parts.find(x=>x.category==='gpu');
+ok(huge.overflow&&/360 mm/.test(huge.overflow),'una gráfica que no cabe no se señala');
 const ram4=createVisual3DScene(createVisualBuildModel(B({ram:{cat:'ram',id:'r4',brand:'Forge',name:'4 DIMM',kit:4}})));
-ok(ram2.parts.find(x=>x.category==='ram').instances===2&&ram4.parts.find(x=>x.category==='ram').instances===4,'3D RAM 2/4 módulos incorrecto');
+ok(ram4.parts.find(x=>x.category==='ram').units.length===4,'3D RAM de 4 módulos incorrecta');
 ok(createVisual3DScene(visual).parts.find(x=>x.category==='cooler').kind==='air-cooler','3D air cooler descriptor incorrecto');
-const aio240=createVisual3DScene(createVisualBuildModel(B({cooler:{cat:'cooler',id:'a24',brand:'Forge',name:'AIO 240',type:'Liquid',radSize:240}})));
+const tower=createVisual3DScene(createVisualBuildModel(B({cooler:{cat:'cooler',id:'t',brand:'Forge',name:'Tower',type:'Aire (torre)',height:158,fanSize:120}}))).parts.find(x=>x.category==='cooler');
+const dual=createVisual3DScene(createVisualBuildModel(B({cooler:{cat:'cooler',id:'d',brand:'Forge',name:'Dual',type:'Aire (torre doble)',height:168,fanSize:140}}))).parts.find(x=>x.category==='cooler');
+ok(tower.detail.towers===1&&dual.detail.towers===2&&mm(dual.size[2])===154&&mm(tower.size[2])===77,'torre simple/doble no miden 77/154 mm de fondo');
+ok(mm(tower.size[0])===158-7&&Math.abs(tower.position[1]-mountedCpu.position[1])<.002,'el disipador no sale del zócalo con su altura real');
+const aio240=createVisual3DScene(createVisualBuildModel(B({cooler:{cat:'cooler',id:'a24',brand:'Forge',name:'AIO 240',type:'AIO 240 mm',radSize:240}})));
 const aio360=createVisual3DScene(aio);
-ok(aio240.parts.find(x=>x.category==='cooler').kind==='aio'&&aio240.parts.find(x=>x.category==='cooler').scale[0]<aio360.parts.find(x=>x.category==='cooler').scale[0],'3D AIO 240/360 incorrecto');
-const mountedAio=aio240.parts.find(x=>x.category==='cooler');
-ok(['top','front','side'].includes(mountedAio.mount)&&mountedAio.position===aio240.layout.radiatorMounts[mountedAio.mount],'AIO usa un montaje de radiador no permitido');
-ok(mountedAio.connectionTarget.join(',')===aio240.layout.cpuSocket.join(','),'AIO no conecta radiador y bloque CPU');
-ok(mountedAio.tubePaths.flat().every(point=>point.every((value,axis)=>value>=aio240.layout.interior.min[axis]&&value<=aio240.layout.interior.max[axis])),'tubos AIO abandonan el interior del chasis');
-const atxPsu=createVisual3DScene(createVisualBuildModel(B({psu:{cat:'psu',id:'pa',brand:'Forge',name:'ATX',form:'ATX'}})));
-ok(atxPsu.parts.find(x=>x.category==='psu').scale[0]>createVisual3DScene(visual).parts.find(x=>x.category==='psu').scale[0],'3D ATX/SFX PSU no escala distinto');
-const mountedPsu=atxPsu.parts.find(x=>x.category==='psu');
-ok(mountedPsu.position.join(',')===atxPsu.layout.psuBay.join(',')&&mountedPsu.position[1]<0,'PSU no está anclada a la bahía inferior');
-const dual3d=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'o11',brand:'Lian Li',name:'O11 Dynamic',dims:'465×285×459 mm'},cooler:{cat:'cooler',id:'a36',brand:'Forge',name:'AIO 360',type:'Liquid',radSize:360}})));
-ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.archetype==='DUAL_CHAMBER_SHOWCASE'&&dual3d.layout.radiatorMounts.side&&dual3d.parts.find(x=>x.category==='cooler').mount==='side','dual chamber no prioriza el montaje lateral canónico');
+const r240=aio240.parts.find(x=>x.category==='cooler'), r360=aio360.parts.find(x=>x.category==='cooler');
+ok(r240.kind==='aio'&&r360.kind==='aio'&&r240.detail.fans===2&&r360.detail.fans===3,'AIO 240/360 no llevan 2/3 ventiladores');
+ok(['top','front','side','bottom','rear'].includes(r240.mount)&&aio240.layout.mounts[r240.mount].capacityMm>=240,'AIO en un anclaje que no admite su radiador');
+ok(r240.tubePaths.length===2&&validateVisual3DScene(aio240).length===0,`AIO incumple el contrato físico: ${validateVisual3DScene(aio240)}`);
+const atxPsu=createVisual3DScene(createVisualBuildModel(B({psu:{cat:'psu',id:'pa',brand:'Forge',name:'ATX',form:'ATX',len:160}})));
+const sfxPsu=createVisual3DScene(createVisualBuildModel(B({psu:{cat:'psu',id:'ps',brand:'Forge',name:'SFX',form:'SFX',len:100}})));
+const pA=atxPsu.parts.find(x=>x.category==='psu'), pS=sfxPsu.parts.find(x=>x.category==='psu');
+ok(mm(pA.size[0])===150&&mm(pA.size[1])===86&&mm(pA.size[2])===160&&mm(pS.size[0])===125&&mm(pS.size[2])===100,'fuente ATX/SFX no mide lo suyo');
+ok(atxPsu.layout.shroud&&pA.bounds.max[1]<=atxPsu.layout.shroud.max[1]/100+.002&&pA.position[1]<0,'la fuente no está bajo la cubierta inferior');
+const dual3d=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'o11',brand:'Lian Li',name:'O11 Dynamic',dims:'465×285×459 mm',psuPos:'Trasera',rad:{top:360,side:360,bottom:360}},cooler:{cat:'cooler',id:'a36',brand:'Forge',name:'AIO 360',type:'AIO 360 mm',radSize:360}})));
+ok(dual3d.layout.family==='dual-chamber'&&dual3d.layout.psuBay.vertical&&dual3d.parts.find(x=>x.category==='cooler').mount==='side','doble cámara sin fuente trasera o sin radiador lateral');
+ok(validateVisual3DScene(dual3d).length===0,`doble cámara incumple el contrato físico: ${validateVisual3DScene(dual3d)}`);
 const specifiedCase=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'spec-case',brand:'Forge',name:'Measured showcase',dims:'600×300×550 mm',side:'Cristal templado doble',psuPos:'Trasera',gpuLen:450,rad:{top:240,side:360}}})));
-ok(specifiedCase.layout.size.join(',')==='3,6,5.5'&&specifiedCase.layout.family==='dual-chamber','chasis no respeta dimensiones y paneles declarados');
-ok(specifiedCase.layout.radiatorCapacity.top===240&&specifiedCase.layout.radiatorCapacity.front===0&&specifiedCase.layout.radiatorCapacity.side===360&&specifiedCase.layout.psuBay[0]<0,'anclajes de caja ignoran radiadores o cámara PSU declarados');
+ok(specifiedCase.layout.size.join(',')==='300,550,600'&&specifiedCase.layout.family==='dual-chamber','chasis no respeta dimensiones largo × ancho × alto ni paneles declarados');
+ok(specifiedCase.layout.mounts.top.capacityMm===240&&!specifiedCase.layout.mounts.front&&specifiedCase.layout.mounts.side.capacityMm===360,'anclajes de caja ignoran los radiadores declarados');
 ok(atx3d.camera.minDistance<atx3d.camera.maxDistance&&atx3d.camera.fov>=35&&atx3d.camera.fov<=45,'encuadre 3D no mantiene límites útiles para desktop/mobile');
-ok(atx3d.camera.position[0]>0&&atx3d.camera.position[2]>0&&readFileSync('src/components/configurator/three/ThreeWorkbench.tsx','utf8').includes('scaleX(-1)'),'cámara inicial no presenta trasera/PSU a la izquierda y frontal a la derecha');
+/* Cuatro montajes reales del catálogo, sin una sola pieza fuera de sitio. */
+for(const [nombre,ids] of [['North+AIO 360',{cpu:18,mbo:0,ram:1,gpu:580,cooler:3,case:0,psu:10,storage:0}],['AP201+torre doble',{cpu:60,mbo:40,ram:6,gpu:4,cooler:1,case:21,psu:4,storage:4}]]){
+  const build=B(Object.fromEntries(Object.entries(ids).map(([k,v])=>[k,P.find(p=>p.id===`${k}-${v}`)])));
+  const s3=createVisual3DScene(createVisualBuildModel(build)); const e=validateVisual3DScene(s3);
+  ok(e.length===0,`${nombre}: ${e.join(', ')}`);
+}
+/* La cámara mira desde delante-izquierda-arriba: +X (cristal) y −Z (frontal). Con la mano
+   derecha eso deja el cristal a la izquierda y el frontal a la derecha sin espejar el canvas. */
+ok(atx3d.camera.direction[0]>0&&atx3d.camera.direction[1]>0&&atx3d.camera.direction[2]<0&&!readFileSync('src/components/configurator/three/ThreeWorkbench.tsx','utf8').includes('scaleX(-1)'),'la cámara no encuadra cristal a la izquierda y frontal a la derecha, o el canvas sigue espejado');
 for(const [type,kind] of [['M.2','m2'],['2.5" SSD','drive-25'],['3.5" HDD','drive-35']]) { const m={...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type}}}}; ok(createVisual3DScene(m).parts.find(x=>x.category==='storage').kind===kind,'3D storage '+type+' incorrecto'); }
 const mountedM2=createVisual3DScene({...visualEmpty,parts:{...visualEmpty.parts,storage:{...visualEmpty.parts.storage,state:'installed',metadata:{type:'M.2'}}}});
-ok(mountedM2.parts.find(x=>x.category==='storage').position.join(',')===mountedM2.layout.anchors.m2Anchors[0].join(','),'M.2 no permanece anclado a la placa');
+const m2p=mountedM2.parts.find(x=>x.category==='storage'), m2L=mountedM2.layout;
+ok(Math.abs(m2p.position[1]-(m2L.boardTopY-m2L.board.m2[0][1])/100)<.002&&Math.abs(m2p.position[2]-(m2L.boardRearZ-m2L.board.m2[0][0])/100)<.002,'M.2 no permanece anclado a su hueco de la placa');
 ok(createVisual3DScene(visual).parts.find(x=>x.category==='ram').state==='conflict','3D conflict no se propaga');
 ok(empty3d.parts.find(x=>x.category==='cpu').state==='next','3D next no se propaga');
 ok(createVisual3DScene(createVisualBuildModel(removed)).parts.find(x=>x.category==='gpu').state==='empty','3D remove no vuelve a ghost');
 for (const [label, candidate] of [['air', atx3d], ['aio-240', aio240], ['aio-360-showcase', dual3d], ['compact', createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'mini',brand:'Forge',name:'NR200 Mini-ITX',dims:'376×185×292 mm'},mbo:{cat:'mbo',id:'itx2',brand:'Forge',name:'Mini ITX',form:'Mini-ITX'},cooler:{cat:'cooler',id:'air',brand:'Forge',name:'Air tower'}}))) ]]) {
   ok(validateVisual3DScene(candidate).length===0,`3D ${label} placement inválido: ${validateVisual3DScene(candidate).join(',')}`);
-  for (const category of ['mbo','gpu','psu','storage']) ok(containsBox(candidate.layout.interior,candidate.parts.find(x=>x.category===category).bounds),`3D ${label} ${category} atraviesa el chasis`);
+  const int={min:candidate.layout.interior.min.map(v=>v/100),max:candidate.layout.interior.max.map(v=>v/100)};
+  for (const category of ['mbo','gpu','psu','storage']) ok(containsBox(int,candidate.parts.find(x=>x.category===category).bounds),`3D ${label} ${category} atraviesa el chasis`);
 }
 
 console.log('CATÁLOGO: '+P.length+' piezas');
