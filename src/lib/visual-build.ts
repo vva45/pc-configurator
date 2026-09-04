@@ -81,12 +81,14 @@ function metadata(category: VisualCategory, selected: Picked[]): VisualPart["met
       dimensions: text(p.dims), volumeL: number(p.vol), gpuClearanceMm: number(p.gpuLen),
       psuPosition: text(p.psuPos), sidePanel: text(p.side),
       radiatorMounts: p.rad && typeof p.rad === "object" ? JSON.stringify(p.rad) : undefined,
+      fanSizes: Array.isArray(p.fanSizes) ? JSON.stringify(p.fanSizes) : undefined, fanIncluded: number(p.fanInc),
+      coolerClearanceMm: number(p.coolerH), color: text(p.color),
     };
     case "mbo": return { form: text(p.form), dimmSlots: number(p.dimm) };
     case "cpu": return { socket: text(p.socket), cores: number(p.cores) };
-    case "ram": return { modules: Math.min(8, selected.reduce((sum, item) => sum + (number(values(item).kit) || 1) * (item.qty || 1), 0)), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), type: text(p.memType) };
+    case "ram": return { modules: Math.min(8, selected.reduce((sum, item) => sum + (number(values(item).kit) || 1) * (item.qty || 1), 0)), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), type: text(p.memType), heightMm: number(p.height), rgb: Boolean(p.rgb) };
     case "gpu": { const family = gpuFamilyLabel(part); return { lengthMm: number(p.len), slots: number(p.slots), vramGB: number(p.vram), conn8: number(p.conn8) || 0, conn6: number(p.conn6) || 0, hpwr: Boolean(p.hpwr), family: family.label, vendor: family.vendor }; }
-    case "cooler": { const radiatorMm = number(p.radSize); const aio = aioGeometry(radiatorMm, number(p.fans)); return { mode: radiatorMm || /aio|liquid|líquid/i.test(text(p.type) || "") ? "aio" : "air", heightMm: number(p.height), radiatorMm, fans: radiatorMm ? aio.fanCount : number(p.fans) || 1, fanSizeMm: radiatorMm ? aio.fanSizeMm : number(p.fanSize), radiatorWidthMm: radiatorMm ? aio.widthMm : undefined, radiatorLengthMm: radiatorMm ? aio.lengthMm : undefined, radiatorThicknessMm: radiatorMm ? aio.thicknessMm : undefined }; }
+    case "cooler": { const radiatorMm = number(p.radSize); const aio = aioGeometry(radiatorMm, number(p.fans)); return { mode: radiatorMm || /aio|liquid|líquid/i.test(text(p.type) || "") ? "aio" : "air", type: text(p.type), heightMm: number(p.height), radiatorMm, fans: radiatorMm ? aio.fanCount : number(p.fans) || 1, fanSizeMm: radiatorMm ? aio.fanSizeMm : number(p.fanSize), radiatorWidthMm: radiatorMm ? aio.widthMm : undefined, radiatorLengthMm: radiatorMm ? aio.lengthMm : undefined, radiatorThicknessMm: radiatorMm ? aio.thicknessMm : undefined }; }
     case "storage": { const drives = selected.flatMap((item) => Array.from({ length: item.qty || 1 }, () => ({ type: storageType(item), capacity: visualCapacityLabel(number(values(item).capGB) || 0) }))); return { type: storageType(part), count: Math.min(8, drives.length), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), drives: JSON.stringify(drives.slice(0, 8)) }; }
     case "psu": return { form: text(p.form), watt: number(p.watt), lengthMm: number(p.len) };
     case "fan": return { count: Math.min(12, selected.reduce((sum, item) => sum + (item.qty || 1), 0)), sizeMm: number(p.size) };

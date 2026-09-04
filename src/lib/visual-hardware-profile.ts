@@ -9,6 +9,10 @@ export interface CaseFeatures {
   psuPosition?: string;
   gpuClearanceMm?: number;
   radiatorMounts?: Partial<Record<"top" | "front" | "side" | "bottom" | "rear", number>>;
+  fanSizes?: number[];
+  fanIncluded?: number;
+  coolerClearanceMm?: number;
+  color?: string;
   panels: { window: CasePanelMaterial; front: CasePanelMaterial; rear: "solid" };
 }
 export interface VisualHardwareProfile {
@@ -36,12 +40,13 @@ const NVIDIA = "#76b900";
 const AMD = "#ed1c24";
 const joined = (part?: Pick<VisualPart, "name" | "metadata">) => `${part?.name || ""} ${Object.values(part?.metadata || {}).join(" ")}`.toUpperCase();
 
-/** Catalog dimensions are stored as H × W × D. Separators and an optional mm suffix are tolerated. */
+/** El catálogo guarda las dimensiones como largo × ancho × alto (fondo, ancho, altura),
+    que es como las publican los fabricantes. Se toleran separadores y el sufijo «mm». */
 export function parseCaseDimensions(value: unknown): CaseDimensions | undefined {
   if (typeof value !== "string") return undefined;
   const numbers = value.replace(/,/g, ".").match(/\d+(?:\.\d+)?/g)?.map(Number);
   if (!numbers || numbers.length < 3 || numbers.slice(0, 3).some((n) => n < 80 || n > 1000)) return undefined;
-  const [height, width, depth] = numbers;
+  const [depth, width, height] = numbers;
   return { height, width, depth };
 }
 
@@ -51,8 +56,11 @@ export function inferCaseStyle(part?: Pick<VisualPart, "name" | "metadata">, dim
   if (/\bHTPC\b|RIDGE|DESKTOP|CONSOLE/.test(value)) return "HTPC";
   if (/O11|DUAL[ -]?CHAMBER|6500X|H9 FLOW|GT502/.test(value)) return "WIDE_DUAL_CHAMBER";
   if (/AQUARIUM|VISION|FISHTANK|PANORAM/.test(value) || /DOBLE|TRES CARAS/.test(value)) return "AQUARIUM";
-  if (/MINI[ -]?ITX|NR200|MESHLICIOUS|2000D/.test(value) || (dimensions && dimensions.height < 390 && dimensions.width < 210)) return "MINI_TOWER";
-  if (/COMPACT|MATX|MICRO[ -]?ATX|AP20[12]|A3-MATX/.test(value) || (dimensions && dimensions.height < 440)) return "COMPACT_TOWER";
+  /* «Micro-ATX» aparece en la lista de formatos que admite casi cualquier torre:
+     el tamaño se lee del nombre y de las medidas, no de esa lista. */
+  const name = (part?.name || "").toUpperCase();
+  if (/MINI[ -]?ITX|NR200|MESHLICIOUS|2000D/.test(name) || (dimensions && dimensions.height < 390 && dimensions.width < 210)) return "MINI_TOWER";
+  if (/COMPACT|MATX|MICRO[ -]?ATX|AP20[12]|A3-MATX/.test(name) || (dimensions && dimensions.height < 440)) return "COMPACT_TOWER";
   return dimensions ? "STANDARD_TOWER" : "GENERIC";
 }
 
@@ -62,7 +70,7 @@ export function inferCasePanels(part: Pick<VisualPart, "name" | "metadata">, sty
   const name = (part.name || "").toUpperCase();
   const window = /CRISTAL|GLASS/.test(description) ? "glass" : /MALLA|MESH/.test(description) ? "mesh" : "solid";
   const panoramic = style === "AQUARIUM" || style === "WIDE_DUAL_CHAMBER" || /DOBLE|TRES CARAS/.test(description);
-  const airflowFront = /AIRFLOW|MESH|TORRENT|500DX|LANCOOL|POP AIR|MESHIFY/.test(name);
+  const airflowFront = /AIRFLOW|MESH|TORRENT|500DX|LANCOOL|POP AIR|MESHIFY|AP20[12]|FLOW|NR200P?\b|TERRA|NORTH XL/.test(name);
   return { window, front: panoramic ? "glass" : airflowFront ? "mesh" : "solid", rear: "solid" };
 }
 
@@ -94,7 +102,7 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
       if (part.metadata.radiatorMounts) {
         try { radiatorMounts = JSON.parse(String(part.metadata.radiatorMounts)); } catch { radiatorMounts = undefined; }
       }
-      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style, isLight: caseLight, caseFeatures: { sidePanel: String(part.metadata.sidePanel || ""), psuPosition: String(part.metadata.psuPosition || ""), gpuClearanceMm: typeof part.metadata.gpuClearanceMm === "number" ? part.metadata.gpuClearanceMm : undefined, radiatorMounts, panels: inferCasePanels(part, style) } };
+      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style, isLight: caseLight, caseFeatures: { sidePanel: String(part.metadata.sidePanel || ""), psuPosition: String(part.metadata.psuPosition || ""), gpuClearanceMm: typeof part.metadata.gpuClearanceMm === "number" ? part.metadata.gpuClearanceMm : undefined, radiatorMounts, fanSizes: (() => { try { const v = JSON.parse(String(part.metadata.fanSizes || "[]")); return Array.isArray(v) ? v.filter((n): n is number => typeof n === "number") : undefined; } catch { return undefined; } })(), fanIncluded: typeof part.metadata.fanIncluded === "number" ? part.metadata.fanIncluded : undefined, coolerClearanceMm: typeof part.metadata.coolerClearanceMm === "number" ? part.metadata.coolerClearanceMm : undefined, color: typeof part.metadata.color === "string" ? part.metadata.color : undefined, panels: inferCasePanels(part, style) } };
     }
     case "mbo": return { ...base, primaryColor: light ? "#d8dcd8" : "#171b1a", secondaryColor: light ? "#8f9792" : "#505653", material: "pcb", metalness: .35, roughness: .42, isLight: light };
     case "cpu": return { ...base, primaryColor: "#c6cbc7", secondaryColor: "#313633", material: "metal", metalness: .9, roughness: .22, isLight: true };
