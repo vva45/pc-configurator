@@ -1,6 +1,6 @@
 import type { CatId, Part } from "@/data/parts/types";
 import type { AppBuild, Picked } from "@/lib/compat";
-import { aioGeometry, gpuFamilyLabel } from "@/lib/visual-hardware-profile";
+import { aioGeometry, gpuFamilyLabel, gpuModelLabel } from "@/lib/visual-hardware-profile";
 export { gpuFamilyLabel } from "@/lib/visual-hardware-profile";
 
 export type VisualState = "empty" | "installed" | "conflict" | "warning" | "next";
@@ -13,6 +13,8 @@ export interface VisualPart {
   name?: string;
   state: VisualState;
   reason?: string;
+  brand?: string;   // marca y modelo de la primera pieza elegida, para rotular el 3D
+  model?: string;
   quantity: number;
   metadata: Record<string, string | number | boolean | undefined>;
 }
@@ -87,7 +89,7 @@ function metadata(category: VisualCategory, selected: Picked[]): VisualPart["met
     case "mbo": return { form: text(p.form), dimmSlots: number(p.dimm) };
     case "cpu": return { socket: text(p.socket), cores: number(p.cores) };
     case "ram": return { modules: Math.min(8, selected.reduce((sum, item) => sum + (number(values(item).kit) || 1) * (item.qty || 1), 0)), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), type: text(p.memType), heightMm: number(p.height), rgb: Boolean(p.rgb) };
-    case "gpu": { const family = gpuFamilyLabel(part); return { lengthMm: number(p.len), slots: number(p.slots), vramGB: number(p.vram), conn8: number(p.conn8) || 0, conn6: number(p.conn6) || 0, hpwr: Boolean(p.hpwr), family: family.label, vendor: family.vendor }; }
+    case "gpu": { const family = gpuFamilyLabel(part); return { lengthMm: number(p.len), slots: number(p.slots), vramGB: number(p.vram), conn8: number(p.conn8) || 0, conn6: number(p.conn6) || 0, hpwr: Boolean(p.hpwr), family: family.label, vendor: family.vendor, chip: gpuModelLabel(part.name) || text(p.chip) }; }
     case "cooler": { const radiatorMm = number(p.radSize); const aio = aioGeometry(radiatorMm, number(p.fans)); return { mode: radiatorMm || /aio|liquid|líquid/i.test(text(p.type) || "") ? "aio" : "air", type: text(p.type), heightMm: number(p.height), radiatorMm, fans: radiatorMm ? aio.fanCount : number(p.fans) || 1, fanSizeMm: radiatorMm ? aio.fanSizeMm : number(p.fanSize), radiatorWidthMm: radiatorMm ? aio.widthMm : undefined, radiatorLengthMm: radiatorMm ? aio.lengthMm : undefined, radiatorThicknessMm: radiatorMm ? aio.thicknessMm : undefined }; }
     case "storage": { const drives = selected.flatMap((item) => Array.from({ length: item.qty || 1 }, () => ({ type: storageType(item), capacity: visualCapacityLabel(number(values(item).capGB) || 0) }))); return { type: storageType(part), count: Math.min(8, drives.length), capacityGB: selected.reduce((sum, item) => sum + (number(values(item).capGB) || 0) * (item.qty || 1), 0), drives: JSON.stringify(drives.slice(0, 8)) }; }
     case "psu": return { form: text(p.form), watt: number(p.watt), lengthMm: number(p.len) };
@@ -116,6 +118,7 @@ export function createVisualBuildModel(build: AppBuild, options: VisualBuildOpti
     parts[category] = {
       category, sourceCategory: source, label: LABELS[category], state, reason,
       name: selected.length ? selected.map((part) => `${part.brand} ${part.name}`).join(" · ") : undefined,
+      brand: selected[0]?.brand, model: selected[0]?.name,
       quantity: selected.reduce((sum, item) => sum + (item.qty || 1), 0),
       metadata: selected.length ? metadata(category, selected) : {},
     };

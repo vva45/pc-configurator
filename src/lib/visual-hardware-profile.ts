@@ -13,6 +13,7 @@ export interface CaseFeatures {
   fanIncluded?: number;
   coolerClearanceMm?: number;
   color?: string;
+  forms?: string;   // formatos de placa que admite, tal como los lista el catálogo
   panels: { window: CasePanelMaterial; front: CasePanelMaterial; rear: "solid" };
 }
 export interface VisualHardwareProfile {
@@ -88,6 +89,16 @@ export function gpuFamilyLabel(part: Pick<Part, "brand" | "name">): { label: str
   return { label: "GPU", vendor: "generic" };
 }
 
+/** Modelo corto para rotular una gráfica: «RX 9070 XT», «RTX 4070 Ti SUPER», «Arc B580».
+    Sale del nombre del catálogo; si no se reconoce, no se inventa nada. */
+export function gpuModelLabel(name?: string): string | undefined {
+  const m = (name || "").match(/\b(RTX|GTX|GT|RX|ARC)\s*([A-Z]?\d{3,4})(?:\s*(XTX|XT|GRE|TI\s*SUPER|TI|SUPER))?\b/i);
+  if (!m) return undefined;
+  const family = m[1].toUpperCase() === "ARC" ? "Arc" : m[1].toUpperCase();
+  const suffix = m[3] ? " " + m[3].replace(/\s+/g, " ").replace(/^ti/i, "Ti").replace(/super/i, "SUPER").replace(/^(xtx|xt|gre)$/i, (x) => x.toUpperCase()) : "";
+  return `${family} ${m[2].toUpperCase()}${suffix}`;
+}
+
 /** One deterministic appearance resolver shared by the SVG and WebGL renderers. */
 export function createVisualHardwareProfile(part: VisualPart, motherboard?: VisualHardwareProfile): VisualHardwareProfile {
   const value = joined(part);
@@ -102,7 +113,7 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
       if (part.metadata.radiatorMounts) {
         try { radiatorMounts = JSON.parse(String(part.metadata.radiatorMounts)); } catch { radiatorMounts = undefined; }
       }
-      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style, isLight: caseLight, caseFeatures: { sidePanel: String(part.metadata.sidePanel || ""), psuPosition: String(part.metadata.psuPosition || ""), gpuClearanceMm: typeof part.metadata.gpuClearanceMm === "number" ? part.metadata.gpuClearanceMm : undefined, radiatorMounts, fanSizes: (() => { try { const v = JSON.parse(String(part.metadata.fanSizes || "[]")); return Array.isArray(v) ? v.filter((n): n is number => typeof n === "number") : undefined; } catch { return undefined; } })(), fanIncluded: typeof part.metadata.fanIncluded === "number" ? part.metadata.fanIncluded : undefined, coolerClearanceMm: typeof part.metadata.coolerClearanceMm === "number" ? part.metadata.coolerClearanceMm : undefined, color: typeof part.metadata.color === "string" ? part.metadata.color : undefined, panels: inferCasePanels(part, style) } };
+      return { ...base, primaryColor: caseLight ? LIGHT : "#29312e", secondaryColor: caseLight ? LIGHT_GREY : "#46504b", material: "metal", metalness: .72, roughness: .36, dimensions, style, isLight: caseLight, caseFeatures: { sidePanel: String(part.metadata.sidePanel || ""), psuPosition: String(part.metadata.psuPosition || ""), gpuClearanceMm: typeof part.metadata.gpuClearanceMm === "number" ? part.metadata.gpuClearanceMm : undefined, radiatorMounts, fanSizes: (() => { try { const v = JSON.parse(String(part.metadata.fanSizes || "[]")); return Array.isArray(v) ? v.filter((n): n is number => typeof n === "number") : undefined; } catch { return undefined; } })(), fanIncluded: typeof part.metadata.fanIncluded === "number" ? part.metadata.fanIncluded : undefined, coolerClearanceMm: typeof part.metadata.coolerClearanceMm === "number" ? part.metadata.coolerClearanceMm : undefined, color: typeof part.metadata.color === "string" ? part.metadata.color : undefined, forms: typeof part.metadata.form === "string" ? part.metadata.form : undefined, panels: inferCasePanels(part, style) } };
     }
     case "mbo": return { ...base, primaryColor: light ? "#d8dcd8" : "#171b1a", secondaryColor: light ? "#8f9792" : "#505653", material: "pcb", metalness: .35, roughness: .42, isLight: light };
     case "cpu": return { ...base, primaryColor: "#c6cbc7", secondaryColor: "#313633", material: "metal", metalness: .9, roughness: .22, isLight: true };
