@@ -154,6 +154,48 @@ for (const [label, candidate] of [['air', atx3d], ['aio-240', aio240], ['aio-360
   for (const category of ['mbo','gpu','psu','storage']) ok(containsBox(int,candidate.parts.find(x=>x.category===category).bounds),`3D ${label} ${category} atraviesa el chasis`);
 }
 
+/* Ventilador trasero al lado del escudo I/O (44,45 mm de ancho), nunca encima, y dentro del chasis. */
+const rf=atx3d.layout.rearFan;
+ok(rf&&rf.center[0]-rf.size/2>=atx3d.layout.boardFaceX+45&&rf.center[0]+rf.size/2<=atx3d.layout.interior.max[0]&&rf.center[1]+rf.size/2<=atx3d.layout.interior.max[1],'el ventilador trasero pisa el escudo I/O o sale del chasis');
+ok(atx3d.layout.fanSlots.find(s=>s.where==='rear').position.join()===rf.center.join(),'el hueco del ventilador trasero no coincide con el anclaje');
+/* Pasacables en la bandeja: tres delante del canto de la placa y uno encima de ella. */
+const G=atx3d.layout.grommets, LA=atx3d.layout;
+ok(G.upper[2]<LA.boardRearZ-LA.board.d&&G.mid[2]<LA.boardRearZ-LA.board.d&&G.low[2]<LA.boardRearZ-LA.board.d&&G.top[1]>LA.boardTopY&&Math.abs(G.upper[0]-LA.trayX)<2,'los pasacables no están en la bandeja delante o encima de la placa');
+/* Cables: 24 pines, EPS y uno por conector de la gráfica, sin salir de la cámara; sin fuente no hay cables de alimentación. */
+const wired=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'wc',brand:'Forge',name:'Tower',dims:'450×230×460 mm'},mbo:{cat:'mbo',id:'wm',brand:'Forge',name:'ATX',form:'ATX'},psu:{cat:'psu',id:'wp',brand:'Forge',name:'PSU',form:'ATX',watt:850,len:160},gpu:{cat:'gpu',id:'wg',brand:'Forge',name:'GPU',len:300,slots:3,conn8:2},storage:{cat:'storage',id:'ws',brand:'Forge',name:'HDD',iface:'SATA 3.5 HDD',capGB:4000}})));
+ok(wired.cables.some(c=>c.kind==='atx24'&&c.strands===4)&&wired.cables.some(c=>c.kind==='eps')&&wired.cables.filter(c=>c.kind==='pcie').length===2&&wired.cables.some(c=>c.kind==='sata')&&wired.cables.some(c=>c.kind==='panel'),'faltan cables (24 pines, EPS, PCIe, SATA o panel)');
+const wint={min:wired.layout.interior.min.map(v=>v/100),max:wired.layout.interior.max.map(v=>v/100)};
+ok(wired.cables.every(c=>c.path.every(pt=>containsBox(wint,{min:pt,max:pt}))),'un cable sale del chasis');
+ok(createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'wm2',brand:'Forge',name:'ATX',form:'ATX'}}))).cables.every(c=>c.kind==='panel'),'hay cables de alimentación sin fuente');
+ok(wired.parts.find(x=>x.category==='gpu').source.brand==='Forge'&&wired.parts.find(x=>x.category==='gpu').source.model==='GPU','marca y modelo no llegan a la pieza 3D para rotularla');
+/* Sándwich (Ridge): la gráfica al otro lado de la bandeja, paralela a la placa, y la fuente de pie sobre la placa. */
+const ridge=createVisual3DScene(createVisualBuildModel(B({case:{cat:'case',id:'ridge',brand:'Fractal Design',name:'Ridge',dims:'377×123×358 mm',form:['Mini-ITX'],coolerH:70,gpuLen:325,psuPos:'Lateral'},mbo:{cat:'mbo',id:'itx3',brand:'Forge',name:'ITX',form:'Mini-ITX'},gpu:{cat:'gpu',id:'rg',brand:'Forge',name:'GPU',len:300,slots:2},psu:{cat:'psu',id:'rp',brand:'Forge',name:'SFX',form:'SFX',len:100}})));
+const rgpu=ridge.parts.find(x=>x.category==='gpu');
+ok(ridge.layout.family==='sandwich'&&ridge.layout.gpuChamber&&rgpu.bounds.max[0]<ridge.layout.trayX/100&&rgpu.detail.sandwich===true&&ridge.layout.psuBay.vertical,'el sándwich no pone la gráfica detrás de la bandeja ni la fuente de pie');
+ok(validateVisual3DScene(ridge).length===0,`sándwich incumple el contrato físico: ${validateVisual3DScene(ridge)}`);
+/* Barrido del catálogo entero: cada caja con tres montajes que el motor daría por válidos. Lo que
+   no cabe se avisa (overflow); lo que no puede pasar es que dos piezas se crucen sin aviso. */
+{
+  const cases=P.filter(x=>x.cat==='case');
+  const dimsOf=c=>{const m=String(c.dims||'').match(/(\d+)\D+(\d+)\D+(\d+)/); return m?{d:+m[1],w:+m[2],h:+m[3]}:{d:450,w:220,h:450};};
+  const has=(c,re)=>(Array.isArray(c.form)?c.form:[]).some(f=>re.test(String(f)));
+  const bigForm=c=>has(c,/e-atx/i)?'E-ATX':has(c,/^atx$/i)?'ATX':has(c,/micro/i)?'Micro-ATX':'Mini-ITX';
+  const midForm=c=>has(c,/micro/i)?'Micro-ATX':'Mini-ITX';
+  const maxRad=c=>{const r=c.rad&&typeof c.rad==='object'?Math.max(0,...Object.values(c.rad).map(Number).filter(Number.isFinite)):0; return r||240;};
+  const gpuLen=(c,want)=>Math.min(want,(Number(c.gpuLen)||want)-5);
+  const small=c=>{const d=dimsOf(c); return d.w<230||d.h<320||d.d<300;};
+  const psuOf=c=>small(c)?{cat:'psu',id:'sp',brand:'Forge',name:'PSU',form:'SFX',watt:750,len:100}:{cat:'psu',id:'sp',brand:'Forge',name:'PSU',form:'ATX',watt:850,len:160};
+  const buildsOf=c=>[
+    B({case:c,mbo:{cat:'mbo',id:'m1',brand:'Forge',name:'Big',form:bigForm(c),dimm:4},cpu:{cat:'cpu',id:'c',brand:'Forge',name:'CPU'},ram:{cat:'ram',id:'r',brand:'Forge',name:'RAM',kit:2,height:44},cooler:{cat:'cooler',id:'k1',brand:'Forge',name:'AIO',type:'AIO',radSize:maxRad(c)},gpu:{cat:'gpu',id:'g1',brand:'Forge',name:'GPU',len:gpuLen(c,340),slots:3,conn8:2},psu:psuOf(c),storage:[{cat:'storage',id:'s1',brand:'Forge',name:'NVMe',iface:'M.2 NVMe',capGB:2000,qty:2}],fan:{cat:'fan',id:'f',brand:'Forge',name:'Fan',size:120,qty:2}}),
+    B({case:c,mbo:{cat:'mbo',id:'m2',brand:'Forge',name:'ITX',form:'Mini-ITX',dimm:2},cpu:{cat:'cpu',id:'c',brand:'Forge',name:'CPU'},ram:{cat:'ram',id:'r',brand:'Forge',name:'RAM',kit:2},cooler:{cat:'cooler',id:'k2',brand:'Forge',name:'Torre',type:'Aire (torre)',height:Math.min(158,(Number(c.coolerH)||160)-5),fanSize:120},gpu:{cat:'gpu',id:'g2',brand:'Forge',name:'GPU',len:gpuLen(c,240),slots:2,conn8:1},psu:psuOf(c),storage:[{cat:'storage',id:'s2',brand:'Forge',name:'SSD',iface:'SATA 2.5',capGB:1000},{cat:'storage',id:'s3',brand:'Forge',name:'HDD',iface:'SATA 3.5 HDD',capGB:4000}]}),
+    B({case:c,mbo:{cat:'mbo',id:'m3',brand:'Forge',name:'mATX',form:midForm(c),dimm:4},cpu:{cat:'cpu',id:'c',brand:'Forge',name:'CPU'},ram:{cat:'ram',id:'r',brand:'Forge',name:'RAM',kit:4,height:40},cooler:{cat:'cooler',id:'k3',brand:'Forge',name:'AIO 240',type:'AIO',radSize:240},gpu:{cat:'gpu',id:'g3',brand:'Forge',name:'GPU',len:gpuLen(c,300),slots:2.5,conn8:1,conn6:1},psu:psuOf(c),storage:[{cat:'storage',id:'s4',brand:'Forge',name:'HDD',iface:'SATA 3.5 HDD',capGB:4000,qty:2}],fan:{cat:'fan',id:'f',brand:'Forge',name:'Fan',size:140,qty:3}}),
+  ];
+  const bad=[]; let scenes=0;
+  for(const c of cases) for(const build of buildsOf(c)){ scenes++; const s3=createVisual3DScene(createVisualBuildModel(build)); const e=[...new Set(validateVisual3DScene(s3))]; if(e.length) bad.push(`${c.brand} ${c.name}: ${e.join(', ')}`); }
+  ok(scenes===cases.length*3&&bad.length===0,`barrido de cajas: ${bad.length} montajes con piezas cruzadas\n    `+bad.slice(0,8).join('\n    '));
+  console.log('  barrido 3D: '+scenes+' montajes sobre '+cases.length+' cajas sin piezas cruzadas');
+}
+
 console.log('CATÁLOGO: '+P.length+' piezas');
 const byCat={}; P.forEach(p=>byCat[p.cat]=(byCat[p.cat]||0)+1);
 CATS.forEach(c=>{ ok(byCat[c.id]>0, 'categoría vacía: '+c.id); });
