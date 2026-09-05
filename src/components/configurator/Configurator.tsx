@@ -254,10 +254,10 @@ export default function Configurator() {
 
   const Bar = (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-      borderBottom: "1px solid var(--trace)", background: "var(--board-2)", position: "sticky", top: 0, zIndex: 30, flexWrap: "wrap" }}>
+      borderBottom: "1px solid var(--border)", background: "var(--bg-panel)", position: "sticky", top: 0, zIndex: 30, flexWrap: "wrap" }}>
       <button type="button" onClick={resetHome} aria-label="Reiniciar montaje y volver a CPU" className="forge-home">
-        <div style={{ width: 26, height: 26, border: "1px solid var(--gold)", display: "grid", placeItems: "center" }}>
-          <CircuitBoard size={14} color="var(--gold)" />
+        <div style={{ width: 26, height: 26, border: "1px solid var(--accent)", display: "grid", placeItems: "center" }}>
+          <CircuitBoard size={14} color="var(--accent)" />
         </div>
         <div>
           <div className="dsp" style={{ fontSize: 17, letterSpacing: ".02em" }}>Forge</div>
@@ -266,7 +266,7 @@ export default function Configurator() {
       </button>
       <div style={{ flex: 1 }} />
       <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <Globe size={13} color="var(--silk-dim)" />
+        <Globe size={13} color="var(--text-secondary)" />
         <select value={region} onChange={(e) => setRegion(e.target.value as RegionId)} aria-label="Región"
           style={{ width: "auto", minWidth: 150 }}>
           {Object.entries(REGIONS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -276,13 +276,12 @@ export default function Configurator() {
       <button className="btn btn-gold" disabled={!Object.keys(build).length}
         onClick={() => setShopping(true)}
         style={{ display: "flex", alignItems: "center", gap: 6,
-          opacity: Object.keys(build).length ? 1 : 0.35,
           cursor: Object.keys(build).length ? "pointer" : "not-allowed" }}>
         <ShoppingCart size={12} /> Dónde comprar
       </button>
       <div style={{ textAlign: "right" }}>
         <div className="eyebrow" style={{ fontSize: 8.5 }}>Total del montaje</div>
-        <div className="mono" style={{ fontSize: 17, color: "var(--gold)", fontWeight: 600, lineHeight: 1.1 }}>
+        <div className="mono" style={{ fontSize: 17, color: "var(--accent)", fontWeight: 600, lineHeight: 1.1 }}>
           {total > 0 ? `${eur(total)} ${cur}` : "—"}
         </div>
       </div>
@@ -295,8 +294,8 @@ export default function Configurator() {
       {GROUPS.map((g) => (
         <div key={g.id} className={`build-group build-group-${g.id}`} style={{ marginBottom: 16 }}>
           <div className="build-group-heading" style={{ marginBottom: 7 }}>
-            <div className="build-group-title"><div className="eyebrow" style={{ color: "var(--gold-dim)" }}>{g.label}</div>
-            <div className="mono" style={{ fontSize: 9.5, color: "var(--silk-dim)" }}>{g.sub}</div>
+            <div className="build-group-title"><div className="eyebrow" style={{ color: "var(--text-secondary)" }}>{g.label}</div>
+            <div className="mono" style={{ fontSize: 9.5, color: "var(--text-secondary)" }}>{g.sub}</div>
             </div>
             {g.id === "core" && <div className="core-progress" aria-label={`${coreDone} de ${requiredCore.length} componentes requeridos seleccionados`}>
               <div className="core-progress-copy"><span>Core build</span><strong>{coreDone} / {requiredCore.length}</strong></div>
@@ -315,7 +314,7 @@ export default function Configurator() {
               <button className={coreDone ? "btn btn-gold" : "btn"} onClick={() => setSummary(true)}
                 disabled={!coreDone} style={{ width: "100%", marginTop: 8, display: "flex",
                   alignItems: "center", justifyContent: "center", gap: 7, padding: "9px 12px",
-                  opacity: coreDone ? 1 : 0.4, cursor: coreDone ? "pointer" : "not-allowed" }}>
+                  cursor: coreDone ? "pointer" : "not-allowed" }}>
                 <ClipboardList size={13} /> Resumen de la torre
                 <span className="mono" style={{ fontSize: 10, opacity: 0.75 }}>{coreDone}/{requiredCore.length}</span>
               </button>
@@ -332,20 +331,20 @@ export default function Configurator() {
       <PowerGauge power={power} psu={one(build, "psu")} />
 
       {power.total > 0 && (
-        <div style={{ marginTop: 12, border: "1px solid var(--trace)", padding: "9px 10px" }}>
+        <div style={{ marginTop: 12, border: "1px solid var(--border)", padding: "9px 10px" }}>
           <div className="eyebrow" style={{ marginBottom: 6 }}>Reparto del consumo</div>
           {Object.entries(power.detail).filter(([, v]) => v > 0).map(([k, v]) => (
             <div key={k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
-              <span className="mono" style={{ fontSize: 10, width: 82, color: "var(--silk-dim)" }}>{k}</span>
-              <div style={{ flex: 1, height: 5, background: "#0A1610" }}>
-                <div style={{ height: "100%", width: `${(v / power.total) * 100}%`, background: "var(--gold-dim)" }} />
+              <span className="mono" style={{ fontSize: 10, width: 82, color: "var(--text-secondary)" }}>{k}</span>
+              <div style={{ flex: 1, height: 5, background: "#090D12" }}>
+                <div style={{ height: "100%", width: `${(v / power.total) * 100}%`, background: "rgba(140,165,195,.5)" }} />
               </div>
               <span className="mono" style={{ fontSize: 10, width: 38, textAlign: "right" }}>{Math.round(v)} W</span>
             </div>
           ))}
           {power.desk > 0 && (
-            <div className="mono" style={{ fontSize: 9.5, color: "var(--silk-dim)", marginTop: 7,
-              borderTop: "1px solid var(--trace)", paddingTop: 6, lineHeight: 1.5 }}>
+            <div className="mono" style={{ fontSize: 9.5, color: "var(--text-secondary)", marginTop: 7,
+              borderTop: "1px solid var(--border)", paddingTop: 6, lineHeight: 1.5 }}>
               + {power.desk} W de monitores y altavoces. Van al enchufe, no a la fuente: no cuentan para dimensionarla.
             </div>
           )}
@@ -361,8 +360,8 @@ export default function Configurator() {
 
       <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
         <span className="eyebrow">POST · verificación</span>
-        <div style={{ flex: 1, height: 1, background: "var(--trace)" }} />
-        <span className="mono" style={{ fontSize: 10, color: !log.length ? "var(--silk-dim)" : fails ? "var(--red)" : warns ? "var(--amber)" : "var(--cyan)" }}>
+        <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+        <span className="mono" style={{ fontSize: 10, color: !log.length ? "var(--text-secondary)" : fails ? "var(--danger)" : warns ? "var(--warning)" : "var(--success)" }}>
           {!log.length ? "pendiente" : fails ? `${fails} fallo${fails > 1 ? "s" : ""}` : warns ? `${warns} aviso${warns > 1 ? "s" : ""}` : "todo correcto"}
         </span>
       </div>
@@ -385,14 +384,14 @@ export default function Configurator() {
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* La categoría se elige en el panel de montaje de la izquierda;
           aquí solo buscador, orden y conmutadores. */}
-      <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--trace)" }}>
+      <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
         <nav className="category-jump" aria-label="Categorías del montaje" data-horizontal-scroll-zone>
           {CATS.map((category) => { const Icon = category.icon; const selected = ((build[category.id] || []) as Picked[]).length > 0; return <button key={category.id} className={cat === category.id ? "is-active" : selected ? "is-selected" : ""} aria-current={cat === category.id ? "step" : undefined} onClick={() => setCat(category.id)}><Icon size={13}/><span>{category.label}</span>{selected && <i aria-label="seleccionada" />}</button>; })}
         </nav>
         <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
           <span className="eyebrow" style={{ whiteSpace: "nowrap" }}>{CAT[cat].label}</span>
           <div style={{ position: "relative", flex: "1 1 180px", minWidth: 150 }}>
-            <Search size={13} color="var(--silk-dim)"
+            <Search size={13} color="var(--text-secondary)"
               style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)" }} />
             <input type="text" value={q} onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar por marca, modelo o especificación…"
@@ -430,12 +429,12 @@ export default function Configurator() {
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <div className={`filt-col ${showFilters ? "open" : ""}`}
-          style={{ width: 224, flexShrink: 0, borderRight: "1px solid var(--trace)" }}>
+          style={{ width: 224, flexShrink: 0, borderRight: "1px solid var(--border)" }}>
           <FilterPanel cat={cat} facets={catalog?.facets || []} filters={filters} setFilters={setFilters}
             onClear={() => setFilters({})} />
         </div>
         <div ref={catalogScroll} className="scroll" style={{ flex: 1, padding: 12 }}>
-          <div className="mono" style={{ fontSize: 10.5, color: "var(--silk-dim)", marginBottom: 9 }}>
+          <div className="mono" style={{ fontSize: 10.5, color: "var(--text-secondary)", marginBottom: 9 }}>
             {catalog ? <>
               {catalog.nCompat} compatibles
               {shownBlocked > 0 && ` · ${shownBlocked} descartadas`}
@@ -445,7 +444,7 @@ export default function Configurator() {
           {catalog && catalog.total === 0 ? (
             <div className="panel" style={{ padding: 24, textAlign: "center" }}>
               <div className="dsp" style={{ fontSize: 15, marginBottom: 6 }}>Nada encaja</div>
-              <div style={{ fontSize: 12.5, color: "var(--silk-dim)", marginBottom: 12 }}>
+              <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginBottom: 12 }}>
                 Los filtros dejan fuera todo el catálogo de {CAT[cat].label.toLowerCase()}.
               </div>
               <button className="btn btn-gold" onClick={() => { setFilters({}); setQ(""); }}>Quitar filtros</button>
@@ -484,10 +483,10 @@ export default function Configurator() {
 
       <div className="layout" onTouchStart={(event) => { if (event.touches.length === 1) touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY, owner: getTabSwipeGestureOwner(event.target) }; else touchStart.current = undefined; }} onTouchEnd={swipeEnd} onTouchCancel={() => { touchStart.current = undefined; }}>
         <div className={`col-build ${tab === "build" ? "on" : ""}`}
-          style={{ borderRight: "1px solid var(--trace)", minHeight: 0 }}>{BuildPane}</div>
+          style={{ borderRight: "1px solid var(--border)", minHeight: 0 }}>{BuildPane}</div>
         <div className={`col-catalog ${tab === "catalog" ? "on" : ""}`} style={{ minHeight: 0 }}>{CatalogPane}</div>
         <div className={`col-status ${tab === "status" ? "on" : ""}`}
-          style={{ borderLeft: "1px solid var(--trace)", minHeight: 0 }}>{StatusPane}</div>
+          style={{ borderLeft: "1px solid var(--border)", minHeight: 0 }}>{StatusPane}</div>
       </div>
 
       {continuar && showFloatingNext && <button className="floating-next" onClick={() => { setCat(continuar); setTab("catalog"); }} aria-label={`Continuar a ${CAT[continuar].label}`}>{(() => { const Icon = CAT[continuar].icon; return <Icon size={16}/>; })()}<span>{CAT[continuar].label}</span><ArrowRight size={17}/></button>}

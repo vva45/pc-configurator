@@ -10,15 +10,15 @@ export default function PostLog({ log }: { log: PostLine[] }) {
   return (
     <div>
       {log.length === 0 && (
-        <div className="mono" style={{ fontSize: 11, color: "var(--silk-dim)", padding: "14px 0", lineHeight: 1.7 }}>
+        <div className="mono" style={{ fontSize: 11, color: "var(--text-secondary)", padding: "14px 0", lineHeight: 1.7 }}>
           Sin comprobaciones todavía.<br />Elige una CPU o una placa base y el informe empieza a rellenarse.
         </div>
       )}
       {log.map((r, i) => (
         <div key={i} className={`log-row fade log-${r.lvl}`} style={{ animationDelay: `${i * 18}ms` }}>
           <span style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>{ico(r.lvl)}{tag(r.lvl).slice(0, 6)}</span>
-          <span style={{ color: "var(--silk)", opacity: 0.85, whiteSpace: "nowrap" }}>{r.id}</span>
-          <span style={{ color: "var(--silk-dim)", lineHeight: 1.45 }}>{r.msg}</span>
+          <span style={{ color: "var(--text)", opacity: 0.85, whiteSpace: "nowrap" }}>{r.id}</span>
+          <span style={{ color: "var(--text-secondary)", lineHeight: 1.45 }}>{r.msg}</span>
         </div>
       ))}
     </div>

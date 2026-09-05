@@ -20,7 +20,7 @@ export default function ForgeIntelligence({ analysis, onAction }: {
         <div className="forge-score-reading"><strong>{score?.total ?? "—"}</strong><span>{score ? "/ 100" : "PENDIENTE"}</span></div>
       </div>
       {score ? <>
-        <div className="forge-score-status">{score.label}</div>
+        <div className={`forge-score-status is-${({ LISTO: "ready", "SÓLIDO": "solid", "EN PROGRESO": "progress", REVISAR: "review" } as const)[score.label]}`}>{score.label}</div>
         <div className="forge-score-track" aria-hidden="true"><i style={{ width: `${score.total}%` }} /></div>
         <dl className="forge-score-breakdown">
           {([['CORE', score.core, 35], ['COMPAT.', score.compatibility, 30], ['POST', score.post, 20], ['ENERGÍA', score.power, 15]] as const).map(([label, value, max]) =>

@@ -35,12 +35,12 @@ export default function ShoppingList({ build, region, total, onClose }: {
 
   return (
     <div role="dialog" aria-modal="true" aria-label="Lista de compra" onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(4,10,7,.82)", zIndex: 60,
+      style={{ position: "fixed", inset: 0, background: "rgba(3,6,10,.84)", zIndex: 60,
         display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div className="panel fade" onClick={(e) => e.stopPropagation()}
         style={{ width: "min(760px,100%)", maxHeight: "88vh", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-          padding: 14, borderBottom: "1px solid var(--trace)" }}>
+          padding: 14, borderBottom: "1px solid var(--border)" }}>
           <div>
             <div className="eyebrow">Lista de compra · {R.label}</div>
             <div className="dsp" style={{ fontSize: 19, marginTop: 5 }}>
@@ -50,7 +50,7 @@ export default function ShoppingList({ build, region, total, onClose }: {
           <button className="btn" onClick={onClose} aria-label="Cerrar"><X size={13} /></button>
         </div>
 
-        <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--trace)",
+        <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)",
           display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
           <span className="eyebrow" style={{ marginRight: 3 }}>Tienda</span>
           <button className={`chip ${store === "all" ? "sel" : ""}`} onClick={() => setStore("all")}>Todas</button>
@@ -61,7 +61,7 @@ export default function ShoppingList({ build, region, total, onClose }: {
 
         <div className="scroll" style={{ padding: 14, flex: 1, minHeight: 140 }}>
           {items.length === 0 && (
-            <div style={{ textAlign: "center", padding: 24, color: "var(--silk-dim)" }}>
+            <div style={{ textAlign: "center", padding: 24, color: "var(--text-secondary)" }}>
               El montaje está vacío. Elige piezas y vuelve aquí.
             </div>
           )}
@@ -69,16 +69,16 @@ export default function ShoppingList({ build, region, total, onClose }: {
             const ss = storesFor(p, region);
             const only = store === "all" ? null : ss.find((x) => x.id === store);
             return (
-              <div key={p._uid} style={{ borderBottom: "1px solid var(--trace)", padding: "9px 0" }}>
+              <div key={p._uid} style={{ borderBottom: "1px solid var(--border)", padding: "9px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
                   <div style={{ minWidth: 0 }}>
                     <span className="eyebrow">{p._cat}</span>
                     <div style={{ fontSize: 13, fontWeight: 600, marginTop: 1 }}>
                       {p.brand} {p.name}{(p.qty || 1) > 1 && <span className="mono"
-                        style={{ color: "var(--gold)", fontSize: 11 }}> ×{p.qty}</span>}
+                        style={{ color: "var(--text-secondary)", fontSize: 11 }}> ×{p.qty}</span>}
                     </div>
                   </div>
-                  <span className="mono" style={{ fontSize: 12, color: "var(--silk-dim)", whiteSpace: "nowrap" }}>
+                  <span className="mono" style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
                     {p.price ? `${eur(p.price * (p.qty || 1))} ${R.cur}` : "—"}
                   </span>
                 </div>
@@ -86,7 +86,7 @@ export default function ShoppingList({ build, region, total, onClose }: {
                   {(only ? [only] : ss).map((s) =>
                     <a key={s.id} className="chip" href={s.url} target="_blank" rel="noopener noreferrer"
                       style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4,
-                        color: s.kind === "comparador" ? "var(--copper)" : undefined }}>
+                        color: s.kind === "comparador" ? "var(--text)" : undefined }}>
                       {s.name}<ExternalLink size={9} />
                     </a>)}
                 </div>
@@ -96,15 +96,15 @@ export default function ShoppingList({ build, region, total, onClose }: {
         </div>
 
         {items.length > 0 && (
-          <div style={{ padding: 14, borderTop: "1px solid var(--trace)" }}>
+          <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span className="eyebrow">Copiar el montaje</span>
               <button className="btn btn-gold" onClick={copy}>{copied ? "Copiado" : "Copiar"}</button>
             </div>
             <textarea ref={ta} readOnly value={text} rows={text.split("\n").length}
               aria-label="Montaje en texto"
-              style={{ width: "100%", background: "var(--board)", border: "1px solid var(--trace)",
-                color: "var(--silk-dim)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11,
+              style={{ width: "100%", background: "var(--bg-canvas)", border: "1px solid var(--border)",
+                color: "var(--text-secondary)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11,
                 lineHeight: 1.5, padding: "8px 9px", resize: "vertical",
                 maxHeight: "42vh", overflowY: "auto" }} />
           </div>

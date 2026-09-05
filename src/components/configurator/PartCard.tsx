@@ -24,15 +24,15 @@ export default function PartCard({ part, blocked, reason, chosen, onPick, onBuy,
         aria-pressed={chosen} onClick={() => onPick(part)} />
       <div className="part-card-art"><PartArt part={part} /></div>
       {(part.museum || part.legacy) && <div className="mono" style={{ position: "absolute", right: 7, top: 7, fontSize: 9,
-        letterSpacing: ".1em", color: "var(--copper)", border: "1px solid var(--copper)", padding: "1px 5px" }}>
+        letterSpacing: ".1em", color: "var(--legacy)", border: "1px solid var(--legacy)", padding: "1px 5px" }}>
         {part.museum ? "MUSEO" : "DESCAT."}</div>}
       <div className="part-card-body">
         <div className="part-brand">{part.brand}</div>
         <h3 className="part-name">{part.name}</h3>
         <div className="part-specs">
           {specs.map((s, i) =>
-            <span key={i} className="mono" style={{ fontSize: 9.5, color: "var(--silk-dim)",
-              border: "1px solid var(--trace)", padding: "1.5px 5px" }}>{s}</span>)}
+            <span key={i} className="mono" style={{ fontSize: 9.5, color: "var(--text-secondary)",
+              border: "1px solid var(--border)", padding: "1.5px 5px" }}>{s}</span>)}
         </div>
         <div className={`part-status part-status-${state}`}>
           {blocked ? <XCircle size={11} /> : <Check size={11} />}
