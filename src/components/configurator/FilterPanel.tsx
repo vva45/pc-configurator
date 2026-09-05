@@ -62,14 +62,14 @@ export default function FilterPanel({ cat, facets, filters, setFilters, onClear 
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input type="number" value={cur[0]} min={lo} max={hi} aria-label={`${d.label} mínimo`}
                 onChange={(e) => set(d.k, [Number(e.target.value), cur[1]])} />
-              <span className="mono" style={{ color: "var(--silk-dim)", fontSize: 11 }}>–</span>
+              <span className="mono" style={{ color: "var(--text-secondary)", fontSize: 11 }}>–</span>
               <input type="number" value={cur[1]} min={lo} max={hi} aria-label={`${d.label} máximo`}
                 onChange={(e) => set(d.k, [cur[0], Number(e.target.value)])} />
             </div>
             <input type="range" min={lo} max={hi} value={cur[0]} aria-label={`${d.label} mínimo`}
               step={(hi - lo) / 100 < 1 ? 0.1 : 1} style={{ marginTop: 5 }}
               onChange={(e) => set(d.k, [Number(e.target.value), cur[1]])} />
-            <div className="mono" style={{ fontSize: 9.5, color: "var(--silk-dim)", display: "flex", justifyContent: "space-between" }}>
+            <div className="mono" style={{ fontSize: 9.5, color: "var(--text-secondary)", display: "flex", justifyContent: "space-between" }}>
               <span>{lo}{d.unit || ""}</span><span>{hi}{d.unit || ""}</span>
             </div>
           </div>;
@@ -84,11 +84,11 @@ export default function FilterPanel({ cat, facets, filters, setFilters, onClear 
         }
 
         return (
-          <div key={d.k} style={{ borderTop: "1px solid var(--trace)", padding: "8px 0" }}>
+          <div key={d.k} style={{ borderTop: "1px solid var(--border)", padding: "8px 0" }}>
             <button onClick={() => toggle(d.k)} style={{ all: "unset", cursor: "pointer", width: "100%",
               display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span className="mono" style={{ fontSize: 11, letterSpacing: ".04em" }}>{d.label}</span>
-              <ChevronDown size={13} color="var(--silk-dim)"
+              <ChevronDown size={13} color="var(--text-secondary)"
                 style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .18s" }} />
             </button>
             {isOpen && <div style={{ marginTop: 8 }}>{body}</div>}

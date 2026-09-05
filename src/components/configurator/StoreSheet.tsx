@@ -15,22 +15,22 @@ export default function StoreSheet({ part, region, onClose }: {
   const Row = (s: ResolvedStore) => (
     <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "11px 12px", border: "1px solid var(--trace)", marginBottom: 6,
-        textDecoration: "none", color: "var(--silk)" }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--gold)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--trace)"; }}>
+        padding: "11px 12px", border: "1px solid var(--border)", marginBottom: 6,
+        textDecoration: "none", color: "var(--text)" }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}>
       <span style={{ fontWeight: 600, fontSize: 13 }}>{s.name}</span>
-      <ExternalLink size={12} color="var(--gold)" />
+      <ExternalLink size={12} color="var(--accent)" />
     </a>
   );
   return (
     <div role="dialog" aria-modal="true" aria-label="Dónde comprar" onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(4,10,7,.82)", zIndex: 60,
+      style={{ position: "fixed", inset: 0, background: "rgba(3,6,10,.84)", zIndex: 60,
         display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div className="panel fade" onClick={(e) => e.stopPropagation()}
         style={{ width: "min(560px,100%)", maxHeight: "86vh", overflow: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-          padding: 14, borderBottom: "1px solid var(--trace)" }}>
+          padding: 14, borderBottom: "1px solid var(--border)" }}>
           <div>
             <div className="eyebrow">Dónde comprar · {R.label}</div>
             <div className="dsp" style={{ fontSize: 19, marginTop: 5 }}>{part.brand} {part.name}</div>
@@ -44,7 +44,7 @@ export default function StoreSheet({ part, region, onClose }: {
             <div className="eyebrow" style={{ margin: "14px 0 7px" }}>Comparadores de precio</div>
             {comps.map(Row)}
           </>}
-          <div className="mono" style={{ fontSize: 10, color: "var(--silk-dim)", marginTop: 12, lineHeight: 1.6 }}>
+          <div className="mono" style={{ fontSize: 10, color: "var(--text-secondary)", marginTop: 12, lineHeight: 1.6 }}>
             Cada enlace abre el buscador de la tienda con «{decodeURIComponent(searchTerm(part))}».
             Cambia la región arriba para ver otro mercado.
           </div>

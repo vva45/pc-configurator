@@ -46,14 +46,15 @@ const M = {
   black: { color: "#0a0d0b", metalness: 0.3, roughness: 0.6 },
 } satisfies Record<string, Mat>;
 
-const STATE = { empty: "#5f7d6a", installed: "#000000", next: "#dfb85e", warning: "#e3a83c", conflict: "#e05a48" } as const;
+/* Colores de estado de la interfaz sobre las piezas: azul = siguiente/activa, rojo = conflicto, ámbar = aviso. */
+const STATE = { empty: "#6b7a8c", installed: "#000000", next: "#4D8DFF", warning: "#E9AB55", conflict: "#ED6666" } as const;
 
-/** Material PBR con el estado de la pieza encima: fantasma si falta, dorado si es la siguiente, rojo si hay conflicto. */
+/** Material PBR con el estado de la pieza encima: fantasma si falta, azul si es la siguiente o está activa, ámbar si avisa, rojo si hay conflicto. */
 function Skin({ part, active, base, tint }: { part: Visual3DPart; active?: boolean; base: Mat; tint?: string }) {
   const ghost = part.state === "empty" || part.state === "next";
-  const accent = active ? "#dfb85e" : STATE[part.state];
+  const accent = active ? "#4D8DFF" : STATE[part.state];
   const intensity = active ? 0.22 : part.state === "installed" ? 0 : part.state === "next" ? 0.35 : part.state === "empty" ? 0.12 : 0.3;
-  return <meshStandardMaterial color={ghost ? (part.state === "next" ? "#8a7a4a" : "#3f5a4b") : tint || base.color} metalness={ghost ? 0.1 : base.metalness} roughness={ghost ? 0.7 : base.roughness}
+  return <meshStandardMaterial color={ghost ? (part.state === "next" ? "#3b5a8a" : "#3a4658") : tint || base.color} metalness={ghost ? 0.1 : base.metalness} roughness={ghost ? 0.7 : base.roughness}
     transparent={ghost || base.transparent} opacity={ghost ? (part.state === "next" ? 0.28 : 0.16) : base.opacity ?? 1} depthWrite={!ghost}
     emissive={accent} emissiveIntensity={intensity} />;
 }
@@ -380,7 +381,7 @@ function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) 
   const trayX = L.trayX * U; const B = L.board;
   const ioTop = (L.boardTopY - B.ioV[0]) * U, ioBot = (L.boardTopY - B.ioV[1]) * U;
   const front = L.panels.front; const window = L.panels.window;
-  const glassMat = <meshPhysicalMaterial color="#bfdccb" metalness={0} roughness={0.05} transparent opacity={0.09} clearcoat={1} clearcoatRoughness={0.05} depthWrite={false} side={THREE.DoubleSide} />;
+  const glassMat = <meshPhysicalMaterial color="#c9d6e2" metalness={0} roughness={0.05} transparent opacity={0.09} clearcoat={1} clearcoatRoughness={0.05} depthWrite={false} side={THREE.DoubleSide} />;
   const meshMat = <meshStandardMaterial color="#141917" metalness={0.3} roughness={0.7} transparent opacity={0.62} depthWrite={false} side={THREE.DoubleSide} />;
   const e = explode; const slats = Math.max(6, Math.round(W / 0.17));
   const G = L.grommets; const rf = L.rearFan;
@@ -469,11 +470,11 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
   const shadowSize = radius * 1.4;
   return <>
     <Studio />
-    <hemisphereLight args={["#e6efe9", "#1b2620", 0.55]} />
+    <hemisphereLight args={["#e4e9ef", "#1a2029", 0.55]} />
     <directionalLight position={[radius * 1.4, radius * 2.2, -radius * 1.6]} intensity={2.4} color="#fff3dc" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0003} shadow-normalBias={0.02}
       shadow-camera-left={-shadowSize} shadow-camera-right={shadowSize} shadow-camera-top={shadowSize} shadow-camera-bottom={-shadowSize} shadow-camera-near={0.2} shadow-camera-far={radius * 8} />
-    <directionalLight position={[-radius * 1.5, radius * 0.8, radius * 1.2]} intensity={0.7} color="#a9d6c4" />
-    <pointLight position={[radius * 0.6, radius * 0.3, -radius * 0.9]} intensity={radius * 1.2} distance={radius * 5} color="#dfe9e3" />
+    <directionalLight position={[-radius * 1.5, radius * 0.8, radius * 1.2]} intensity={0.7} color="#a9c4dc" />
+    <pointLight position={[radius * 0.6, radius * 0.3, -radius * 0.9]} intensity={radius * 1.2} distance={radius * 5} color="#dfe6ee" />
     <group>
       <Chassis scene={scene} explode={explode} />
       <Cables cables={scene.cables} explode={explode} light={cableLight} />

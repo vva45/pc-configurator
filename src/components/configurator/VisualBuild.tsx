@@ -29,7 +29,8 @@ const ZONES: Record<VisualCategory, { x: number; y: number; w: number; h: number
 };
 
 function details(part: VisualPart) {
-  const entries = Object.entries(part.metadata).filter(([, value]) => value !== undefined);
+  /* Las claves compuestas (listas de discos, anclajes, tamaños de ventilador) ya se leen en su sitio; aquí serían JSON crudo. */
+  const entries = Object.entries(part.metadata).filter(([key, value]) => value !== undefined && !/drives|radiatorMounts|fanSizes/.test(key));
   return entries.map(([key, value]) => `${key}: ${value}`).join(" · ");
 }
 

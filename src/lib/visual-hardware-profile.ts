@@ -39,6 +39,7 @@ const LIGHT_GREY = "#b9bfbb";
 const GOLD = "#dfb85e";
 const NVIDIA = "#76b900";
 const AMD = "#ed1c24";
+const INTEL = "#1F8FE5";
 const joined = (part?: Pick<VisualPart, "name" | "metadata">) => `${part?.name || ""} ${Object.values(part?.metadata || {}).join(" ")}`.toUpperCase();
 
 /** El catálogo guarda las dimensiones como largo × ancho × alto (fondo, ancho, altura),
@@ -75,7 +76,7 @@ export function inferCasePanels(part: Pick<VisualPart, "name" | "metadata">, sty
   return { window, front: panoramic ? "glass" : airflowFront ? "mesh" : "solid", rear: "solid" };
 }
 
-export function gpuFamilyLabel(part: Pick<Part, "brand" | "name">): { label: string; vendor: "nvidia" | "amd" | "generic" } {
+export function gpuFamilyLabel(part: Pick<Part, "brand" | "name">): { label: string; vendor: "nvidia" | "amd" | "intel" | "generic" } {
   const value = `${part.brand} ${part.name}`.toUpperCase();
   if (/NVIDIA|GEFORCE|\bRTX\b|\bGTX\b/.test(value)) {
     const family = /\bRTX\b/.test(value) ? "RTX" : /\bGTX\b/.test(value) ? "GTX" : /\bGT\b/.test(value) ? "GT" : "GPU";
@@ -86,6 +87,7 @@ export function gpuFamilyLabel(part: Pick<Part, "brand" | "name">): { label: str
     const series = number.length === 4 ? `${number[0]}000` : number.length === 3 ? `${number[0]}00` : "";
     return { label: series ? `${number.length === 4 ? "RADEON" : "AMD"} RX${series}` : "AMD GPU", vendor: "amd" };
   }
+  if (/\bARC\b|INTEL/.test(value)) return { label: "INTEL ARC", vendor: "intel" };
   return { label: "GPU", vendor: "generic" };
 }
 
@@ -118,7 +120,7 @@ export function createVisualHardwareProfile(part: VisualPart, motherboard?: Visu
     case "mbo": return { ...base, primaryColor: light ? "#d8dcd8" : "#171b1a", secondaryColor: light ? "#8f9792" : "#505653", material: "pcb", metalness: .35, roughness: .42, isLight: light };
     case "cpu": return { ...base, primaryColor: "#c6cbc7", secondaryColor: "#313633", material: "metal", metalness: .9, roughness: .22, isLight: true };
     case "ram": { const ramLight = /\b(WHITE|BLANCO|SNOW)\b/.test(value); return { ...base, primaryColor: ramLight ? (motherboard?.isLight ? "#aeb5b1" : LIGHT) : "#171a19", secondaryColor: ramLight ? "#858d88" : GRAPHITE, material: "metal", metalness: .55, roughness: .35, isLight: ramLight }; }
-    case "gpu": { const vendor = String(part.metadata.vendor || "generic"); return { ...base, family: String(part.metadata.family || "GPU"), primaryColor: "#202423", secondaryColor: "#4a504d", accentColor: vendor === "nvidia" ? NVIDIA : vendor === "amd" ? AMD : GOLD, material: "polymer", metalness: .55, roughness: .38, isLight: false }; }
+    case "gpu": { const vendor = String(part.metadata.vendor || "generic"); return { ...base, family: String(part.metadata.family || "GPU"), primaryColor: "#202423", secondaryColor: "#4a504d", accentColor: vendor === "nvidia" ? NVIDIA : vendor === "amd" ? AMD : vendor === "intel" ? INTEL : GOLD, material: "polymer", metalness: .55, roughness: .38, isLight: false }; }
     case "storage": return { ...base, primaryColor: "#303634", secondaryColor: GOLD, accentColor: GOLD, material: "pcb", metalness: .4, roughness: .42, isLight: false };
     case "psu": return { ...base, primaryColor: light ? LIGHT : DARK, secondaryColor: light ? LIGHT_GREY : GRAPHITE, material: "metal", metalness: .72, roughness: .34, isLight: light };
     case "cooler": return { ...base, primaryColor: "#202423", secondaryColor: "#090b0a", material: "metal", metalness: .68, roughness: .34, isLight: false };
