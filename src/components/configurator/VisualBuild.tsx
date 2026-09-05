@@ -152,7 +152,7 @@ export default function VisualBuild({ model, onOpenCategory, presentation = fals
       <div><span className="eyebrow">FORGE / Estudio de montaje</span><h2 id={titleId}>{presentation ? "Tu PC, pieza a pieza" : "Vista del montaje"}</h2></div>
       <div className="visual-modal-actions" role="group" aria-label="Vista del montaje">
         {presentation && modeButtons}
-        <button ref={openButton} className="btn visual-expand" onClick={() => { setExpanded(true); }}><Maximize2 size={12} /> Ampliar</button>
+        <button ref={openButton} aria-label="Ampliar vista del montaje" title="Ampliar vista del montaje" className="btn visual-expand" onClick={() => { setExpanded(true); }}><Maximize2 size={19} /><span>Ampliar</span></button>
       </div>
     </header>
     {presentation ? <div className="stage-visual-content">{expanded ? <div className="three-loading">Vista ampliada abierta</div> : viewport}</div> : <Renderer model={model} onOpenCategory={onOpenCategory} compact />}

@@ -6,9 +6,9 @@ Rama: `codex/cinematic-configurator`.
 
 ## Resultado
 
-La experiencia Visual presenta el montaje 3D en el centro, las categorías agrupadas en un lateral y el catálogo en tarjetas horizontales debajo. En móvil las categorías forman una barra horizontal. La experiencia Técnico conserva los paneles de montaje, catálogo, consumo y POST y comparte la selección con la vista Visual.
+La experiencia Personalizar presenta el montaje 3D en el centro sobre un fondo negro con iluminación violeta, las categorías en un lateral sin paneles y las opciones en tarjetas compactas debajo. El nombre de la caja encabeza la página. El selector de componente incluye una descripción a la izquierda y búsqueda/filtros desplegables; las tarjetas conservan los nombres, precios, enlaces de compra, etiquetas de descatalogados y bloqueo por incompatibilidad. En móvil las categorías forman una barra horizontal. La experiencia Técnico conserva los paneles de montaje, catálogo, consumo y POST y comparte la selección con la vista Visual.
 
-El visor admite rotación, zoom, separación de piezas, apertura del lateral, vista ampliada y esquema SVG. La ampliación mantiene un único canvas WebGL, ofrece cierre con Escape y devuelve el foco al botón de apertura. Los equipos sin WebGL2 conservan el esquema. El catálogo completo continúa en el servidor.
+El visor admite rotación, zoom, separación de piezas, apertura del lateral, vista ampliada y esquema SVG. Los controles se agrupan en una columna de iconos; el inspector aparece al solicitar detalles o pulsar una pieza. El encuadre y la iluminación de estudio dan protagonismo al PC sin alterar las geometrías ni los puntos de montaje. La ampliación mantiene un único canvas WebGL, ofrece cierre con Escape y devuelve el foco al botón de apertura. Los equipos sin WebGL2 conservan el esquema. El catálogo completo continúa en el servidor.
 
 La geometría 3D conserva el largo de las GPU y radiadores y la altura de los disipadores aunque excedan el interior estimado. Las advertencias visuales explicitan que son estimaciones. Los ventiladores respetan los diámetros y cantidades seleccionados; las GPU sin conectores externos no reciben un cable PCIe inventado.
 
@@ -41,3 +41,9 @@ El módulo de tres juegos, ajustes y FPS queda para la fase posterior solicitada
 ## Revisión y despliegue
 
 Revisar la Preview antes de integrar la rama. La producción permanece en main hasta la aprobación del usuario, conforme a AGENTS.md.
+
+## Revisión tras la segunda referencia
+
+El usuario indicó que la primera propuesta seguía demasiado cerca de la interfaz anterior. Se rehízo la composición de Personalizar con tarjetas de menor tamaño, fondo violeta, navegación discreta y detalles desplegables. Se mantiene el mismo PR para revisar el resultado antes de publicar en main.
+
+Se repitieron verify y build correctamente. En navegador se comprobaron búsqueda y selección de CPU con progresión automática, continuación manual desde RAM, acceso a los 24 tipos de componentes, conservación del montaje en Vista técnica y ampliación con un solo canvas. La geometría exacta por fabricante y los FPS siguen pendientes; no se han introducido imágenes genéricas que sustituyan al hardware elegido.

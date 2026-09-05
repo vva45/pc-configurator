@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowRight, Box, Check, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
+  ArrowRight, Box, Check, ChevronDown, ChevronLeft, ChevronRight, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
 } from "lucide-react";
 import { buildToParams, hasBuildParams } from "@/lib/share";
 import type { CatalogResponse } from "@/lib/catalog-server";
@@ -37,6 +37,16 @@ type SortKey = "rel" | "price" | "priceDesc" | "name";
 type Tab = "build" | "catalog" | "status";
 
 const PAGE_SIZE = 48;
+const CATEGORY_HELP: Partial<Record<CatId, string>> = {
+  cpu: "El cerebro de tu PC. Elige el procesador que dará vida a tus juegos, proyectos y próximas ideas.",
+  cooler: "Mantén la temperatura bajo control. Elige refrigeración por aire o líquida compatible con tu montaje.",
+  mbo: "El punto de unión de todo tu equipo. Socket, conexiones y espacio para seguir creciendo.",
+  ram: "Espacio para hacer más a la vez. Elige la capacidad, velocidad y número de módulos de tu memoria.",
+  gpu: "Da forma a lo que ves. Elige la gráfica que acompañará a tu pantalla y a tus juegos.",
+  storage: "Un lugar para tus juegos y proyectos. Combina unidades según el espacio y las conexiones disponibles.",
+  psu: "La energía de todo el conjunto. Elige potencia y conectores para alimentar tu configuración.",
+  case: "Todo empieza por encajar. Elige el formato, el espacio y el diseño que tendrá tu PC.",
+};
 
 /* Orden de montaje: cada pieza elegida lleva a la siguiente ranura. */
 const CORE = CATS.filter((x) => x.group === "core").map((x) => x.id);
@@ -60,6 +70,9 @@ export default function Configurator() {
   const [tab, setTab] = useState<Tab>("build");     // móvil
   const [showFilters, setShowFilters] = useState(false);
   const [experience, setExperience] = useState<"visual" | "technical">("visual");
+  const [showCatalogTools, setShowCatalogTools] = useState(false);
+  const [showAccessories, setShowAccessories] = useState(false);
+  const optionStrip = useRef<HTMLDivElement>(null);
   const uid = useRef(0);
   const catalogScroll = useRef<HTMLDivElement>(null);
   const continueButton = useRef<HTMLButtonElement>(null);
@@ -200,7 +213,7 @@ export default function Configurator() {
     root?.addEventListener("scroll", update, { passive: true });
     update();
     return () => { observer.disconnect(); root?.removeEventListener("scroll", update); };
-  }, [continuar, cat]);
+  }, [continuar, cat, experience]);
 
   const resetHome = () => {
     restoreController.current?.abort(); booted.current = true;
@@ -264,17 +277,18 @@ export default function Configurator() {
         <div style={{ width: 26, height: 26, border: "1px solid var(--accent)", display: "grid", placeItems: "center" }}>
           <CircuitBoard size={14} color="var(--accent)" />
         </div>
-        <div>
+        <div className="forge-wordmark">
           <div className="dsp" style={{ fontSize: 17, letterSpacing: ".02em" }}>Forge</div>
           <div className="eyebrow" style={{ fontSize: 8.5, marginTop: -2 }}>Configurador de PC</div>
         </div>
+        <span className="forge-build-name">{one(build, "case") ? `${one(build, "case")?.brand} ${one(build, "case")?.name}` : "TU PRÓXIMO PC"}</span>
       </button>
       <div className="experience-switch" role="group" aria-label="Experiencia del configurador">
-        <button aria-pressed={experience === "visual"} onClick={() => setExperience("visual")}><Box size={14} /> Visual</button>
-        <button aria-pressed={experience === "technical"} onClick={() => { setExperience("technical"); setTab("catalog"); }}><SlidersHorizontal size={14} /> Técnico</button>
+        <button aria-pressed={experience === "visual"} onClick={() => setExperience("visual")}><Box size={14} /> Personalizar</button>
+        <button aria-pressed={experience === "technical"} onClick={() => { setExperience("technical"); setTab("catalog"); }}><SlidersHorizontal size={14} /> Vista técnica</button>
       </div>
-      <div style={{ flex: 1 }} />
-      <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div className="forge-spacer" style={{ flex: 1 }} />
+      <label className="forge-region" style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <Globe size={13} color="var(--text-secondary)" />
         <select value={region} onChange={(e) => setRegion(e.target.value as RegionId)} aria-label="Región"
           style={{ width: "auto", minWidth: 150 }}>
@@ -282,13 +296,13 @@ export default function Configurator() {
         </select>
       </label>
       <div style={{ minWidth: 190, display: "none" }} className="wide-gauge" />
-      <button className="btn btn-gold" disabled={!Object.keys(build).length}
+      <button className="btn btn-gold forge-purchase" disabled={!Object.keys(build).length}
         onClick={() => setShopping(true)}
         style={{ display: "flex", alignItems: "center", gap: 6,
           cursor: Object.keys(build).length ? "pointer" : "not-allowed" }}>
         <ShoppingCart size={12} /> Dónde comprar
       </button>
-      <div style={{ textAlign: "right" }}>
+      <div className="forge-total" style={{ textAlign: "right" }}>
         <div className="eyebrow" style={{ fontSize: 8.5 }}>Total orientativo</div>
         <div className="mono" style={{ fontSize: 17, color: "var(--accent)", fontWeight: 600, lineHeight: 1.1 }}>
           {total > 0 ? `${eur(total)} ${cur}` : "—"}
@@ -390,7 +404,7 @@ export default function Configurator() {
 
   const shownBlocked = catalog ? catalog.nBlocked : 0;
   const CatalogPane = (
-    <div className="catalog-content" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div className={`catalog-content${showCatalogTools ? " tools-open" : ""}`} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* La categoría se elige en el panel de montaje de la izquierda;
           aquí solo buscador, orden y conmutadores. */}
       <div className="catalog-toolbar" style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
@@ -427,7 +441,7 @@ export default function Configurator() {
           {/* En memoria y almacenamiento se eligen varias piezas, así que no
               hay salto automático mientras queden ranuras: este botón lo
               ofrece en cuanto hay algo elegido, sin obligar a llenarlas. */}
-          {continuar && (
+          {continuar && experience === "technical" && (
             <button ref={continueButton} className="btn btn-gold" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}
               onClick={() => { setCat(continuar); setTab("catalog"); }}>
               Continuar a {CAT[continuar].label} →
@@ -443,7 +457,7 @@ export default function Configurator() {
             onClear={() => setFilters({})} />
         </div>
         <div ref={catalogScroll} className="scroll" style={{ flex: 1, padding: 12 }}>
-          <div className="mono" style={{ fontSize: 10.5, color: "var(--text-secondary)", marginBottom: 9 }}>
+          <div className="mono catalog-count" style={{ fontSize: 10.5, color: "var(--text-secondary)", marginBottom: 9 }}>
             {catalog ? <>
               {catalog.nCompat} compatibles
               {shownBlocked > 0 && ` · ${shownBlocked} descartadas`}
@@ -460,15 +474,15 @@ export default function Configurator() {
             </div>
           ) : (
             <>
-              <div className="part-grid" style={{ display: "grid", gap: 9,
+              <div ref={optionStrip} className="part-grid" style={{ display: "grid", gap: 9,
                 gridTemplateColumns: "repeat(auto-fill,minmax(196px,1fr))" }}>
                 {(catalog ? items : []).map(({ p, blocked, reason }) =>
-                  <PartCard key={p.id} part={p} blocked={blocked} reason={reason} cur={cur}
+                  <PartCard compact={experience === "visual"} key={p.id} part={p} blocked={blocked} reason={reason} cur={cur}
                     chosen={((build[p.cat] || []) as Picked[]).some((x) => x.id === p.id)}
                     onPick={pick} onBuy={setBuy} />)}
               </div>
               {catalog && items.length < catalog.total && (
-                <button className="btn" style={{ width: "100%", marginTop: 12 }}
+                <button className="btn catalog-load-more" style={{ width: "100%", marginTop: 12 }}
                   onClick={() => setPage((p) => p + 1)}>
                   Cargar más ({items.length}/{catalog.total})
                 </button>
@@ -488,7 +502,7 @@ export default function Configurator() {
         <div className="cinematic-hero">
           <nav className="component-rail" aria-label="Configurar componentes" data-horizontal-scroll-zone>
             <div className="rail-heading"><span className="eyebrow">Tu configuración</span><strong>{coreDone}<span> / {requiredCore.length}</span></strong></div>
-            {GROUPS.map((group) => <div className="rail-group" key={group.id}>
+            {GROUPS.filter((group) => group.id === "core" || showAccessories || CAT[cat].group !== "core").map((group) => <div className="rail-group" key={group.id}>
               <span className="rail-group-label">{group.label}</span>
               {CATS.filter((category) => category.group === group.id).map((category) => {
                 const Icon = category.icon;
@@ -496,24 +510,35 @@ export default function Configurator() {
                 const conflict = selected.some((part) => conflicts.has(part._uid));
                 return <button key={category.id} className={`rail-category${cat === category.id ? " is-active" : ""}${conflict ? " has-conflict" : ""}`} aria-current={cat === category.id ? "step" : undefined} onClick={() => setCat(category.id)}>
                   <span className="rail-icon"><Icon size={17} /></span>
-                  <span className="rail-category-copy"><strong>{category.label}</strong><small>{selected.length ? `${selected[0].brand} ${selected[0].name}` : category.req ? "Por elegir" : "Opcional"}</small></span>
+                  <span className="rail-category-copy"><strong>{category.id === "cpu" ? "Procesador" : category.label}</strong><small>{selected.length ? `${selected[0].brand} ${selected[0].name}` : category.req ? "Por elegir" : "Opcional"}</small></span>
                   {selected.length > 0 && <span className="rail-check" aria-label={conflict ? "Conflicto" : "Seleccionado"}>{conflict ? "!" : <Check size={12} />}</span>}
                 </button>;
               })}
             </div>)}
+            <button className="rail-more" aria-expanded={showAccessories || CAT[cat].group !== "core"} onClick={() => { setShowAccessories(!(showAccessories || CAT[cat].group !== "core")); if (CAT[cat].group !== "core") setCat("cpu"); }}>Accesorios y periféricos <ChevronDown size={14} /></button>
           </nav>
           <div className="cinematic-stage"><VisualBuild presentation model={visualBuild} onOpenCategory={(id) => setCat(id)} /></div>
         </div>
+        <section className="cinematic-deck" aria-labelledby="deck-title">
+          <header className="deck-heading">
+            <div className="deck-step">Elige tu componente</div>
+            <h1 id="deck-title">{cat === "cpu" ? "Procesador" : CAT[cat].label}</h1>
+            <p>{CATEGORY_HELP[cat] || "Completa tu equipo con los accesorios y periféricos que mejor se adapten a ti."}</p>
+            {continuar && <button className="deck-continue" onClick={() => setCat(continuar)}>Continuar a {CAT[continuar].label} <ArrowRight size={14} /></button>}
+          </header>
+          <div className="deck-controls">
+            <button aria-label="Opciones anteriores" onClick={() => optionStrip.current?.scrollBy({ left: -420, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}><ChevronLeft size={17} /></button>
+            <button aria-label="Opciones siguientes" onClick={() => optionStrip.current?.scrollBy({ left: 420, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}><ChevronRight size={17} /></button>
+            <button className="deck-search" aria-expanded={showCatalogTools} onClick={() => { setShowCatalogTools((value) => !value); setShowFilters(false); }}><Search size={14} /> Buscar y filtrar{q || Object.keys(filters).length ? " · activos" : ""}</button>
+          </div>
+          <div className="cinematic-catalog">{CatalogPane}</div>
+        </section>
         <div className="build-telemetry" aria-label="Estado de tu configuración">
           <div><span>Montaje</span><strong>{coreDone} de {requiredCore.length} esenciales</strong></div>
           <div><span>Consumo en juego estimado</span><strong>{power.total > 0 ? `${Math.round(power.gaming)} W` : "Pendiente"}</strong></div>
           <div><span>Compatibilidad</span><strong className={fails ? "telemetry-error" : warns ? "telemetry-warning" : ""}>{!selectedCount ? "Elige tu primera pieza" : fails ? `${fails} conflicto${fails === 1 ? "" : "s"}` : warns ? `${warns} aviso${warns === 1 ? "" : "s"}` : "Sin conflictos detectados"}</strong></div>
           <button onClick={() => { setExperience("technical"); setTab("build"); }}><ClipboardList size={15} /><span>Revisar montaje</span><ArrowRight size={14} /></button>
         </div>
-        <section className="cinematic-deck" aria-labelledby="deck-title">
-          <header className="deck-heading"><div><span className="eyebrow">El siguiente paso lo eliges tú</span><h1 id="deck-title">{CAT[cat].label === "CPU" ? "Procesador" : CAT[cat].label}</h1></div><p>Elige una pieza y observa cómo toma forma tu PC.</p></header>
-          <div className="cinematic-catalog">{CatalogPane}</div>
-        </section>
       </main> : <>
       <div className="mtabs">
         {([["build", "Montaje"], ["catalog", "Catálogo"], ["status", "Consumo y POST"]] as const).map(([k, l]) =>
