@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════
    COLOCACIÓN 3D — de un VisualBuildModel a una escena montada
 
-   Todo se calcula en MILÍMETROS reales y se pasa a unidades de escena
-   (1 unidad = 100 mm) al describir cada pieza. Ninguna cota es «a ojo»:
-   la placa mide lo que dice su formato, la gráfica lo que dice el catálogo
-   y el chasis lo que dicen sus dimensiones. Lo que el catálogo no da
-   (altura de una gráfica, grosor de un radiador) se toma de la norma o
-   del valor típico de su clase, y se dice en el comentario.
+   Las medidas del catálogo se conservan en milímetros y se pasan a
+   unidades de escena (1 unidad = 100 mm). El interior del chasis, los
+   anclajes y las cotas ausentes se aproximan según formato o familia.
+   Por eso los avisos de encaje son estimaciones visuales, no mediciones
+   del modelo exacto ni resultados del motor de compatibilidad. Una pieza
+   que no cabe conserva su tamaño y se señala; nunca se encoge para caber.
 
    Ejes, con el chasis en su sitio y el espectador delante del cristal:
      +X  de la bandeja de la placa hacia el panel de cristal (hacia ti)
@@ -33,6 +33,7 @@ export interface Box3Tuple { min: Vector3Tuple; max: Vector3Tuple }
 const U = 0.01; // mm → unidades de escena
 const mm3 = (v: Vector3Tuple): Vector3Tuple => [v[0] * U, v[1] * U, v[2] * U];
 const finite = (value: unknown, fallback: number) => (typeof value === "number" && Number.isFinite(value) ? value : fallback);
+const positive = (value: unknown, fallback: number) => { const result = finite(value, fallback); return result > 0 ? result : fallback; };
 const clamp = (value: unknown, fallback: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, finite(value, fallback)));
 const boxAt = (center: Vector3Tuple, size: Vector3Tuple): Box3Tuple => ({
   min: [center[0] - size[0] / 2, center[1] - size[1] / 2, center[2] - size[2] / 2],
@@ -403,7 +404,7 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   let frontObstacleZ = L.chamber.min[2] + 6;
   let gpuXLimit = L.chamber.max[0] - 2;
   if (ck.kind === "aio") {
-    const radSize = clamp(ck.radSize, 240, 120, 420);
+    const radSize = positive(ck.radSize, 240);
     const fanSize = radSize === 280 || radSize === 420 || radSize === 140 ? 140 : 120;
     const fans = Math.max(1, Math.round(radSize / fanSize));
     const radLen = fans * fanSize + 12, radW = fanSize + 4, radT = 30;
@@ -421,14 +422,13 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     const plane: MountPlane = (mount && L.mounts[mount]) || L.mounts.top || L.mounts.front || L.mounts.side || L.mounts.rear
       || { mount: "side", center: [L.chamber.max[0] - 16, L.chamber.min[1] + 88, (L.chamber.min[2] + L.chamber.max[2]) / 2], normal: [-1, 0, 0], longAxis: "z", capacityMm: 0, spanMm: L.chamber.max[2] - L.chamber.min[2] - 60 };
     const nAxis = axisOf(plane.normal), lAxis = plane.longAxis === "z" ? 2 : 1, wAxis = [0, 1, 2].find((a) => a !== nAxis && a !== lAxis)!;
-    const usableLen = Math.min(radLen, plane.spanMm);
-    const fansThatFit = Math.max(1, Math.min(fans, Math.floor((usableLen - 12) / fanSize)));
-    const size: Vector3Tuple = [0, 0, 0]; size[nAxis] = radT; size[lAxis] = usableLen; size[wAxis] = radW;
+    // El anclaje puede ser insuficiente; el radiador conserva su longitud y ventiladores.
+    const size: Vector3Tuple = [0, 0, 0]; size[nAxis] = radT; size[lAxis] = radLen; size[wAxis] = radW;
     const center: Vector3Tuple = [plane.center[0], plane.center[1], plane.center[2]];
     const outward: Vector3Tuple = [-plane.normal[0], -plane.normal[1], -plane.normal[2]];
-    const aio = describe(p.cooler!, "aio", center, size, profile(p.cooler!), { dir: outward, distance: 160 }, { radSize, fanSize, fans: fansThatFit, mount: plane.mount, along: plane.longAxis, radT, normalX: plane.normal[0], normalY: plane.normal[1], normalZ: plane.normal[2] });
+    const aio = describe(p.cooler!, "aio", center, size, profile(p.cooler!), { dir: outward, distance: 160 }, { radSize, fanSize, fans, mount: plane.mount, along: plane.longAxis, radT, normalX: plane.normal[0], normalY: plane.normal[1], normalZ: plane.normal[2] });
     aio.mount = plane.mount;
-    if (usableLen < radLen) aio.overflow = `Radiador de ${radSize} mm: en ese anclaje solo caben ${Math.round(usableLen)} mm`;
+    if (plane.spanMm < radLen) aio.overflow = `Radiador de ${radSize} mm: el anclaje representado tiene unos ${Math.round(plane.spanMm)} mm libres`;
     else if (plane.capacityMm < radSize) aio.overflow = `La caja no admite un radiador de ${radSize} mm ahí`;
     else if (topHitsRam && plane.mount === "top") aio.overflow = `El radiador superior roza la memoria: faltan ${Math.round(ramTop - (plane.center[1] - radT / 2 - 27))} mm`;
     else if (sideHitsRam && plane.mount === "side") aio.overflow = `El radiador lateral roza la memoria: faltan ${Math.round(L.boardFaceX + 2 + ramH - (plane.center[0] - radT / 2 - 27))} mm`;
@@ -440,7 +440,7 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     const block: Vector3Tuple = [socket[0] + 22, socket[1], socket[2]];
     aio.connectionTarget = mm3(block);
     const tank: Vector3Tuple = [center[0], center[1], center[2]];
-    tank[lAxis] += Math.sign(socket[lAxis] - center[lAxis] || 1) * (usableLen / 2 - 14);
+    tank[lAxis] += Math.sign(socket[lAxis] - center[lAxis] || 1) * (radLen / 2 - 14);
     const inside = (pt: Vector3Tuple): Vector3Tuple => [Math.min(Math.max(pt[0], L.chamber.min[0] + 8), L.chamber.max[0] - 8), Math.min(Math.max(pt[1], L.chamber.min[1] + 8), L.chamber.max[1] - 8), Math.min(Math.max(pt[2], L.chamber.min[2] + 8), L.chamber.max[2] - 8)];
     aio.tubePaths = [-10, 10].map((off) => {
       const a: Vector3Tuple = [block[0] + 18, block[1] + off, block[2] - 24];
@@ -454,8 +454,7 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     /* Torre: bloque de 50 mm de aletas centrado en el zócalo y ventilador de 27 mm
        delante (hacia el frontal). Doble torre: dos bloques con un ventilador entre
        medias y otro delante, 154 mm en total, como un NH-D15. */
-    const wanted = clamp(p.cooler?.metadata.heightMm, ck.kind === "top-flow" ? 70 : ck.kind === "stock" ? 45 : 158, 30, 200);
-    const height = Math.min(wanted, coolerMax);
+    const height = positive(p.cooler?.metadata.heightMm, ck.kind === "top-flow" ? 70 : ck.kind === "stock" ? 45 : 158);
     const fanSize = clamp(p.cooler?.metadata.fanSizeMm, 120, 80, 140);
     const towers = ck.kind === "dual-tower" ? 2 : 1;
     const tower = ck.kind === "tower" || ck.kind === "dual-tower";
@@ -465,7 +464,7 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     const cooler = describe(p.cooler!, "air-cooler", center, [height - 7, width, depth], profile(p.cooler!), { dir: [1, 0, 0], distance: 300 },
       { kind: ck.kind, towers, fanSize, heightMm: height, fans: Math.round(clamp(p.cooler?.metadata.fans, towers === 2 ? 2 : 1, 0, 3)) });
     cooler.connectionTarget = mm3(socket);
-    if (wanted > coolerMax) cooler.overflow = `Disipador de ${wanted} mm: hasta el panel hay ${Math.round(coolerMax)} mm`;
+    if (height > coolerMax) cooler.overflow = `Disipador de ${height} mm: hasta el panel representado hay unos ${Math.round(coolerMax)} mm`;
     parts.push(cooler);
   }
 
@@ -478,11 +477,19 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   if (aioPart?.mount === "top" && L.rearFan && aioPart.bounds.max[2] > (L.rearFan.center[2] - L.rearFan.size / 2 - 12.5) * U && aioPart.bounds.min[1] - 0.27 < (L.rearFan.center[1] + L.rearFan.size / 2) * U) taken.add("rear");
   const free = L.fanSlots.filter((s) => !taken.has(s.where) && !(s.where === "top" && s.position[2] - s.size / 2 < frontObstacleZ + 4));
   const included = Math.min(free.length, Math.round(clamp(caseProfile.caseFeatures?.fanIncluded, 0, 0, 6)));
-  const chosen = Math.round(clamp(p.fan?.metadata.count, 0, 0, 9));
-  const chosenSlots = free.slice(included, included + chosen);
+  const chosen = Math.round(clamp(p.fan?.metadata.count, 0, 0, 12));
+  const chosenSlots: typeof free = [];
   const fallback = free[Math.min(included, free.length - 1)] || L.fanSlots[0] || { position: [L.chamber.max[0] - 20, L.chamber.max[1] - 70, 0] as Vector3Tuple, normal: [-1, 0, 0] as Vector3Tuple, size: 120, where: "side" as const };
-  const fanUnits: Visual3DUnit[] = (chosenSlots.length ? chosenSlots : [fallback]).map((s) => ({ position: s.position, normal: s.normal, size: [s.size, s.size, 25] as Vector3Tuple }));
-  const fanSize = chosenSlots[0]?.size || fallback.size;
+  const selectedSizes: number[] = (() => { try { return JSON.parse(String(p.fan?.metadata.sizesMm || "[]")); } catch { return []; } })();
+  const remaining = free.slice(included);
+  const fanUnits: Visual3DUnit[] = Array.from({ length: Math.max(1, chosen) }, (_, i) => {
+    const diameter = positive(selectedSizes[i] ?? p.fan?.metadata.sizeMm, fallback.size);
+    const index = remaining.findIndex((slot) => slot.size >= diameter);
+    const slot = index >= 0 ? remaining.splice(index, 1)[0] : fallback;
+    if (index >= 0) chosenSlots.push(slot);
+    return { position: slot.position, normal: slot.normal, size: [diameter, diameter, 25] };
+  });
+  const fanSize = fanUnits[0].size![0];
   const fanPart = describe(p.fan!, "fan", fanUnits[0].position, [fanSize, fanSize, 25], profile(p.fan!), { dir: [0, 0, -1], distance: 140 }, { size: fanSize }, fanUnits);
   if (present(p.fan) && chosenSlots.length < chosen) fanPart.overflow = chosenSlots.length ? `Solo quedan ${chosenSlots.length} posiciones libres para ${chosen} ventiladores` : "No queda ninguna posición libre para más ventiladores";
   parts.push(fanPart);
@@ -506,9 +513,9 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   /* En un sándwich los discos SATA van de pie delante de la gráfica, en su cámara. */
   if (sandwich && sataDrives) frontObstacleZ = Math.max(frontObstacleZ, L.chamber.min[2] + 42 + 35 + (sataKinds.length > 1 ? 78 : 0) + 6);
   const gpuSlots = clamp(p.gpu?.metadata.slots, 2.5, 1, 4);
-  const gpuLenReal = clamp(p.gpu?.metadata.lengthMm, 280, 140, 460);
+  const gpuLenReal = positive(p.gpu?.metadata.lengthMm, 280);
   const gpuMaxLen = Math.min(L.boardRearZ - frontObstacleZ - 4, finite(caseProfile.caseFeatures?.gpuClearanceMm, 9999));
-  const gpuLen = Math.min(gpuLenReal, gpuMaxLen);
+  const gpuLen = gpuLenReal;
   const gpuH = gpuSlots <= 2 ? 115 : gpuSlots < 3 ? 130 : 140;
   const gpuT = gpuSlots * 20.32 - 2;
   const GC = L.gpuChamber;
@@ -609,7 +616,7 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     cables.push(cable("eps", [G.top, [L.boardFaceX + 30, G.top[1] - 2, eps[2] + 6], [eps[0] + 12, eps[1] + 4, eps[2] + 2], [eps[0] + 2, eps[1], eps[2]]], 3.2, 2, [0, 0, 1]));
     if (present(p.gpu) && !sandwich) {
       const hpwr = Boolean(p.gpu?.metadata.hpwr);
-      const plugs = hpwr ? 1 : Math.max(1, Math.min(3, finite(p.gpu?.metadata.conn8, 0) + finite(p.gpu?.metadata.conn6, 0)));
+      const plugs = hpwr ? 1 : Math.max(0, Math.min(3, finite(p.gpu?.metadata.conn8, 0) + finite(p.gpu?.metadata.conn6, 0)));
       for (let i = 0; i < plugs; i++) {
         const plug: Vector3Tuple = [gpuCenter[0] + gpuH / 2 + 9, gpuCenter[1] + gpuT / 2 - 7, gpuCenter[2] + gpuLen / 2 - 60 - i * 22];
         const approachZ = G.mid[2] + 0.35 * (plug[2] - G.mid[2]);
@@ -618,7 +625,7 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     }
   }
 
-  /* Lo que no cabe se dice, con la cota que falta, en vez de dejarlo atravesando la chapa. */
+  /* Las interferencias se señalan sin alterar las medidas de las piezas. */
   const SIDES = ["hacia el lado ciego", "por abajo", "por delante", "hacia el cristal", "por arriba", "por detrás"];
   for (const x of parts) {
     if (x.overflow || x.category === "rgb") continue;
@@ -626,6 +633,9 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
     const worst = over.reduce((best, v, i) => (v > over[best] ? i : best), 0);
     if (over[worst] > 0.3) x.overflow = `No cabe: sobresale ${Math.round(over[worst])} mm ${SIDES[worst]}`;
   }
+
+  // Todos los avisos usan al menos un anclaje o espacio interior inferido.
+  for (const x of parts) if (x.overflow) x.overflow = `Estimación visual: ${x.overflow}`;
 
   /* Chasis y encuadre. */
   const chassis = describe(p.case!, "chassis", [0, 0, 0], L.size, caseProfile, { dir: [0, 0, 0], distance: 0 }, { family: L.family, window: L.panels.window, front: L.panels.front });

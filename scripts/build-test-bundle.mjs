@@ -3,10 +3,12 @@
    Así las dos suites prueban exactamente el código que sirve la app. */
 import { build } from "esbuild";
 import path from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
 
 const root = process.cwd();
 
-await build({
+const result = await build({
+  write: false,
   entryPoints: [path.join(root, "src", "test-exports.ts")],
   bundle: true,
   platform: "node",
@@ -16,4 +18,7 @@ await build({
   outfile: path.join(root, ".test-build", "t.cjs"),
   logLevel: "warning",
 });
+// Node writes the bundle so Windows file access is handled by the same runtime as the tests.
+await mkdir(path.join(root, ".test-build"), { recursive: true });
+await writeFile(path.join(root, ".test-build", "t.cjs"), result.outputFiles[0].contents);
 console.log("t.cjs generado desde src/");

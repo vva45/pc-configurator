@@ -183,7 +183,7 @@ function Gpu({ part, active }: { part: Visual3DPart; active: boolean }) {
   const sandwich = Boolean(part.detail.sandwich);
   const [H, T, L]: V3 = sandwich ? [part.size[1], part.size[0], part.size[2]] : part.size;
   const fans = num(part.detail.fans, 2);
-  const hpwr = Boolean(part.detail.hpwr); const plugs = hpwr ? 1 : Math.max(1, Math.min(3, num(part.detail.conn8, 0) + num(part.detail.conn6, 0)));
+  const hpwr = Boolean(part.detail.hpwr); const plugs = hpwr ? 1 : Math.max(0, Math.min(3, num(part.detail.conn8, 0) + num(part.detail.conn6, 0)));
   const fanD = Math.min(0.96, (L - 0.3) / fans - 0.06);
   const accent = part.profile.accentColor;
   const light = isWhite(part.source.name);
@@ -370,7 +370,7 @@ function Component({ part, active }: { part: Visual3DPart; active: boolean }) {
 }
 
 /* ── Chasis ──────────────────────────────────────────────────────────── */
-function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) {
+function Chassis({ scene, explode, cutaway }: { scene: Visual3DScene; explode: number; cutaway: boolean }) {
   const L = scene.layout; const U = 0.01;
   const sh = { min: L.shell.min.map((v) => v * U) as V3, max: L.shell.max.map((v) => v * U) as V3 };
   const int = { min: L.interior.min.map((v) => v * U) as V3, max: L.interior.max.map((v) => v * U) as V3 };
@@ -424,8 +424,8 @@ function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) 
     {scene.chassisFans.map((f, i) => { const axis: "x" | "y" | "z" = f.normal[0] ? "x" : f.normal[1] ? "y" : "z"; return <Fan key={i} size={f.size / 100} axis={axis} at={f.position} light={light} />; })}
     {/* cristal lateral con su marco */}
     <group position={[e * 1.1, 0, 0]}>
-      {window === "solid" ? <Box size={[0.012, H - 0.02, D]} at={[sh.max[0] - 0.006, cy, cz]} mat={steel} />
-        : <mesh position={[sh.max[0] - 0.004, cy, cz]}><boxGeometry args={[0.006, H - 0.08, D - 0.08]} />{window === "glass" ? glassMat : meshMat}</mesh>}
+      {!cutaway && (window === "solid" ? <Box size={[0.012, H - 0.02, D]} at={[sh.max[0] - 0.006, cy, cz]} mat={steel} />
+        : <mesh position={[sh.max[0] - 0.004, cy, cz]}><boxGeometry args={[0.006, H - 0.08, D - 0.08]} />{window === "glass" ? glassMat : meshMat}</mesh>)}
       {[0, 1, 2, 3].map((i) => <Box key={i} size={i % 2 ? [0.014, H - 0.02, 0.04] : [0.014, 0.04, D]} at={i % 2 ? [sh.max[0] - 0.007, cy, i === 1 ? sh.min[2] + 0.02 : sh.max[2] - 0.02] : [sh.max[0] - 0.007, i === 0 ? sh.max[1] - 0.02 : sh.min[1] + 0.02, cz]} mat={steel} />)}
     </group>
     {/* pies */}
@@ -451,7 +451,7 @@ function Interactive({ part, explode, children, onSelect, onHover }: { part: Vis
   return <group position={pos} onClick={(e) => { e.stopPropagation(); onSelect(part); }} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; onHover(part); }} onPointerOut={() => { document.body.style.cursor = ""; onHover(); }}>{children}</group>;
 }
 
-export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal, explode = 0 }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number; explode?: number }) {
+export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal, explode = 0, cutaway = false }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number; explode?: number; cutaway?: boolean }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, size, invalidate } = useThree();
   const cameraRef = useRef(camera);
@@ -476,7 +476,7 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
     <directionalLight position={[-radius * 1.5, radius * 0.8, radius * 1.2]} intensity={0.7} color="#a9c4dc" />
     <pointLight position={[radius * 0.6, radius * 0.3, -radius * 0.9]} intensity={radius * 1.2} distance={radius * 5} color="#dfe6ee" />
     <group>
-      <Chassis scene={scene} explode={explode} />
+      <Chassis scene={scene} explode={explode} cutaway={cutaway} />
       <Cables cables={scene.cables} explode={explode} light={cableLight} />
       {visible.map((part) => <Interactive key={part.id} part={part} explode={explode} onSelect={onSelect} onHover={onHover}><Component part={part} active={active === part.category} /></Interactive>)}
     </group>

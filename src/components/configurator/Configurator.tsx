@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowRight, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
+  ArrowRight, Box, Check, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
 } from "lucide-react";
 import { buildToParams, hasBuildParams } from "@/lib/share";
 import type { CatalogResponse } from "@/lib/catalog-server";
@@ -59,6 +59,7 @@ export default function Configurator() {
   const [summary, setSummary] = useState(false);
   const [tab, setTab] = useState<Tab>("build");     // móvil
   const [showFilters, setShowFilters] = useState(false);
+  const [experience, setExperience] = useState<"visual" | "technical">("visual");
   const uid = useRef(0);
   const catalogScroll = useRef<HTMLDivElement>(null);
   const continueButton = useRef<HTMLButtonElement>(null);
@@ -75,24 +76,24 @@ export default function Configurator() {
      del montaje se refleja en la URL con replaceState, sin recargas. */
   const searchParams = useSearchParams();
   const booted = useRef(false);
-  const restoreStarted = useRef(false);
+  const initialBuildParams = useRef(searchParams.toString());
+  const restoreController = useRef<AbortController | null>(null);
   useEffect(() => {
-    if (restoreStarted.current) return;
-    restoreStarted.current = true;
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(initialBuildParams.current);
     if (!hasBuildParams(sp)) { booted.current = true; return; }
-    let alive = true;
-    fetch(`/api/build?${sp.toString()}`)
+    const controller = new AbortController();
+    restoreController.current = controller;
+    fetch(`/api/build?${sp.toString()}`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : {}))
       .then((restored: AppBuild) => {
-        if (!alive) return;
+        if (controller.signal.aborted) return;
         if (Object.keys(restored).length)
           setBuild((prev) => (Object.keys(prev).length ? prev : restored));
       })
       .catch(() => { /* enlace irrecuperable: se parte de cero */ })
-      .finally(() => { if (alive) booted.current = true; });
-    return () => { alive = false; };
-  }, [searchParams]);
+      .finally(() => { if (!controller.signal.aborted) booted.current = true; });
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     if (!booted.current) return;
     const qs = buildToParams(build).toString();
@@ -117,7 +118,9 @@ export default function Configurator() {
   const [page, setPage] = useState(0);
   const [prevKey, setPrevKey] = useState(queryKey);
   if (prevKey !== queryKey) { setPrevKey(queryKey); setPage(0); }
-  const [catalog, setCatalog] = useState<CatalogResponse | null>(null);
+  const [catalogResponse, setCatalog] = useState<CatalogResponse | null>(null);
+  const [catalogKey, setCatalogKey] = useState("");
+  const catalog = catalogKey === queryKey ? catalogResponse : null;
   const [items, setItems] = useState<CatalogResponse["items"]>([]);
   const reqId = useRef(0);
   useEffect(() => {
@@ -137,6 +140,7 @@ export default function Configurator() {
         .then((data: CatalogResponse | null) => {
           if (!data || reqId.current !== id) return;
           setCatalog(data);
+          setCatalogKey(queryKey);
           setItems((prev) => (data.page === 0 ? data.items : [...prev, ...data.items]));
         })
         .catch(() => { /* red caída: se mantiene la última página */ });
@@ -199,6 +203,7 @@ export default function Configurator() {
   }, [continuar, cat]);
 
   const resetHome = () => {
+    restoreController.current?.abort(); booted.current = true;
     setBuild({}); setCat("cpu"); setTab("catalog"); setQ(""); setFilters({});
     setSort("rel"); setMuseum(false); setShowFilters(false); setBuy(null);
     setShopping(false); setSummary(false);
@@ -253,7 +258,7 @@ export default function Configurator() {
   };
 
   const Bar = (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+    <div className="forge-topbar" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
       borderBottom: "1px solid var(--border)", background: "var(--bg-panel)", position: "sticky", top: 0, zIndex: 30, flexWrap: "wrap" }}>
       <button type="button" onClick={resetHome} aria-label="Reiniciar montaje y volver a CPU" className="forge-home">
         <div style={{ width: 26, height: 26, border: "1px solid var(--accent)", display: "grid", placeItems: "center" }}>
@@ -264,6 +269,10 @@ export default function Configurator() {
           <div className="eyebrow" style={{ fontSize: 8.5, marginTop: -2 }}>Configurador de PC</div>
         </div>
       </button>
+      <div className="experience-switch" role="group" aria-label="Experiencia del configurador">
+        <button aria-pressed={experience === "visual"} onClick={() => setExperience("visual")}><Box size={14} /> Visual</button>
+        <button aria-pressed={experience === "technical"} onClick={() => { setExperience("technical"); setTab("catalog"); }}><SlidersHorizontal size={14} /> Técnico</button>
+      </div>
       <div style={{ flex: 1 }} />
       <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <Globe size={13} color="var(--text-secondary)" />
@@ -280,7 +289,7 @@ export default function Configurator() {
         <ShoppingCart size={12} /> Dónde comprar
       </button>
       <div style={{ textAlign: "right" }}>
-        <div className="eyebrow" style={{ fontSize: 8.5 }}>Total del montaje</div>
+        <div className="eyebrow" style={{ fontSize: 8.5 }}>Total orientativo</div>
         <div className="mono" style={{ fontSize: 17, color: "var(--accent)", fontWeight: 600, lineHeight: 1.1 }}>
           {total > 0 ? `${eur(total)} ${cur}` : "—"}
         </div>
@@ -381,10 +390,10 @@ export default function Configurator() {
 
   const shownBlocked = catalog ? catalog.nBlocked : 0;
   const CatalogPane = (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div className="catalog-content" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* La categoría se elige en el panel de montaje de la izquierda;
           aquí solo buscador, orden y conmutadores. */}
-      <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
+      <div className="catalog-toolbar" style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
         <nav className="category-jump" aria-label="Categorías del montaje" data-horizontal-scroll-zone>
           {CATS.map((category) => { const Icon = category.icon; const selected = ((build[category.id] || []) as Picked[]).length > 0; return <button key={category.id} className={cat === category.id ? "is-active" : selected ? "is-selected" : ""} aria-current={cat === category.id ? "step" : undefined} onClick={() => setCat(category.id)}><Icon size={13}/><span>{category.label}</span>{selected && <i aria-label="seleccionada" />}</button>; })}
         </nav>
@@ -412,7 +421,7 @@ export default function Configurator() {
               {museum ? "Ocultar descatalogadas" : "Mostrar descatalogadas"}
             </button>
           ) : null}
-          <button className="chip filt-toggle" onClick={() => setShowFilters((v) => !v)}>
+          <button className="chip filt-toggle" aria-expanded={showFilters} onClick={() => setShowFilters((v) => !v)}>
             <SlidersHorizontal size={10} style={{ display: "inline", verticalAlign: "-1px" }} /> Filtros
           </button>
           {/* En memoria y almacenamiento se eligen varias piezas, así que no
@@ -427,7 +436,7 @@ export default function Configurator() {
         </div>
       </div>
 
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+      <div className="catalog-results" style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <div className={`filt-col ${showFilters ? "open" : ""}`}
           style={{ width: 224, flexShrink: 0, borderRight: "1px solid var(--border)" }}>
           <FilterPanel cat={cat} facets={catalog?.facets || []} filters={filters} setFilters={setFilters}
@@ -451,9 +460,9 @@ export default function Configurator() {
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gap: 9,
+              <div className="part-grid" style={{ display: "grid", gap: 9,
                 gridTemplateColumns: "repeat(auto-fill,minmax(196px,1fr))" }}>
-                {items.map(({ p, blocked, reason }) =>
+                {(catalog ? items : []).map(({ p, blocked, reason }) =>
                   <PartCard key={p.id} part={p} blocked={blocked} reason={reason} cur={cur}
                     chosen={((build[p.cat] || []) as Picked[]).some((x) => x.id === p.id)}
                     onPick={pick} onBuy={setBuy} />)}
@@ -472,9 +481,40 @@ export default function Configurator() {
   );
 
   return (
-    <div className="fg">
+    <div className={`fg experience-${experience}`}>
       {Bar}
 
+      {experience === "visual" ? <main className="cinematic-workspace">
+        <div className="cinematic-hero">
+          <nav className="component-rail" aria-label="Configurar componentes" data-horizontal-scroll-zone>
+            <div className="rail-heading"><span className="eyebrow">Tu configuración</span><strong>{coreDone}<span> / {requiredCore.length}</span></strong></div>
+            {GROUPS.map((group) => <div className="rail-group" key={group.id}>
+              <span className="rail-group-label">{group.label}</span>
+              {CATS.filter((category) => category.group === group.id).map((category) => {
+                const Icon = category.icon;
+                const selected = (build[category.id] || []) as Picked[];
+                const conflict = selected.some((part) => conflicts.has(part._uid));
+                return <button key={category.id} className={`rail-category${cat === category.id ? " is-active" : ""}${conflict ? " has-conflict" : ""}`} aria-current={cat === category.id ? "step" : undefined} onClick={() => setCat(category.id)}>
+                  <span className="rail-icon"><Icon size={17} /></span>
+                  <span className="rail-category-copy"><strong>{category.label}</strong><small>{selected.length ? `${selected[0].brand} ${selected[0].name}` : category.req ? "Por elegir" : "Opcional"}</small></span>
+                  {selected.length > 0 && <span className="rail-check" aria-label={conflict ? "Conflicto" : "Seleccionado"}>{conflict ? "!" : <Check size={12} />}</span>}
+                </button>;
+              })}
+            </div>)}
+          </nav>
+          <div className="cinematic-stage"><VisualBuild presentation model={visualBuild} onOpenCategory={(id) => setCat(id)} /></div>
+        </div>
+        <div className="build-telemetry" aria-label="Estado de tu configuración">
+          <div><span>Montaje</span><strong>{coreDone} de {requiredCore.length} esenciales</strong></div>
+          <div><span>Consumo en juego estimado</span><strong>{power.total > 0 ? `${Math.round(power.gaming)} W` : "Pendiente"}</strong></div>
+          <div><span>Compatibilidad</span><strong className={fails ? "telemetry-error" : warns ? "telemetry-warning" : ""}>{!selectedCount ? "Elige tu primera pieza" : fails ? `${fails} conflicto${fails === 1 ? "" : "s"}` : warns ? `${warns} aviso${warns === 1 ? "" : "s"}` : "Sin conflictos detectados"}</strong></div>
+          <button onClick={() => { setExperience("technical"); setTab("build"); }}><ClipboardList size={15} /><span>Revisar montaje</span><ArrowRight size={14} /></button>
+        </div>
+        <section className="cinematic-deck" aria-labelledby="deck-title">
+          <header className="deck-heading"><div><span className="eyebrow">El siguiente paso lo eliges tú</span><h1 id="deck-title">{CAT[cat].label === "CPU" ? "Procesador" : CAT[cat].label}</h1></div><p>Elige una pieza y observa cómo toma forma tu PC.</p></header>
+          <div className="cinematic-catalog">{CatalogPane}</div>
+        </section>
+      </main> : <>
       <div className="mtabs">
         {([["build", "Montaje"], ["catalog", "Catálogo"], ["status", "Consumo y POST"]] as const).map(([k, l]) =>
           <button key={k} className={`chip ${tab === k ? "sel" : ""}`} style={{ border: "none" }}
@@ -489,7 +529,9 @@ export default function Configurator() {
           style={{ borderLeft: "1px solid var(--border)", minHeight: 0 }}>{StatusPane}</div>
       </div>
 
-      {continuar && showFloatingNext && <button className="floating-next" onClick={() => { setCat(continuar); setTab("catalog"); }} aria-label={`Continuar a ${CAT[continuar].label}`}>{(() => { const Icon = CAT[continuar].icon; return <Icon size={16}/>; })()}<span>{CAT[continuar].label}</span><ArrowRight size={17}/></button>}
+      </>}
+
+      {experience === "technical" && continuar && showFloatingNext && <button className="floating-next" onClick={() => { setCat(continuar); setTab("catalog"); }} aria-label={`Continuar a ${CAT[continuar].label}`}>{(() => { const Icon = CAT[continuar].icon; return <Icon size={16}/>; })()}<span>{CAT[continuar].label}</span><ArrowRight size={17}/></button>}
 
       {buy && <StoreSheet part={buy} region={region} onClose={() => setBuy(null)} />}
       {shopping && <ShoppingList build={build} region={region} total={total}
