@@ -59,6 +59,7 @@ export interface BoardSpec {
   pcieU0: number; pcieLen: number; // dónde empieza y cuánto mide el conector ×16
   m2: Array<[number, number]>;     // centros de M.2 2280 (u, v), tumbados
   ioV: [number, number];           // tramo v del bloque de puertos traseros
+  slot0V: number;                  // centro v de la primera ranura de expansión (las tapas van a 20,32 mm)
   chipset: [number, number];       // centro del disipador del chipset
   atx24: [number, number];         // conector de 24 pines, de canto en el borde delantero
   eps: [number, number];           // conector EPS de 8 pines de la CPU, arriba junto al I/O
@@ -71,14 +72,15 @@ export function boardSpec(form: unknown, dimm?: unknown): BoardSpec {
   const dimmSlots = Math.round(clamp(dimm, itx ? 2 : 4, 1, 8));
   /* ITX: los DIMM van pegados al canto delantero, la ranura ×16 al canto inferior y
      el M.2 tumbado entre el zócalo y la ranura. */
-  if (itx) return { form: "Mini-ITX", h: 170, d: 170, slots: 1, dimm: Math.min(2, dimmSlots), socket: [88, 66], ramU0: 138, ramPitch: 10, ramLen: 133, ramV0: 10, pcieV: 160, pcieU0: 45, pcieLen: 89, m2: [[70, 140]], ioV: [10, 135], chipset: [40, 122], atx24: [161, 100], eps: [40, 8], sata: [160, 152], fp: [150, 163] };
+  if (itx) return { form: "Mini-ITX", h: 170, d: 170, slots: 1, dimm: Math.min(2, dimmSlots), socket: [88, 66], ramU0: 138, ramPitch: 10, ramLen: 133, ramV0: 10, pcieV: 160, pcieU0: 45, pcieLen: 89, m2: [[70, 140]], ioV: [10, 135], slot0V: 160, chipset: [40, 122], atx24: [161, 100], eps: [40, 8], sata: [160, 152], fp: [150, 163] };
   const h = micro ? 244 : 305, d = eatx ? 305 : 244;
   return {
     form: eatx ? "E-ATX" : micro ? "Micro-ATX" : "ATX", h, d, slots: micro ? 4 : 7, dimm: dimmSlots,
     socket: [125, 72], ramU0: 183, ramPitch: 10, ramLen: 133, ramV0: 12,
     pcieV: 160 + 1.5 * 20.32, pcieU0: 50, pcieLen: 89,
     m2: micro ? [[110, 128]] : [[110, 128], [110, 250]],
-    ioV: [10, 165], chipset: [205, h - 70],
+    /* El escudo I/O acaba 5 mm antes de la primera tapa de ranura (161): no se tocan. */
+    ioV: [10, 156], slot0V: 160 + 10.16, chipset: [205, h - 70],
     atx24: [d - 9, 112], eps: [45, 8], sata: [d - 6, micro ? 190 : 200], fp: [d - 20, h - 8],
   };
 }
@@ -356,6 +358,14 @@ export function coolerKind(type: unknown, radiatorMm?: unknown): { kind: "aio" |
 }
 
 const present = (x?: VisualPart) => Boolean(x && x.state !== "empty" && x.state !== "next");
+
+/** Qué zócalos DIMM ocupan `modules` módulos (índices desde la CPU, 0 el más cercano).
+    Cuatro zócalos: 4, 2, 3, 1 (doble canal en A2/B2 primero); dos: el lejano primero;
+    otros recuentos, de lejos a cerca. */
+export function dimmPopulation(dimm: number, modules: number): number[] {
+  const order = dimm === 4 ? [3, 1, 2, 0] : dimm === 2 ? [1, 0] : Array.from({ length: dimm }, (_, i) => dimm - 1 - i);
+  return order.slice(0, Math.max(1, Math.min(modules, dimm))).sort((a, b) => a - b);
+}
 const axisOf = (n: Vector3Tuple) => (n[0] ? 0 : n[1] ? 1 : 2);
 
 /** VisualBuildModel → escena montada. Determinista: misma entrada, misma escena. */
@@ -379,10 +389,11 @@ export function createVisual3DScene(model: VisualBuildModel): Visual3DScene {
   /* CPU: zócalo de 45 mm con la tapa de 40 encima, 7 mm en total. */
   parts.push(describe(p.cpu!, "cpu", onBoard(B.socket[0], B.socket[1], 3.5), [7, 45, 45], profile(p.cpu!), { dir: [1, 0, 0], distance: 220 }));
 
-  /* RAM: los módulos van a los zócalos más lejos de la CPU (A2/B2 y luego A1/B1). */
+  /* RAM: se puebla como un montador. En cuatro zócalos, dos módulos van al 2 y al 4
+     (doble canal), uno solo al más lejano de la CPU; en dos zócalos, uno solo al lejano. */
   const modules = Math.min(B.dimm, Math.round(clamp(p.ram?.metadata.modules, 2, 1, 8)));
   const ramH = clamp(p.ram?.metadata.heightMm, 40, 31, 60);
-  const ramUnits = Array.from({ length: modules }, (_, i) => ({ position: onBoard(B.ramU0 + (B.dimm - 1 - i) * B.ramPitch, B.ramV0 + B.ramLen / 2, ramH / 2 + 2) }));
+  const ramUnits = dimmPopulation(B.dimm, modules).map((slot) => ({ position: onBoard(B.ramU0 + slot * B.ramPitch, B.ramV0 + B.ramLen / 2, ramH / 2 + 2) }));
   parts.push(describe(p.ram!, "ram", ramUnits[0].position, [ramH, B.ramLen, 7], profile(p.ram!), { dir: [1, 0, 0], distance: 180 }, { slots: B.dimm, rgb: Boolean(p.ram?.metadata.rgb) }, ramUnits));
 
   /* Refrigeración, antes que la gráfica: un radiador delante o al lado le quita sitio. */

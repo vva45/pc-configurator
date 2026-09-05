@@ -154,6 +154,20 @@ for (const [label, candidate] of [['air', atx3d], ['aio-240', aio240], ['aio-360
   for (const category of ['mbo','gpu','psu','storage']) ok(containsBox(int,candidate.parts.find(x=>x.category===category).bounds),`3D ${label} ${category} atraviesa el chasis`);
 }
 
+/* Las tapas de las ranuras de expansión no tocan el escudo I/O, y siguen la ranura ×16 de cada placa. */
+for(const [nombre,s3] of [['ATX',atx3d],['ITX',itx3d]]){ const Bd=s3.layout.board; ok(Bd.slot0V-9.16>=Bd.ioV[1]+4,`${nombre}: la primera tapa de ranura toca el escudo I/O`); const paso=(((Bd.pcieV-Bd.slot0V)%20.32)+20.32)%20.32; ok(paso<.01||20.32-paso<.01,`${nombre}: las tapas no siguen el paso de las ranuras`); }
+/* RAM como un montador: dos módulos en los zócalos 2 y 4 (doble canal), uno en el más lejano de la CPU. */
+{
+  const idx=(s3)=>{const Bd=s3.layout.board; return s3.parts.find(x=>x.category==='ram').units.map(u=>Math.round(((s3.layout.boardRearZ-u.position[2]*100)-Bd.ramU0)/Bd.ramPitch)).sort();};
+  const two=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'d4',brand:'Forge',name:'ATX',form:'ATX',dimm:4},ram:{cat:'ram',id:'k2',brand:'Forge',name:'Kit',kit:2}})));
+  const one=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'d4',brand:'Forge',name:'ATX',form:'ATX',dimm:4},ram:{cat:'ram',id:'k1',brand:'Forge',name:'Uno',kit:1}})));
+  const four=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'d4',brand:'Forge',name:'ATX',form:'ATX',dimm:4},ram:{cat:'ram',id:'k4',brand:'Forge',name:'Cuatro',kit:4}})));
+  const itxOne=createVisual3DScene(createVisualBuildModel(B({mbo:{cat:'mbo',id:'d2',brand:'Forge',name:'ITX',form:'Mini-ITX',dimm:2},ram:{cat:'ram',id:'k1b',brand:'Forge',name:'Uno',kit:1}})));
+  ok(idx(two).join()==='1,3','dos módulos no van a los zócalos 2 y 4');
+  ok(idx(one).join()==='3','un módulo no va al zócalo más lejano de la CPU');
+  ok(idx(four).join()==='0,1,2,3','cuatro módulos no llenan los cuatro zócalos');
+  ok(idx(itxOne).join()==='1','en ITX un módulo no va al zócalo lejano');
+}
 /* Ventilador trasero al lado del escudo I/O (44,45 mm de ancho), nunca encima, y dentro del chasis. */
 const rf=atx3d.layout.rearFan;
 ok(rf&&rf.center[0]-rf.size/2>=atx3d.layout.boardFaceX+45&&rf.center[0]+rf.size/2<=atx3d.layout.interior.max[0]&&rf.center[1]+rf.size/2<=atx3d.layout.interior.max[1],'el ventilador trasero pisa el escudo I/O o sale del chasis');

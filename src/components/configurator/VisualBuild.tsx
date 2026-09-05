@@ -7,6 +7,7 @@ import { Box, Maximize2, X } from "lucide-react";
 import type { CatId } from "@/data/parts/types";
 import { getAioSchematicGeometry } from "@/lib/aio-schematic";
 import { getInitialVisualPart, type VisualBuildModel, type VisualCategory, type VisualPart } from "@/lib/visual-build";
+import { dimmPopulation } from "@/lib/visual-3d";
 import { createVisualHardwareProfile, type VisualHardwareProfile } from "@/lib/visual-hardware-profile";
 
 interface Props { model: VisualBuildModel; onOpenCategory: (category: CatId) => void; }
@@ -50,7 +51,9 @@ function PartShape({ part, profile, active, onActivate, onInspect }: { part: Vis
   }
   if (part.category === "ram") {
     const modules = installed ? Math.max(1, Math.min(4, Number(part.metadata.modules) || 1)) : 2;
-    return <g {...common}>{Array.from({ length: modules }, (_, i) => <rect key={i} x={z.x + i * 9} y={z.y} width="6" height={z.h} rx="1" />)}</g>;
+    /* Mismo criterio que el 3D: dos módulos en los zócalos 2 y 4, uno en el más lejano de la CPU. */
+    const used = new Set(dimmPopulation(4, modules));
+    return <g {...common}>{[0, 1, 2, 3].map((i) => <rect key={i} x={z.x + i * 9} y={z.y} width="6" height={z.h} rx="1" opacity={used.has(i) ? 1 : 0.28} strokeDasharray={used.has(i) ? undefined : "2 2"} />)}</g>;
   }
   if (part.category === "cooler" && part.metadata.mode === "aio") {
     const geometry = getAioSchematicGeometry(part.metadata.radiatorMm);
