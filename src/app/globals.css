@@ -151,7 +151,7 @@ body{background:var(--bg-canvas)}
 }
 
 /* Header: a deliberate instrument strip rather than a utility bar. */
-.fg>div:first-child{
+.fg>.forge-topbar{
   display:grid!important;grid-template-columns:minmax(220px,1fr) auto auto auto;
   grid-template-areas:"brand region shop total";align-items:center;gap:12px!important;
   min-height:70px;padding:10px 20px!important;
@@ -161,7 +161,7 @@ body{background:var(--bg-canvas)}
     linear-gradient(180deg,rgba(255,255,255,.028),transparent)!important;
   box-shadow:0 8px 22px rgba(0,0,0,.22),0 1px 0 rgba(120,150,185,.08) inset;
 }
-.fg>div:first-child::before{
+.fg>.forge-topbar::before{
   content:"";position:absolute;left:39%;top:50%;width:15%;height:22px;transform:translateY(-50%);
   opacity:.5;pointer-events:none;
   background:
@@ -169,31 +169,30 @@ body{background:var(--bg-canvas)}
     linear-gradient(var(--border),var(--border)) left 2px top 10px/52% 1px no-repeat,
     linear-gradient(135deg,transparent 48%,var(--border) 49% 51%,transparent 52%) right/45% 100% no-repeat;
 }
-.fg>div:first-child::after{
+.fg>.forge-topbar::after{
   content:"";position:absolute;right:0;bottom:-1px;width:24%;height:1px;
   background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.6;
 }
-.fg>div:first-child>div:first-child{grid-area:brand;gap:11px!important;min-width:0}
-.fg>div:first-child>div:nth-child(2){display:none!important}
-.fg>div:first-child>div:first-child>div:first-child{
+.fg>.forge-topbar>div:first-child{grid-area:brand;gap:11px!important;min-width:0}
+.fg>.forge-topbar>div:first-child>div:first-child{
   width:34px!important;height:34px!important;border-color:var(--accent)!important;
   background:linear-gradient(135deg,rgba(77,141,255,.14),rgba(77,141,255,.02));
   box-shadow:0 0 0 4px rgba(77,141,255,.04),0 0 18px rgba(77,141,255,.12);
 }
-.fg>div:first-child .dsp{letter-spacing:.045em!important}
-.fg>div:first-child .eyebrow{letter-spacing:.18em}
-.fg>div:first-child>label{
+.fg>.forge-topbar .dsp{letter-spacing:.045em!important}
+.fg>.forge-topbar .eyebrow{letter-spacing:.18em}
+.fg>.forge-topbar>label{
   grid-area:region;padding:4px 7px 4px 9px;border:1px solid var(--border);
   background:rgba(7,10,15,.42);box-shadow:0 1px 0 rgba(255,255,255,.025) inset;
 }
-.fg>div:first-child select{border-color:transparent;background:transparent!important;padding:5px 3px!important}
-.fg>div:first-child>.btn{grid-area:shop;min-height:36px;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset}
-.fg>div:first-child>div:last-child{
+.fg>.forge-topbar select{border-color:transparent;background:transparent!important;padding:5px 3px!important}
+.fg>.forge-topbar>.btn{grid-area:shop;min-height:36px;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset}
+.fg>.forge-topbar>div:last-child{
   grid-area:total;min-width:146px;padding:5px 0 5px 15px;border-left:1px solid var(--border-soft);
   background:linear-gradient(90deg,transparent,rgba(77,141,255,.06));
 }
-.fg>div:first-child>div:last-child .eyebrow{color:var(--text-secondary)!important}
-.fg>div:first-child>div:last-child .mono{
+.fg>.forge-topbar>div:last-child .eyebrow{color:var(--text-secondary)!important}
+.fg>.forge-topbar>div:last-child .mono{
   font-size:21px!important;letter-spacing:-.045em;text-shadow:0 0 17px rgba(77,141,255,.14);
 }
 
@@ -332,21 +331,21 @@ input[type=text]:focus,input[type=number]:focus,select:focus{
   .col-status{display:none}
 }
 @media(max-width:900px){
-  .fg>div:first-child{
+  .fg>.forge-topbar{
     grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"brand region" "shop total";
     min-height:94px;padding:7px 10px!important;gap:5px 8px!important;
   }
-  .fg>div:first-child::before{display:none}
-  .fg>div:first-child>div:first-child{gap:8px!important}
-  .fg>div:first-child>div:first-child>div:first-child{width:30px!important;height:30px!important}
-  .fg>div:first-child>div:first-child .dsp{font-size:16px!important}
-  .fg>div:first-child>div:first-child .eyebrow{font-size:7.5px!important}
-  .fg>div:first-child>label{padding:3px 5px 3px 7px;gap:4px!important}
-  .fg>div:first-child>label select{min-width:112px!important;font-size:11px!important}
-  .fg>div:first-child>.btn{justify-self:start;min-height:34px;padding:7px 9px!important;font-size:9.5px!important}
-  .fg>div:first-child>div:last-child{min-width:120px;padding:3px 0 3px 10px}
-  .fg>div:first-child>div:last-child .eyebrow{font-size:7.5px!important}
-  .fg>div:first-child>div:last-child .mono{font-size:18px!important}
+  .fg>.forge-topbar::before{display:none}
+  .fg>.forge-topbar>div:first-child{gap:8px!important}
+  .fg>.forge-topbar>div:first-child>div:first-child{width:30px!important;height:30px!important}
+  .fg>.forge-topbar>div:first-child .dsp{font-size:16px!important}
+  .fg>.forge-topbar>div:first-child .eyebrow{font-size:7.5px!important}
+  .fg>.forge-topbar>label{padding:3px 5px 3px 7px;gap:4px!important}
+  .fg>.forge-topbar>label select{min-width:112px!important;font-size:11px!important}
+  .fg>.forge-topbar>.btn{justify-self:start;min-height:34px;padding:7px 9px!important;font-size:9.5px!important}
+  .fg>.forge-topbar>div:last-child{min-width:120px;padding:3px 0 3px 10px}
+  .fg>.forge-topbar>div:last-child .eyebrow{font-size:7.5px!important}
+  .fg>.forge-topbar>div:last-child .mono{font-size:18px!important}
   .mtabs{top:94px!important}
   .mtabs button{min-height:34px;padding:8px 3px!important;font-size:9.5px!important;letter-spacing:.035em}
   .layout{display:block;height:auto;padding:0;background:none}
@@ -391,9 +390,9 @@ input[type=text]:focus,input[type=number]:focus,select:focus{
   .col-catalog .scroll{padding-bottom:calc(68px + env(safe-area-inset-bottom))!important}
 }
 @media(max-width:400px){
-  .fg>div:first-child>label select{min-width:102px!important;font-size:10.5px!important}
-  .fg>div:first-child>.btn{font-size:9px!important;padding-inline:8px!important}
-  .fg>div:first-child>div:last-child{min-width:112px;padding-left:8px}
+  .fg>.forge-topbar>label select{min-width:102px!important;font-size:10.5px!important}
+  .fg>.forge-topbar>.btn{font-size:9px!important;padding-inline:8px!important}
+  .fg>.forge-topbar>div:last-child{min-width:112px;padding-left:8px}
   .mtabs button{font-size:9px!important}
 }
 

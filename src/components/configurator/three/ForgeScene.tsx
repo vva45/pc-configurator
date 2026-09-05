@@ -26,15 +26,15 @@ import type { VisualCategory } from "@/lib/visual-build";
 /* ── Materiales ──────────────────────────────────────────────────────── */
 type Mat = { color: string; metalness: number; roughness: number; emissive?: string; emissiveIntensity?: number; transparent?: boolean; opacity?: number };
 const M = {
-  steel: { color: "#262b29", metalness: 0.45, roughness: 0.55 },
+  steel: { color: "#17191f", metalness: 0.68, roughness: 0.4 },
   steelLight: { color: "#d4d8d4", metalness: 0.4, roughness: 0.5 },
-  tray: { color: "#2b312e", metalness: 0.5, roughness: 0.58 },
+  tray: { color: "#20242a", metalness: 0.4, roughness: 0.64 },
   pcb: { color: "#16261c", metalness: 0.15, roughness: 0.75 },
   pcbLight: { color: "#cfd4cf", metalness: 0.2, roughness: 0.7 },
   alu: { color: "#b6bab6", metalness: 0.85, roughness: 0.38 },
-  aluDark: { color: "#3b403e", metalness: 0.8, roughness: 0.42 },
+  aluDark: { color: "#30363d", metalness: 0.8, roughness: 0.34 },
   aluMid: { color: "#6e7572", metalness: 0.8, roughness: 0.4 },
-  plastic: { color: "#181c1a", metalness: 0.1, roughness: 0.62 },
+  plastic: { color: "#14171b", metalness: 0.08, roughness: 0.6 },
   plasticLight: { color: "#e2e5e1", metalness: 0.05, roughness: 0.55 },
   copper: { color: "#b87333", metalness: 0.95, roughness: 0.3 },
   gold: { color: "#dfb85e", metalness: 0.9, roughness: 0.32 },
@@ -183,7 +183,7 @@ function Gpu({ part, active }: { part: Visual3DPart; active: boolean }) {
   const sandwich = Boolean(part.detail.sandwich);
   const [H, T, L]: V3 = sandwich ? [part.size[1], part.size[0], part.size[2]] : part.size;
   const fans = num(part.detail.fans, 2);
-  const hpwr = Boolean(part.detail.hpwr); const plugs = hpwr ? 1 : Math.max(1, Math.min(3, num(part.detail.conn8, 0) + num(part.detail.conn6, 0)));
+  const hpwr = Boolean(part.detail.hpwr); const plugs = hpwr ? 1 : Math.max(0, Math.min(3, num(part.detail.conn8, 0) + num(part.detail.conn6, 0)));
   const fanD = Math.min(0.96, (L - 0.3) / fans - 0.06);
   const accent = part.profile.accentColor;
   const light = isWhite(part.source.name);
@@ -370,7 +370,7 @@ function Component({ part, active }: { part: Visual3DPart; active: boolean }) {
 }
 
 /* ── Chasis ──────────────────────────────────────────────────────────── */
-function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) {
+function Chassis({ scene, explode, cutaway }: { scene: Visual3DScene; explode: number; cutaway: boolean }) {
   const L = scene.layout; const U = 0.01;
   const sh = { min: L.shell.min.map((v) => v * U) as V3, max: L.shell.max.map((v) => v * U) as V3 };
   const int = { min: L.interior.min.map((v) => v * U) as V3, max: L.interior.max.map((v) => v * U) as V3 };
@@ -424,8 +424,8 @@ function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) 
     {scene.chassisFans.map((f, i) => { const axis: "x" | "y" | "z" = f.normal[0] ? "x" : f.normal[1] ? "y" : "z"; return <Fan key={i} size={f.size / 100} axis={axis} at={f.position} light={light} />; })}
     {/* cristal lateral con su marco */}
     <group position={[e * 1.1, 0, 0]}>
-      {window === "solid" ? <Box size={[0.012, H - 0.02, D]} at={[sh.max[0] - 0.006, cy, cz]} mat={steel} />
-        : <mesh position={[sh.max[0] - 0.004, cy, cz]}><boxGeometry args={[0.006, H - 0.08, D - 0.08]} />{window === "glass" ? glassMat : meshMat}</mesh>}
+      {!cutaway && (window === "solid" ? <Box size={[0.012, H - 0.02, D]} at={[sh.max[0] - 0.006, cy, cz]} mat={steel} />
+        : <mesh position={[sh.max[0] - 0.004, cy, cz]}><boxGeometry args={[0.006, H - 0.08, D - 0.08]} />{window === "glass" ? glassMat : meshMat}</mesh>)}
       {[0, 1, 2, 3].map((i) => <Box key={i} size={i % 2 ? [0.014, H - 0.02, 0.04] : [0.014, 0.04, D]} at={i % 2 ? [sh.max[0] - 0.007, cy, i === 1 ? sh.min[2] + 0.02 : sh.max[2] - 0.02] : [sh.max[0] - 0.007, i === 0 ? sh.max[1] - 0.02 : sh.min[1] + 0.02, cz]} mat={steel} />)}
     </group>
     {/* pies */}
@@ -434,12 +434,14 @@ function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) 
 }
 
 /* ── Entorno e iluminación ───────────────────────────────────────────── */
-const setEnvironment = (target: THREE.Scene, env: THREE.Texture | null) => { target.environment = env; target.environmentIntensity = 0.9; };
+const setEnvironment = (target: THREE.Scene, env: THREE.Texture | null) => { target.environment = env; target.environmentIntensity = 0.62; };
 function Studio() {
   const { gl, scene } = useThree();
   useEffect(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const room = new RoomEnvironment();
+    const env = pmrem.fromScene(room, 0.04).texture;
+    room.dispose();
     setEnvironment(scene, env);
     return () => { setEnvironment(scene, null); env.dispose(); pmrem.dispose(); };
   }, [gl, scene]);
@@ -451,36 +453,59 @@ function Interactive({ part, explode, children, onSelect, onHover }: { part: Vis
   return <group position={pos} onClick={(e) => { e.stopPropagation(); onSelect(part); }} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; onHover(part); }} onPointerOut={() => { document.body.style.cursor = ""; onHover(); }}>{children}</group>;
 }
 
-export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal, explode = 0 }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number; explode?: number }) {
+export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal, explode = 0, cutaway = false }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number; explode?: number; cutaway?: boolean }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, size, invalidate } = useThree();
   const cameraRef = useRef(camera);
   const visible = scene.parts.filter((p) => p.state !== "empty");
   const radius = scene.camera.radius;
   const cableLight = Boolean(scene.parts.find((p) => p.category === "psu")?.profile.isLight);
+  // Fit the projected chassis corners, preserving every physical dimension.
+  // A sphere fit wastes space around a tall tower, especially on wide stages.
+  const framing = useMemo(() => {
+    const target = new THREE.Vector3(...scene.focusTarget);
+    const [x, y, z] = scene.camera.direction;
+    const direction = new THREE.Vector3(x, y * 0.55, z * 0.75).normalize();
+    const right = new THREE.Vector3(0, 1, 0).cross(direction).normalize();
+    const up = direction.clone().cross(right).normalize();
+    const vertical = Math.tan(THREE.MathUtils.degToRad(scene.camera.fov) / 2);
+    const horizontal = vertical * (size.width / Math.max(1, size.height));
+    const fill = 0.84;
+    let distance = scene.camera.minDistance;
+    for (const px of [scene.bounds.min[0], scene.bounds.max[0]]) {
+      for (const py of [scene.bounds.min[1], scene.bounds.max[1]]) {
+        for (const pz of [scene.bounds.min[2], scene.bounds.max[2]]) {
+          const corner = new THREE.Vector3(px, py, pz).sub(target);
+          distance = Math.max(distance, corner.dot(direction) + Math.max(
+            Math.abs(corner.dot(right)) / (horizontal * fill),
+            Math.abs(corner.dot(up)) / (vertical * fill),
+          ));
+        }
+      }
+    }
+    return { target, direction, distance };
+  }, [scene, size.width, size.height]);
   useEffect(() => {
     const cam = cameraRef.current; if (!(cam instanceof THREE.PerspectiveCamera)) return;
-    const vfov = THREE.MathUtils.degToRad(cam.fov); const hfov = 2 * Math.atan(Math.tan(vfov / 2) * cam.aspect);
-    const distance = (radius / Math.sin(Math.min(vfov, hfov) / 2)) * 1.0;
-    const dir = new THREE.Vector3(...scene.camera.direction).normalize();
-    cam.position.copy(new THREE.Vector3(...scene.focusTarget)).addScaledVector(dir, distance);
-    cam.near = Math.max(0.05, distance - radius * 1.6); cam.far = distance + radius * 6; cam.updateProjectionMatrix();
-    controls.current?.target.set(...scene.focusTarget); controls.current?.update(); invalidate();
-  }, [invalidate, resetSignal, scene, radius, size.width, size.height]);
+    cam.position.copy(framing.target).addScaledVector(framing.direction, framing.distance);
+    cam.near = 0.05; cam.far = Math.max(framing.distance * 2, radius * 12); cam.updateProjectionMatrix();
+    controls.current?.target.copy(framing.target); controls.current?.update(); invalidate();
+  }, [invalidate, resetSignal, framing, radius]);
   const shadowSize = radius * 1.4;
   return <>
     <Studio />
-    <hemisphereLight args={["#e4e9ef", "#1a2029", 0.55]} />
-    <directionalLight position={[radius * 1.4, radius * 2.2, -radius * 1.6]} intensity={2.4} color="#fff3dc" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0003} shadow-normalBias={0.02}
+    <hemisphereLight args={["#c9d5ec", "#080811", 0.42]} />
+    <directionalLight position={[radius * 1.4, radius * 2.2, -radius * 1.6]} intensity={2.8} color="#edf2ff" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0003} shadow-normalBias={0.02}
       shadow-camera-left={-shadowSize} shadow-camera-right={shadowSize} shadow-camera-top={shadowSize} shadow-camera-bottom={-shadowSize} shadow-camera-near={0.2} shadow-camera-far={radius * 8} />
-    <directionalLight position={[-radius * 1.5, radius * 0.8, radius * 1.2]} intensity={0.7} color="#a9c4dc" />
-    <pointLight position={[radius * 0.6, radius * 0.3, -radius * 0.9]} intensity={radius * 1.2} distance={radius * 5} color="#dfe6ee" />
+    <directionalLight position={[-radius * 1.5, radius * 0.9, radius * 1.2]} intensity={1.6} color="#ac8bff" />
+    <directionalLight position={[radius * 1.8, radius * 0.2, radius * 0.7]} intensity={0.85} color="#a7ccff" />
+    <pointLight position={[radius * 0.8, radius * 0.2, -radius * 0.5]} intensity={radius * 1.1} distance={radius * 5} color="#dcecff" />
     <group>
-      <Chassis scene={scene} explode={explode} />
+      <Chassis scene={scene} explode={explode} cutaway={cutaway} />
       <Cables cables={scene.cables} explode={explode} light={cableLight} />
       {visible.map((part) => <Interactive key={part.id} part={part} explode={explode} onSelect={onSelect} onHover={onHover}><Component part={part} active={active === part.category} /></Interactive>)}
     </group>
-    <ContactShadows position={[0, scene.bounds.min[1] - 0.01, 0]} opacity={0.5} scale={radius * 4} blur={2.2} far={radius * 2} frames={1} />
-    <OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} maxDistance={scene.camera.maxDistance} minPolarAngle={0.2} maxPolarAngle={1.55} enablePan={false} onChange={() => invalidate()} />
+    <ContactShadows position={[0, scene.bounds.min[1] - 0.01, 0]} opacity={0.68} scale={radius * 4} blur={2.8} far={radius * 2} frames={1} />
+    <OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} maxDistance={Math.max(scene.camera.maxDistance, framing.distance * 1.5)} minPolarAngle={0.2} maxPolarAngle={1.55} enablePan={false} onChange={() => invalidate()} />
   </>;
 }

@@ -1,24 +1,30 @@
 "use client";
 
-import { Component, useEffect, useId, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import { Component, useEffect, useId, useRef, useState, useSyncExternalStore, type ErrorInfo, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { Box, Maximize2, X } from "lucide-react";
+import { visualPartDetails, visualPartLabel, visualStateLabel } from "./visual-labels";
 import type { CatId } from "@/data/parts/types";
 import { getAioSchematicGeometry } from "@/lib/aio-schematic";
 import { getInitialVisualPart, type VisualBuildModel, type VisualCategory, type VisualPart } from "@/lib/visual-build";
 import { dimmPopulation } from "@/lib/visual-3d";
 import { createVisualHardwareProfile, type VisualHardwareProfile } from "@/lib/visual-hardware-profile";
 
-interface Props { model: VisualBuildModel; onOpenCategory: (category: CatId) => void; }
-const ThreeWorkbench = dynamic(() => import("./three/ThreeWorkbench"), { ssr: false });
+interface Props { model: VisualBuildModel; onOpenCategory: (category: CatId) => void; presentation?: boolean; }
+const ThreeWorkbench = dynamic(() => import("./three/ThreeWorkbench"), { ssr: false, loading: () => <div className="three-loading" role="status">Cargando el visor 3D…</div> });
 class ThreeBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   componentDidCatch(error: Error, info: ErrorInfo) { console.error("Forge 3D renderer failed", error, info.componentStack); }
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
-function supportsWebGL() { try { const canvas = document.createElement("canvas"); return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl")); } catch { return false; } }
+function supportsWebGL() { try { const context = document.createElement("canvas").getContext("webgl2"); if (!context) return false; context.getExtension("WEBGL_lose_context")?.loseContext(); return true; } catch { return false; } }
+
+const subscribeWebGL = () => () => {};
+const serverWebGL = () => undefined;
+let cachedWebGL: boolean | undefined;
+const readWebGL = () => cachedWebGL ?? (cachedWebGL = supportsWebGL());
 
 const ZONES: Record<VisualCategory, { x: number; y: number; w: number; h: number }> = {
   case: { x: 12, y: 10, w: 316, h: 240 }, mbo: { x: 72, y: 47, w: 170, h: 160 },
@@ -29,11 +35,7 @@ const ZONES: Record<VisualCategory, { x: number; y: number; w: number; h: number
   expansion: { x: 83, y: 197, w: 116, h: 16 },
 };
 
-function details(part: VisualPart) {
-  /* Las claves compuestas (listas de discos, anclajes, tamaños de ventilador) ya se leen en su sitio; aquí serían JSON crudo. */
-  const entries = Object.entries(part.metadata).filter(([key, value]) => value !== undefined && !/drives|radiatorMounts|fanSizes/.test(key));
-  return entries.map(([key, value]) => `${key}: ${value}`).join(" · ");
-}
+function details(part: VisualPart) { return visualPartDetails(part); }
 
 function PartShape({ part, profile, active, onActivate, onInspect }: { part: VisualPart; profile: VisualHardwareProfile; active: boolean; onActivate: () => void; onInspect: () => void }) {
   const z = ZONES[part.category];
@@ -103,14 +105,16 @@ function Renderer({ model, onOpenCategory, compact = false }: Props & { compact?
       {order.map((category) => { const part = model.parts[category]; return part ? <PartShape key={category} part={part} profile={createVisualHardwareProfile(part, motherboardProfile)} active={inspected.category === category} onInspect={() => setInspectedCategory(part.category)} onActivate={() => onOpenCategory(part.sourceCategory)} /> : null; })}
       <text className="visual-axis" x="18" y="244">SYSTEM FRAME{" // "}{model.installedCount.toString().padStart(2, "0")} ZONES ONLINE</text>
     </svg>
-    {!compact && <div className={`visual-inspector is-${inspected.state}`} aria-live="polite"><span>{inspected.label}{" // "}{inspected.state}</span><strong>{inspected.name || "Esperando componentes"}</strong><small>{details(inspected) || inspected.reason || "Selecciona esta zona para abrir su categoría."}</small>{inspected.reason && <em>{inspected.reason}</em>}</div>}
+    {!compact && <div className={`visual-inspector is-${inspected.state}`} aria-live="polite"><span>{visualPartLabel(inspected)}{" · "}{visualStateLabel[inspected.state]}</span><strong>{inspected.name || "Esperando componentes"}</strong><small>{details(inspected) || inspected.reason || "Selecciona esta zona para abrir su categoría."}</small>{inspected.reason && <em>{inspected.reason}</em>}</div>}
   </div>;
 }
 
-export default function VisualBuild({ model, onOpenCategory }: Props) {
+export default function VisualBuild({ model, onOpenCategory, presentation = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<"3d" | "schema">("3d");
-  const [webgl, setWebgl] = useState<boolean>();
+  const webgl = useSyncExternalStore(subscribeWebGL, readWebGL, serverWebGL);
+  const titleId = useId();
+  const modalTitleId = useId();
   const openButton = useRef<HTMLButtonElement>(null);
   const modal = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -124,10 +128,9 @@ export default function VisualBuild({ model, onOpenCategory }: Props) {
       if (event.key === "Escape") { event.preventDefault(); setExpanded(false); return; }
       if (event.key !== "Tab") return;
       const focusable = Array.from(modal.current?.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') || [])
-        .filter((element) => !element.hasAttribute("disabled"));
+        .filter((element) => !element.hasAttribute("disabled") && element.getClientRects().length > 0);
       if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      const first = focusable[0], last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
@@ -138,10 +141,26 @@ export default function VisualBuild({ model, onOpenCategory }: Props) {
       opener?.focus();
     };
   }, [expanded]);
-  return <section className="visual-build" aria-labelledby="visual-build-title">
-    <header><div><span className="eyebrow">Visual build</span><h2 id="visual-build-title">Forge digital twin</h2></div><button ref={openButton} className="btn visual-expand" onClick={() => { setWebgl(supportsWebGL()); setExpanded(true); }}><Maximize2 size={11} /> Inspeccionar</button></header>
-    <Renderer model={model} onOpenCategory={onOpenCategory} compact />
-    <footer><span>{model.isEmpty ? "SYSTEM FRAME · Esperando componentes" : `${model.installedCount} zonas instaladas`}</span><i aria-hidden="true" /></footer>
-    {expanded && createPortal(<div ref={modal} className="visual-modal" role="dialog" aria-modal="true" aria-labelledby="visual-modal-title"><div className="visual-modal-card"><header><div><span className="eyebrow">Forge visual build</span><h2 id="visual-modal-title">3D Workbench · live</h2></div><div className="visual-modal-actions" role="group" aria-label="Modo de visualización"><button className={`btn${mode === "3d" ? " is-active" : ""}`} aria-pressed={mode === "3d"} onClick={() => setMode("3d")}><Box size={13}/> 3D</button><button className={`btn${mode === "schema" ? " is-active" : ""}`} aria-pressed={mode === "schema"} onClick={() => setMode("schema")}>Esquema</button><button ref={closeButton} className="btn" onClick={() => setExpanded(false)} aria-label="Cerrar Visual Build"><X size={14} /> Cerrar</button></div></header>{mode === "3d" && webgl ? <ThreeBoundary fallback={<div className="three-fallback"><p>Vista 3D no disponible en este dispositivo.</p><Renderer model={model} onOpenCategory={onOpenCategory} /></div>}><ThreeWorkbench model={model} onOpenCategory={(cat) => { setExpanded(false); onOpenCategory(cat); }} /></ThreeBoundary> : <div className={mode === "3d" ? "three-fallback" : undefined}>{mode === "3d" && <p>Vista 3D no disponible en este dispositivo.</p>}<Renderer model={model} onOpenCategory={(cat) => { setExpanded(false); onOpenCategory(cat); }} /></div>}</div></div>, document.body)}
+  const openCategory = (category: CatId) => { setExpanded(false); onOpenCategory(category); };
+  const fallback = <div className="three-fallback"><p>Vista 3D no disponible. Puedes seguir configurando con el esquema.</p><Renderer model={model} onOpenCategory={openCategory} /></div>;
+  const viewport = mode === "schema" ? <Renderer model={model} onOpenCategory={openCategory} />
+    : webgl === undefined ? <div className="three-loading" role="status">Preparando el visor 3D…</div>
+    : webgl ? <ThreeBoundary fallback={fallback}><ThreeWorkbench model={model} onOpenCategory={openCategory} /></ThreeBoundary> : fallback;
+  const modeButtons = <><button className={`btn${mode === "3d" ? " is-active" : ""}`} aria-pressed={mode === "3d"} onClick={() => setMode("3d")}><Box size={13} /> 3D</button><button className={`btn${mode === "schema" ? " is-active" : ""}`} aria-pressed={mode === "schema"} onClick={() => setMode("schema")}>Esquema</button></>;
+  return <section className={`visual-build${presentation ? " stage-visual-build" : ""}`} aria-labelledby={titleId}>
+    <header className={presentation ? "stage-visual-header" : undefined}>
+      <div><span className="eyebrow">FORGE / Estudio de montaje</span><h2 id={titleId}>{presentation ? "Tu PC, pieza a pieza" : "Vista del montaje"}</h2></div>
+      <div className="visual-modal-actions" role="group" aria-label="Vista del montaje">
+        {presentation && modeButtons}
+        <button ref={openButton} aria-label="Ampliar vista del montaje" title="Ampliar vista del montaje" className="btn visual-expand" onClick={() => { setExpanded(true); }}><Maximize2 size={19} /><span>Ampliar</span></button>
+      </div>
+    </header>
+    {presentation ? <div className="stage-visual-content">{expanded ? <div className="three-loading">Vista ampliada abierta</div> : viewport}</div> : <Renderer model={model} onOpenCategory={onOpenCategory} compact />}
+    <footer><span>{presentation ? "Vista orientativa · geometría según los datos disponibles" : model.isEmpty ? "Esperando componentes" : `${model.installedCount} zonas instaladas`}</span><i aria-hidden="true" /></footer>
+    {expanded && createPortal(<div ref={modal} className="visual-modal" role="dialog" aria-modal="true" aria-labelledby={modalTitleId}><div className="visual-modal-card">
+      <header><div><span className="eyebrow">FORGE / Estudio de montaje</span><h2 id={modalTitleId}>Tu montaje en detalle</h2></div>
+      <div className="visual-modal-actions" role="group" aria-label="Modo de visualización">{modeButtons}<button ref={closeButton} className="btn" onClick={() => setExpanded(false)} aria-label="Cerrar vista ampliada"><X size={14} /> Cerrar</button></div></header>
+      {viewport}
+    </div></div>, document.body)}
   </section>;
 }
