@@ -398,7 +398,7 @@ function Chassis({ scene, explode }: { scene: Visual3DScene; explode: number }) 
     <group position={[0, 0, e * 0.6]}>
       <Box size={[W, H - 0.02, 0.012]} at={[cx, cy, sh.max[2] - 0.006]} mat={steel} />
       <Box size={[0.42, ioTop - ioBot + 0.02, 0.014]} at={[L.boardFaceX * U + 0.21, (ioTop + ioBot) / 2, sh.max[2] + 0.002]} mat={M.black} shadow={false} />
-      {Array.from({ length: B.slots }, (_, i) => <Box key={i} size={[1.12, 0.18, 0.014]} at={[L.boardFaceX * U + 0.06 + 0.56, (L.boardTopY - (160 + 10.16 + i * 20.32)) * U, sh.max[2] + 0.002]} mat={light ? M.steelLight : M.aluDark} shadow={false} />)}
+      {Array.from({ length: B.slots }, (_, i) => <Box key={i} size={[1.12, 0.18, 0.014]} at={[L.boardFaceX * U + 0.06 + 0.56, (L.boardTopY - (B.slot0V + i * 20.32)) * U, sh.max[2] + 0.002]} mat={light ? M.steelLight : M.aluDark} shadow={false} />)}
       {rf && <mesh position={[rf.center[0] * U, rf.center[1] * U, sh.max[2] + 0.004]}><torusGeometry args={[rf.size * U / 2 - 0.04, 0.015, 8, 48]} /><meshStandardMaterial {...M.aluDark} /></mesh>}
       {rf && [0, 1, 2, 3].map((i) => <mesh key={i} position={[rf.center[0] * U, rf.center[1] * U, sh.max[2] + 0.004]} rotation={[0, 0, (i / 4) * Math.PI]}><boxGeometry args={[rf.size * U - 0.1, 0.01, 0.006]} /><meshStandardMaterial {...M.aluDark} /></mesh>)}
     </group>
