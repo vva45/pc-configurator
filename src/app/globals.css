@@ -537,6 +537,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{
 
 /* ═══ FORGE — Phase 5: lazy 3D workbench ═══ */
 .visual-modal-card{display:flex;width:min(1240px,100%);height:min(86vh,780px);overflow:hidden;flex-direction:column}
+.visual-viewport-slot,.visual-viewport{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0}.visual-viewport-slot[hidden]{display:none}
 .visual-modal-actions{display:flex;align-items:center;gap:6px}.visual-modal-actions .btn{display:inline-flex;align-items:center;gap:5px}.visual-modal-actions .is-active{border-color:var(--accent);color:var(--accent-strong);background:var(--accent-soft)}
 /* Estudio técnico oscuro: una luz azul ambiental muy sutil, nada de habitación azul. */
 .three-workbench{display:grid;grid-template-columns:minmax(0,1fr) 240px;min-height:0;flex:1;background:radial-gradient(circle at 46% 44%,rgba(63,108,175,.2),transparent 52%),linear-gradient(145deg,#0D141C,#060A0F)}

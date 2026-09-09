@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, useEffect, useId, useRef, useState, useSyncExternalStore, type ErrorInfo, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type ErrorInfo, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { Box, Maximize2, X } from "lucide-react";
@@ -111,13 +111,31 @@ function Renderer({ model, onOpenCategory, compact = false }: Props & { compact?
 
 export default function VisualBuild({ model, onOpenCategory, presentation = false }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
   const [mode, setMode] = useState<"3d" | "schema">("3d");
+  const [viewportHost, setViewportHost] = useState<HTMLDivElement | null>(null);
   const webgl = useSyncExternalStore(subscribeWebGL, readWebGL, serverWebGL);
   const titleId = useId();
   const modalTitleId = useId();
   const openButton = useRef<HTMLButtonElement>(null);
   const modal = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const inlineViewport = useRef<HTMLDivElement>(null);
+  const modalViewport = useRef<HTMLDivElement>(null);
+  const attachViewport = useCallback((target: HTMLDivElement | null) => {
+    inlineViewport.current = target;
+    if (!target) return;
+    const host = document.createElement("div");
+    host.className = "visual-viewport";
+    target.appendChild(host);
+    setViewportHost(host);
+    return () => { host.remove(); };
+  }, []);
+  useLayoutEffect(() => {
+    const target = expanded ? modalViewport.current : inlineViewport.current;
+    // Move the portal container, keeping its React tree and WebGL canvas alive.
+    if (target && viewportHost) target.appendChild(viewportHost);
+  }, [expanded, viewportHost]);
   useEffect(() => {
     if (!expanded) return;
     const opener = openButton.current;
@@ -152,15 +170,17 @@ export default function VisualBuild({ model, onOpenCategory, presentation = fals
       <div><span className="eyebrow">FORGE / Estudio de montaje</span><h2 id={titleId}>{presentation ? "Tu PC, pieza a pieza" : "Vista del montaje"}</h2></div>
       <div className="visual-modal-actions" role="group" aria-label="Vista del montaje">
         {presentation && modeButtons}
-        <button ref={openButton} aria-label="Ampliar vista del montaje" title="Ampliar vista del montaje" className="btn visual-expand" onClick={() => { setExpanded(true); }}><Maximize2 size={19} /><span>Ampliar</span></button>
+        <button ref={openButton} aria-label="Ampliar vista del montaje" title="Ampliar vista del montaje" className="btn visual-expand" onClick={() => { setHasOpened(true); setExpanded(true); }}><Maximize2 size={19} /><span>Ampliar</span></button>
       </div>
     </header>
-    {presentation ? <div className="stage-visual-content">{expanded ? <div className="three-loading">Vista ampliada abierta</div> : viewport}</div> : <Renderer model={model} onOpenCategory={onOpenCategory} compact />}
+    <div ref={attachViewport} className={presentation ? "stage-visual-content" : "visual-viewport-slot"} hidden={!presentation} />
+    {!presentation && <Renderer model={model} onOpenCategory={onOpenCategory} compact />}
+    {viewportHost && (presentation || hasOpened) && createPortal(viewport, viewportHost)}
     <footer><span>{presentation ? "Vista orientativa · geometría según los datos disponibles" : model.isEmpty ? "Esperando componentes" : `${model.installedCount} zonas instaladas`}</span><i aria-hidden="true" /></footer>
     {expanded && createPortal(<div ref={modal} className="visual-modal" role="dialog" aria-modal="true" aria-labelledby={modalTitleId}><div className="visual-modal-card">
       <header><div><span className="eyebrow">FORGE / Estudio de montaje</span><h2 id={modalTitleId}>Tu montaje en detalle</h2></div>
       <div className="visual-modal-actions" role="group" aria-label="Modo de visualización">{modeButtons}<button ref={closeButton} className="btn" onClick={() => setExpanded(false)} aria-label="Cerrar vista ampliada"><X size={14} /> Cerrar</button></div></header>
-      {viewport}
+      <div ref={modalViewport} className="visual-viewport-slot" />
     </div></div>, document.body)}
   </section>;
 }

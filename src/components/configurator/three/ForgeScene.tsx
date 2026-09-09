@@ -457,12 +457,14 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, size, invalidate } = useThree();
   const cameraRef = useRef(camera);
+  const previousFraming = useRef<{ scene: Visual3DScene; signal: number; distance: number } | null>(null);
   const visible = scene.parts.filter((p) => p.state !== "empty");
   const radius = scene.camera.radius;
   const cableLight = Boolean(scene.parts.find((p) => p.category === "psu")?.profile.isLight);
   // Fit the projected chassis corners, preserving every physical dimension.
   // A sphere fit wastes space around a tall tower, especially on wide stages.
   const framing = useMemo(() => {
+    if (size.width <= 0 || size.height <= 0) return null;
     const target = new THREE.Vector3(...scene.focusTarget);
     const [x, y, z] = scene.camera.direction;
     const direction = new THREE.Vector3(x, y * 0.55, z * 0.75).normalize();
@@ -486,11 +488,26 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
     return { target, direction, distance };
   }, [scene, size.width, size.height]);
   useEffect(() => {
+    if (!framing) return;
     const cam = cameraRef.current; if (!(cam instanceof THREE.PerspectiveCamera)) return;
-    cam.position.copy(framing.target).addScaledVector(framing.direction, framing.distance);
-    cam.near = 0.05; cam.far = Math.max(framing.distance * 2, radius * 12); cam.updateProjectionMatrix();
-    controls.current?.target.copy(framing.target); controls.current?.update(); invalidate();
-  }, [invalidate, resetSignal, framing, radius]);
+    const orbit = controls.current;
+    const previous = previousFraming.current;
+    if (!previous || previous.scene !== scene || previous.signal !== resetSignal) {
+      cam.position.copy(framing.target).addScaledVector(framing.direction, framing.distance);
+      orbit?.target.copy(framing.target);
+    } else {
+      // Preserve orbit and zoom relative to the fitted view as the viewport changes shape.
+      const target = orbit?.target ?? framing.target;
+      cam.position.sub(target).multiplyScalar(framing.distance / previous.distance).add(target);
+    }
+    previousFraming.current = { scene, signal: resetSignal, distance: framing.distance };
+    cam.near = 0.05; cam.far = Math.max(framing.distance * 2, radius * 12, cam.position.length() * 2); cam.updateProjectionMatrix();
+    if (orbit) {
+      orbit.maxDistance = Math.max(scene.camera.maxDistance, framing.distance * 1.5, cam.position.distanceTo(orbit.target));
+      orbit.update();
+    }
+    invalidate();
+  }, [invalidate, resetSignal, framing, radius, scene]);
   const shadowSize = radius * 1.4;
   return <>
     <Studio />
@@ -506,6 +523,6 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
       {visible.map((part) => <Interactive key={part.id} part={part} explode={explode} onSelect={onSelect} onHover={onHover}><Component part={part} active={active === part.category} /></Interactive>)}
     </group>
     <ContactShadows position={[0, scene.bounds.min[1] - 0.01, 0]} opacity={0.68} scale={radius * 4} blur={2.8} far={radius * 2} frames={1} />
-    <OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} maxDistance={Math.max(scene.camera.maxDistance, framing.distance * 1.5)} minPolarAngle={0.2} maxPolarAngle={1.55} enablePan={false} onChange={() => invalidate()} />
+    <OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} minPolarAngle={0.2} maxPolarAngle={1.55} enablePan={false} onChange={() => invalidate()} />
   </>;
 }
