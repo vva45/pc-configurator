@@ -320,6 +320,27 @@ ok(post.length>8,'POST demasiado corto: '+post.length);
 const bad={...full,ram:[find('ram','3600 CL16')]};
 ok(runPost(bad,calcPower(bad)).some(l=>l.lvl==='fail'&&l.id==='MEM_TYPE'),'POST no detecta DDR4 en placa DDR5');
 
+// POST cuenta unidades físicas de almacenamiento, incluidas las repetidas y las cantidades omitidas.
+const storageBoard=find('mbo','B650 Tomahawk');
+const nvme4=find('storage','990 PRO'), nvme5=find('storage','T705');
+const sataSsd=find('storage','870 EVO'), sataHdd=find('storage','BarraCuda');
+const storagePost=storage=>runPost(B({mbo:storageBoard,storage}),{total:0});
+const hasStorageLine=(lines,id,lvl,msg)=>lines.some(l=>l.id===id&&l.lvl===lvl&&l.msg===msg);
+ok(hasStorageLine(storagePost(nvme4),'M2_SLOTS','ok','1 de 3 ranuras M.2 usadas'),'POST no cuenta una unidad M.2 sin qty');
+ok(hasStorageLine(storagePost(sataSsd),'SATA_PORTS','ok','1 de 6 puertos SATA usados'),'POST no cuenta una unidad SATA sin qty');
+const storageBoundary=storagePost([{...nvme4,qty:2},nvme5,{...sataSsd,qty:5},sataHdd]);
+ok(hasStorageLine(storageBoundary,'M2_SLOTS','ok','3 de 3 ranuras M.2 usadas'),'POST no suma M.2 mixtas hasta el límite de ranuras');
+ok(hasStorageLine(storageBoundary,'SATA_PORTS','ok','6 de 6 puertos SATA usados'),'POST no suma SSD y HDD SATA hasta el límite de puertos');
+ok(!storageBoundary.some(l=>l.lvl!=='ok'),'POST avisa con M.2, SATA y Gen5 dentro de sus límites');
+const storageOverflow=storagePost([{...nvme4,qty:4},{...sataSsd,qty:7}]);
+ok(hasStorageLine(storageOverflow,'M2_SLOTS','fail','4 unidades M.2 para 3 ranuras'),'POST no detecta cuatro SSD iguales para tres ranuras M.2');
+ok(hasStorageLine(storageOverflow,'SATA_PORTS','fail','7 unidades SATA para 6 puertos'),'POST no detecta siete unidades SATA para seis puertos');
+const gen5Overflow=storagePost([{...nvme5,qty:2},nvme4]);
+ok(hasStorageLine(gen5Overflow,'M2_SLOTS','ok','3 de 3 ranuras M.2 usadas'),'POST confunde el límite Gen5 con el número total de ranuras M.2');
+ok(hasStorageLine(gen5Overflow,'M2_SLOTS','warn','2 SSD PCIe 5.0 pero solo 1 ranura(s) Gen5: irán a Gen4'),'POST no suma qty para el aviso de SSD Gen5');
+const sharedSataPost=runPost(B({mbo:find('mbo','B650I'),storage:{...nvme4,qty:3}}),{total:0});
+ok(hasStorageLine(sharedSataPost,'SATA_PORTS','warn','Muchas M.2 pobladas: en esta placa suelen deshabilitar puertos SATA'),'POST no usa qty para avisar de puertos SATA compartidos');
+
 // 12. KEYSPECS y FILTERS cubren todo
 CATS.forEach(c=>{
   ok(FILTERS[c.id],'sin filtros: '+c.id);

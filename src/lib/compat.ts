@@ -276,8 +276,8 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
     }
   }
   if (mbo && st.length) {
-    const m2 = st.filter((s) => s.iface.startsWith("M.2")).length;
-    const sata = st.filter((s) => s.iface.startsWith("SATA")).length;
+    const m2 = st.filter((s) => s.iface.startsWith("M.2")).reduce((a, s) => a + (s.qty || 1), 0);
+    const sata = st.filter((s) => s.iface.startsWith("SATA")).reduce((a, s) => a + (s.qty || 1), 0);
     if (m2) {
       if (m2 <= mbo.m2) push("ok", "M2_SLOTS", `${m2} de ${mbo.m2} ranuras M.2 usadas`);
       else push("fail", "M2_SLOTS", `${m2} unidades M.2 para ${mbo.m2} ranuras`);
@@ -287,7 +287,7 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
       else push("fail", "SATA_PORTS", `${sata} unidades SATA para ${mbo.sata} puertos`);
     }
     if (m2 >= 3 && mbo.sata <= 4) push("warn", "SATA_PORTS", "Muchas M.2 pobladas: en esta placa suelen deshabilitar puertos SATA");
-    const g5 = st.filter((s) => s.gen.includes("5.0")).length;
+    const g5 = st.filter((s) => s.gen.includes("5.0")).reduce((a, s) => a + (s.qty || 1), 0);
     if (g5 > (mbo.m2gen5 || 0)) push("warn", "M2_SLOTS", `${g5} SSD PCIe 5.0 pero solo ${mbo.m2gen5 || 0} ranura(s) Gen5: irán a Gen4`);
   }
   if (cs && fans.length) {

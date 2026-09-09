@@ -87,7 +87,7 @@
 .stage-visual-content .inspector-close { display:grid; place-items:center; position:absolute; top:6px; right:6px; width:25px; height:25px; border:0; background:none; color:#c9bddc; cursor:pointer; }
 .stage-visual-content .visual-inspector strong { font:500 16px 'Inter Tight',sans-serif; }
 .stage-visual-content .visual-inspector small { font:11px/1.6 'Inter Tight',sans-serif; }
-.stage-visual-content > .visual-renderer, .stage-visual-content > .three-fallback { flex:1; min-height:0; }
+.stage-visual-content .visual-viewport > .visual-renderer, .stage-visual-content .visual-viewport > .three-fallback { flex:1; min-height:0; }
 .stage-visual-content .visual-renderer { height:100%; }
 .stage-visual-content .visual-renderer svg { max-height:100%; }
 .three-loading { display:grid; place-items:center; flex:1; min-height:240px; color:var(--text-secondary); font-size:12px; }

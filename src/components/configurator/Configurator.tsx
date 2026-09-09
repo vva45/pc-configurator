@@ -135,9 +135,15 @@ export default function Configurator() {
   const [catalogKey, setCatalogKey] = useState("");
   const catalog = catalogKey === queryKey ? catalogResponse : null;
   const [items, setItems] = useState<CatalogResponse["items"]>([]);
+  const [retryRequest, setRetryRequest] = useState(0);
+  const [failedRequest, setFailedRequest] = useState<string | null>(null);
+  const requestKey = JSON.stringify([queryKey, page, retryRequest]);
+  const catalogFailed = failedRequest === requestKey;
+  const loadingMore = Boolean(catalog && page > catalog.page && !catalogFailed);
   const reqId = useRef(0);
   useEffect(() => {
     const id = ++reqId.current;
+    const controller = new AbortController();
     const sp = new URLSearchParams({
       cat, museum: museum ? "1" : "0", q, sort,
       showBlocked: showBlocked ? "1" : "0",
@@ -148,18 +154,24 @@ export default function Configurator() {
     if (Object.keys(clean).length) sp.set("filters", JSON.stringify(clean));
     const url = `/api/parts?${sp.toString()}${buildQs ? "&" + buildQs : ""}`;
     const t = setTimeout(() => {
-      fetch(url)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: CatalogResponse | null) => {
-          if (!data || reqId.current !== id) return;
+      fetch(url, { signal: controller.signal })
+        .then((r) => {
+          if (!r.ok) throw new Error("No se ha podido cargar el catálogo");
+          return r.json();
+        })
+        .then((data: CatalogResponse) => {
+          if (controller.signal.aborted || reqId.current !== id) return;
+          setFailedRequest(null);
           setCatalog(data);
           setCatalogKey(queryKey);
           setItems((prev) => (data.page === 0 ? data.items : [...prev, ...data.items]));
         })
-        .catch(() => { /* red caída: se mantiene la última página */ });
+        .catch(() => {
+          if (!controller.signal.aborted && reqId.current === id) setFailedRequest(requestKey);
+        });
     }, q ? 150 : 0); // pequeña espera solo al teclear en el buscador
-    return () => clearTimeout(t);
-  }, [queryKey, page, cat, museum, q, sort, showBlocked, filters, buildQs]);
+    return () => { clearTimeout(t); controller.abort(); };
+  }, [requestKey, queryKey, page, cat, museum, q, sort, showBlocked, filters, buildQs]);
 
   function pick(part: Part) {
     const c = CAT[part.cat];
@@ -462,8 +474,12 @@ export default function Configurator() {
               {catalog.nCompat} compatibles
               {shownBlocked > 0 && ` · ${shownBlocked} descartadas`}
               {" · "}{catalog.poolSize} en catálogo
-            </> : "Cargando catálogo…"}
+            </> : catalogFailed ? "No se ha podido cargar el catálogo." : "Cargando catálogo…"}
           </div>
+          {catalogFailed && <div role="alert">
+            <span>No se ha podido cargar esta página. </span>
+            <button className="btn" onClick={() => setRetryRequest((value) => value + 1)}>Reintentar carga</button>
+          </div>}
           {catalog && catalog.total === 0 ? (
             <div className="panel" style={{ padding: 24, textAlign: "center" }}>
               <div className="dsp" style={{ fontSize: 15, marginBottom: 6 }}>Nada encaja</div>
@@ -483,8 +499,9 @@ export default function Configurator() {
               </div>
               {catalog && items.length < catalog.total && (
                 <button className="btn catalog-load-more" style={{ width: "100%", marginTop: 12 }}
-                  onClick={() => setPage((p) => p + 1)}>
-                  Cargar más ({items.length}/{catalog.total})
+                  disabled={loadingMore || catalogFailed} aria-busy={loadingMore}
+                  onClick={() => setPage((current) => current === catalog.page ? current + 1 : current)}>
+                  {loadingMore ? "Cargando…" : `Cargar más (${items.length}/${catalog.total})`}
                 </button>
               )}
             </>
