@@ -178,6 +178,15 @@ function explicitPortCount(value: unknown): number {
     return sum + (count ? Number(count[1]) : 0);
   }, 0));
 }
+// A declared LAN speed implies one connector unless a multiplier says otherwise.
+// Never use the speed itself (for example 2.5 GbE) as a connector count.
+function ethernetPortCount(value: unknown): number {
+  if (typeof value !== "string") return 0;
+  const lan = value.trim();
+  if (!lan || /^(?:[-–—]+|n\/?a|none|sin(?:\s+.*)?|no(?:\s+.*)?)$/i.test(lan)) return 0;
+  const multipliers = [...lan.matchAll(/[×x]\s*(\d+)\s*\)?\s*(?:\([^)]*\))?\s*(?=[,;]|$)/gi)];
+  return multipliers.length ? Math.min(24, multipliers.reduce((sum, match) => sum + Number(match[1]), 0)) : 1;
+}
 function graphicsPorts(value: unknown): RearPortKind[] {
   if (typeof value !== "string") return [];
   const ports: RearPortKind[] = [];
@@ -218,7 +227,7 @@ function Motherboard({ part, active, rearZ }: { part: Visual3DPart; active: bool
   const portTypes: RearPortKind[] = [
     ...Array.from({ length: explicitPortCount(part.metadata.usbA) }, () => "USB-A" as const),
     ...Array.from({ length: explicitPortCount(part.metadata.usbC) }, () => "USB-C" as const),
-    ...Array.from({ length: explicitPortCount(part.metadata.lan) }, () => "LAN" as const),
+    ...Array.from({ length: ethernetPortCount(part.metadata.lan) }, () => "LAN" as const),
   ];
   const ports = placeRearPorts(portTypes, .35, ioHeight - .2);
   /* (u, v, alt) de tablero → posición relativa al centro del PCB. */
