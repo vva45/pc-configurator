@@ -22,6 +22,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { Vector3Tuple, Visual3DCable, Visual3DPart, Visual3DScene } from "@/lib/visual-3d";
 import type { VisualCategory } from "@/lib/visual-build";
+import { ethernetPortCount } from "@/lib/ethernet-ports";
 
 /* ── Materiales ──────────────────────────────────────────────────────── */
 type Mat = { color: string; metalness: number; roughness: number; emissive?: string; emissiveIntensity?: number; transparent?: boolean; opacity?: number };
@@ -177,15 +178,6 @@ function explicitPortCount(value: unknown): number {
     const count = item.match(/[×x]\s*(\d+)\s*(?:\([^)]*\))?\s*$/i);
     return sum + (count ? Number(count[1]) : 0);
   }, 0));
-}
-// A declared LAN speed implies one connector unless a multiplier says otherwise.
-// Never use the speed itself (for example 2.5 GbE) as a connector count.
-function ethernetPortCount(value: unknown): number {
-  if (typeof value !== "string") return 0;
-  const lan = value.trim();
-  if (!lan || /^(?:[-–—]+|n\/?a|none|sin(?:\s+.*)?|no(?:\s+.*)?)$/i.test(lan)) return 0;
-  const multipliers = [...lan.matchAll(/[×x]\s*(\d+)\s*\)?\s*(?:\([^)]*\))?\s*(?=[,;]|$)/gi)];
-  return multipliers.length ? Math.min(24, multipliers.reduce((sum, match) => sum + Number(match[1]), 0)) : 1;
 }
 function graphicsPorts(value: unknown): RearPortKind[] {
   if (typeof value !== "string") return [];

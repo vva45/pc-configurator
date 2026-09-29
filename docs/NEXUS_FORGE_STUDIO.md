@@ -13,7 +13,7 @@ Implemented 2026-09-29 from FORGE main `270630a`. NEXUS reference: project `appg
 
 ## Rendering and data boundaries
 
-The FORGE server catalog, compatibility engine, power engine and physical scene normalization remain intact. The NEXUS renderer is not copied wholesale because it only understands its own restricted case/component IDs. Principal, interior, front and rear camera presets, zoom controls, visible dimensions and improved fan geometry use the existing FORGE physical model. No hardware is scaled to force it into a chassis. A declared LAN speed represents one Ethernet connector unless the catalog supplies an explicit multiplier; missing/negative LAN data represents none.
+The FORGE server catalog, compatibility engine, power engine and physical scene normalization remain intact. The NEXUS renderer is not copied wholesale because it only understands its own restricted case/component IDs. Principal, interior, front and rear camera presets, zoom controls, visible dimensions and improved fan geometry use the existing FORGE physical model. No hardware is scaled to force it into a chassis. Ethernet connectors follow explicit multipliers, added interfaces and dual-port descriptions. Notes about alternative speeds and models do not add ports. A permanent test covers all 19 catalog LAN formats and 45 edge cases.
 
 These are procedural representations based on available catalog dimensions and inferred mounting profiles, not manufacturer CAD. Exact internal mounting geometry and cosmetic details remain approximate. Mixed storage and specialized hardware are not exhaustively represented as manufacturer-specific 3D models. The technical sheet shows the selected catalog model regardless of visualization coverage.
 

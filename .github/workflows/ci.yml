@@ -33,5 +33,7 @@ jobs:
         run: node scripts/test-gaming.mjs
       - name: Ficha técnica
         run: node scripts/test-build-dossier.mjs
+      - name: Puertos Ethernet
+        run: node scripts/test-ethernet.mjs
       - name: Build de producción
         run: npm run build
