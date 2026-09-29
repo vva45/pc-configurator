@@ -462,7 +462,8 @@ export default function Configurator() {
               {" · "}{catalog.poolSize} en catálogo
             </> : "Cargando catálogo…"}
           </div>
-          {catalogError ? <div className="studio-notice" role="alert">No se pudo cargar el catálogo. <button onClick={() => setCatalogRetry(n => n + 1)}>Reintentar catálogo</button></div> : catalog && catalog.total === 0 ? (
+          {catalogError && <div className="studio-notice" role="alert">{catalog ? "No se pudo cargar la siguiente página. Los resultados anteriores siguen disponibles." : "No se pudo cargar el catálogo."} <button onClick={() => setCatalogRetry(n => n + 1)}>Reintentar catálogo</button></div>}
+          {catalog && catalog.total === 0 ? (
             <div className="panel" style={{ padding: 24, textAlign: "center" }}>
               <div className="dsp" style={{ fontSize: 15, marginBottom: 6 }}>Nada encaja</div>
               <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginBottom: 12 }}>
@@ -479,10 +480,10 @@ export default function Configurator() {
                     chosen={((build[p.cat] || []) as Picked[]).some((x) => x.id === p.id)}
                     onPick={pick} onBuy={setBuy} />)}
               </div>
-              {catalog && items.length < catalog.total && (
+              {catalog && items.length < catalog.total && !catalogError && (
                 <button className="btn catalog-load-more" style={{ width: "100%", marginTop: 12 }}
-                  onClick={() => setPage((p) => p + 1)}>
-                  Cargar más ({items.length}/{catalog.total})
+                  disabled={page > catalog.page} onClick={() => setPage(catalog.page + 1)}>
+                  {page > catalog.page ? "Cargando más…" : `Cargar más (${items.length}/${catalog.total})`}
                 </button>
               )}
             </>

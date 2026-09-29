@@ -13,7 +13,7 @@ Implemented 2026-09-29 from FORGE main `270630a`. NEXUS reference: project `appg
 
 ## Rendering and data boundaries
 
-The FORGE server catalog, compatibility engine, power engine and physical scene normalization remain intact. The NEXUS renderer is not copied wholesale because it only understands its own restricted case/component IDs. Principal, interior, front and rear camera presets, zoom controls, visible dimensions and improved fan geometry use the existing FORGE physical model. No hardware is scaled to force it into a chassis.
+The FORGE server catalog, compatibility engine, power engine and physical scene normalization remain intact. The NEXUS renderer is not copied wholesale because it only understands its own restricted case/component IDs. Principal, interior, front and rear camera presets, zoom controls, visible dimensions and improved fan geometry use the existing FORGE physical model. No hardware is scaled to force it into a chassis. A declared LAN speed represents one Ethernet connector unless the catalog supplies an explicit multiplier; missing/negative LAN data represents none.
 
 These are procedural representations based on available catalog dimensions and inferred mounting profiles, not manufacturer CAD. Exact internal mounting geometry and cosmetic details remain approximate. Mixed storage and specialized hardware are not exhaustively represented as manufacturer-specific 3D models. The technical sheet shows the selected catalog model regardless of visualization coverage.
 
@@ -27,13 +27,13 @@ Game choices, quality and selected resolution live in the configurator shell, so
 
 ## Regression corrections
 
-M.2/SATA slot gating and POST now count quantities of repeated storage references. PCIe 5.0 SSD warnings also count physical units. Catalog request errors expose a retry action; stale requests are aborted when the query changes.
+M.2/SATA slot gating and POST now count quantities of repeated storage references. PCIe 5.0 SSD warnings also count physical units. Catalog request errors expose a retry action; stale requests are aborted when the query changes. Failed pagination keeps previous cards visible and retries the same page; the load-more action stays disabled during an append request.
 
 ## Validation
 
 - `npm run verify`: TypeScript, ESLint, 4,662 engine assertions, 16,458 catalog references with no audit issues, game simulation checks and technical-sheet checks.
 - `npm run build`: production compilation.
-- Browser: desktop/tablet/mobile layouts; initial build and shared build restoration; quantity updates; empty-state persistence; category navigation/search; 3D presets/zoom; technical-sheet share; regional shopping links; game and resolution changes.
+- Browser: desktop/tablet/mobile layouts; initial build and shared build restoration; quantity updates; empty-state persistence; category navigation/search; 3D presets/zoom; technical-sheet share; regional shopping links; game and resolution changes; forced HTTP 503 during pagination (48 cards remain visible, retry restores 96 cards without duplicates).
 
 The new tests are included in the normal test/verify pipeline. Text export is covered by automated tests; a browser download was not verified. Third-party game covers have a textual fallback when unavailable.
 
