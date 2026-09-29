@@ -29,5 +29,9 @@ jobs:
         run: node test-motor.cjs
       - name: Auditoría del catálogo
         run: node audit-catalogo.cjs
+      - name: Simulación de juegos
+        run: node scripts/test-gaming.mjs
+      - name: Ficha técnica
+        run: node scripts/test-build-dossier.mjs
       - name: Build de producción
         run: npm run build

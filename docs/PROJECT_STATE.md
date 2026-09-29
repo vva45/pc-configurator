@@ -1,5 +1,7 @@
 # Forge — Current Project State
 
+The 2026-09-29 FORGE × NEXUS integration is documented in [NEXUS_FORGE_STUDIO.md](./NEXUS_FORGE_STUDIO.md), including the revised interface, 3D controls, technical sheet, game simulation, limitations and validation. The Phase 4 record below is historical; verify GitHub/Vercel for the currently deployed revision.
+
 This document records the repository state verified during the Phase 4 final closeout on **2026-08-26**. It describes the current production baseline, not future implementation requirements. Revalidate changing facts such as the remote `main` commit, catalog size, and test counts before treating them as current in a later task.
 
 ## Current production baseline

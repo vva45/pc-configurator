@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./cinematic.css";
+import "./studio.css";
 
 export const metadata: Metadata = {
-  title: "Forge — Configurador de PC",
-  description: "Motor de compatibilidad, cálculo de consumo, filtros por especificación y compra por región.",
+  title: "FORGE × NEXUS — PC Build Studio",
+  description: "Configura tu PC en 3D, compara componentes, explora sus especificaciones y estima el rendimiento de tus juegos.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

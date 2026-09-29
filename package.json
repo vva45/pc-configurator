@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/build-test-bundle.mjs && node test-motor.cjs && node audit-catalogo.cjs",
+    "test": "node scripts/build-test-bundle.mjs && node test-motor.cjs && node audit-catalogo.cjs && node scripts/test-gaming.mjs && node scripts/test-build-dossier.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test",
     "vercel-build": "npm run verify && next build"
   },

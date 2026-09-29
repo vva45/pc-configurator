@@ -298,6 +298,23 @@ ok(gate(find('psu','MAG A650BN'),B({gpu:find('gpu','5090 Founders')})).blocked,'
 ok(gate(find('storage','870 EVO'),B({mbo:find('mbo','M5A97')})).blocked===false,'SATA bloqueado en placa con SATA');
 ok(gate(find('storage','990 PRO'),B({mbo:find('mbo','M5A97')})).blocked,'M.2 no bloqueado en placa sin M.2');
 
+// Selected quantities consume physical slots, including repeated references.
+const storageBoard = { ...find('mbo','B650 Tomahawk'), m2: 2, sata: 2, m2gen5: 1 };
+const nvmeUnit = find('storage','990 PRO');
+const sataUnit = find('storage','870 EVO');
+for (const [unit, code, name] of [[nvmeUnit,'M2_SLOTS','M.2'], [sataUnit,'SATA_PORTS','SATA']]) {
+  const exact = B({ mbo: storageBoard, storage: { ...unit, qty: 2 } });
+  const overflow = B({ mbo: storageBoard, storage: { ...unit, qty: 3 } });
+  ok(!gate({ ...unit, qty: 2 }, B({ mbo: storageBoard })).blocked, name+' bloquea dos unidades en dos conexiones');
+  ok(gate({ ...unit, qty: 3 }, B({ mbo: storageBoard })).blocked, name+' ignora qty al validar referencia seleccionada');
+  ok(gate(unit, exact).blocked, name+' permite añadir una unidad con dos conexiones ocupadas');
+  ok(gate({ ...unit, qty: 2 }, B({ mbo: storageBoard, storage: { ...unit, qty: 1 } })).blocked, name+' no suma cantidad candidata y unidades instaladas');
+  ok(runPost(exact, calcPower(exact)).some(l=>l.id===code&&l.lvl==='ok'&&l.msg.startsWith('2 de 2')), name+' POST no cuenta dos unidades del mismo modelo');
+  ok(runPost(overflow, calcPower(overflow)).some(l=>l.id===code&&l.lvl==='fail'&&l.msg.startsWith('3 unidades')), name+' POST no detecta exceso de cantidad');
+}
+const gen5Unit = P.find(p=>p.cat==='storage'&&p.gen.includes('5.0'));
+const gen5Double = B({ mbo: storageBoard, storage: { ...gen5Unit, qty: 2 } });
+ok(runPost(gen5Double, calcPower(gen5Double)).some(l=>l.id==='M2_SLOTS'&&l.lvl==='warn'&&l.msg.startsWith('2 SSD')), 'POST Gen5 no cuenta dos unidades del mismo modelo');
 // 9. Periféricos nunca bloqueados
 ['monitor','keyboard','mouse','pad','headset','mic','webcam','speaker'].forEach(c=>{
   ok(!P.filter(p=>p.cat===c).some(p=>gate(p,B({mbo:find('mbo','B650 Tomahawk'),case:find('case','NR200P')})).blocked),

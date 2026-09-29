@@ -7,8 +7,9 @@
    ═══════════════════════════════════════════════════════════════════ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
-  ArrowRight, Box, Check, ChevronDown, ChevronLeft, ChevronRight, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store,
+  ArrowRight, Box, Check, ChevronDown, ChevronLeft, ChevronRight, CircuitBoard, ClipboardList, Globe, Search, ShoppingCart, SlidersHorizontal, Store, ShieldCheck, RotateCcw, Plus, Cpu, Monitor, Zap,
 } from "lucide-react";
 import { buildToParams, hasBuildParams } from "@/lib/share";
 import type { CatalogResponse } from "@/lib/catalog-server";
@@ -30,8 +31,14 @@ import StoreSheet from "./StoreSheet";
 import BuildSummary from "./BuildSummary";
 import ForgeIntelligence from "./ForgeIntelligence";
 import VisualBuild from "./VisualBuild";
+import type { GamingPreferences } from "./GamingPanel";
 import { createVisualBuildModel } from "@/lib/visual-build";
 import { getTabSwipeGestureOwner, isIntentionalTabSwipe, type TabSwipeGestureOwner } from "@/lib/tab-swipe";
+
+const BuildDossier = dynamic(() => import("./BuildDossier"), { loading: () => <p className="studio-loading">Preparando la ficha técnica…</p> });
+const GamingPanel = dynamic(() => import("./GamingPanel"), { loading: () => <p className="studio-loading">Preparando tus juegos…</p> });
+// Stable catalog indices, resolved by the same server route as shared builds.
+const STARTER_BUILD = "cpu=19&cooler=3&mbo=2&ram=1&gpu=3&storage=0&psu=0&case=1";
 
 type SortKey = "rel" | "price" | "priceDesc" | "name";
 type Tab = "build" | "catalog" | "status";
@@ -69,9 +76,13 @@ export default function Configurator() {
   const [summary, setSummary] = useState(false);
   const [tab, setTab] = useState<Tab>("build");     // móvil
   const [showFilters, setShowFilters] = useState(false);
-  const [experience, setExperience] = useState<"visual" | "technical">("visual");
+  const [experience, setExperience] = useState<"visual" | "dossier" | "technical">("visual");
   const [showCatalogTools, setShowCatalogTools] = useState(false);
   const [showAccessories, setShowAccessories] = useState(false);
+  // Keep play preferences while the visual panel unmounts in other studio views.
+  const [gamingPreferences, setGamingPreferences] = useState<GamingPreferences>({ games: ["1091500", "730", "1174180"], resolution: "1440", quality: "Alto" });
+  const [restoring, setRestoring] = useState(true);
+  const [restoreError, setRestoreError] = useState(false);
   const optionStrip = useRef<HTMLDivElement>(null);
   const uid = useRef(0);
   const catalogScroll = useRef<HTMLDivElement>(null);
@@ -92,25 +103,26 @@ export default function Configurator() {
   const initialBuildParams = useRef(searchParams.toString());
   const restoreController = useRef<AbortController | null>(null);
   useEffect(() => {
-    const sp = new URLSearchParams(initialBuildParams.current);
-    if (!hasBuildParams(sp)) { booted.current = true; return; }
+    const original = new URLSearchParams(initialBuildParams.current);
+    if (original.get("empty") === "1" && !hasBuildParams(original)) { booted.current = true; setRestoring(false); return; }
+    const sp = hasBuildParams(original) ? original : new URLSearchParams(STARTER_BUILD);
     const controller = new AbortController();
     restoreController.current = controller;
     fetch(`/api/build?${sp.toString()}`, { signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : {}))
+      .then((r) => { if (!r.ok) throw new Error("No se pudo cargar el montaje"); return r.json(); })
       .then((restored: AppBuild) => {
         if (controller.signal.aborted) return;
         if (Object.keys(restored).length)
           setBuild((prev) => (Object.keys(prev).length ? prev : restored));
       })
-      .catch(() => { /* enlace irrecuperable: se parte de cero */ })
-      .finally(() => { if (!controller.signal.aborted) booted.current = true; });
+      .catch(() => { if (!controller.signal.aborted) setRestoreError(true); })
+      .finally(() => { if (!controller.signal.aborted) { booted.current = true; setRestoring(false); } });
     return () => controller.abort();
   }, []);
   useEffect(() => {
     if (!booted.current) return;
     const qs = buildToParams(build).toString();
-    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+    window.history.replaceState(null, "", qs ? `?${qs}` : "?empty=1");
   }, [build]);
 
   const cur = REGIONS[region].cur;
@@ -131,6 +143,8 @@ export default function Configurator() {
   const [page, setPage] = useState(0);
   const [prevKey, setPrevKey] = useState(queryKey);
   if (prevKey !== queryKey) { setPrevKey(queryKey); setPage(0); }
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogRetry, setCatalogRetry] = useState(0);
   const [catalogResponse, setCatalog] = useState<CatalogResponse | null>(null);
   const [catalogKey, setCatalogKey] = useState("");
   const catalog = catalogKey === queryKey ? catalogResponse : null;
@@ -138,6 +152,7 @@ export default function Configurator() {
   const reqId = useRef(0);
   useEffect(() => {
     const id = ++reqId.current;
+    const controller = new AbortController();
     const sp = new URLSearchParams({
       cat, museum: museum ? "1" : "0", q, sort,
       showBlocked: showBlocked ? "1" : "0",
@@ -148,20 +163,22 @@ export default function Configurator() {
     if (Object.keys(clean).length) sp.set("filters", JSON.stringify(clean));
     const url = `/api/parts?${sp.toString()}${buildQs ? "&" + buildQs : ""}`;
     const t = setTimeout(() => {
-      fetch(url)
-        .then((r) => (r.ok ? r.json() : null))
+      setCatalogError(false);
+      fetch(url, { signal: controller.signal })
+        .then((r) => { if (!r.ok) throw new Error("Catálogo no disponible"); return r.json(); })
         .then((data: CatalogResponse | null) => {
           if (!data || reqId.current !== id) return;
           setCatalog(data);
           setCatalogKey(queryKey);
           setItems((prev) => (data.page === 0 ? data.items : [...prev, ...data.items]));
         })
-        .catch(() => { /* red caída: se mantiene la última página */ });
+        .catch(() => { if (!controller.signal.aborted && reqId.current === id) setCatalogError(true); });
     }, q ? 150 : 0); // pequeña espera solo al teclear en el buscador
-    return () => clearTimeout(t);
-  }, [queryKey, page, cat, museum, q, sort, showBlocked, filters, buildQs]);
+    return () => { clearTimeout(t); controller.abort(); };
+  }, [queryKey, page, cat, museum, q, sort, showBlocked, filters, buildQs, catalogRetry]);
 
   function pick(part: Part) {
+    restoreController.current?.abort(); booted.current = true; setRestoring(false);
     const c = CAT[part.cat];
     const item: Picked = { ...part, _uid: `${part.id}-${++uid.current}`, qty: 1 };
     const previas = (build[part.cat] || []) as Picked[];
@@ -217,10 +234,11 @@ export default function Configurator() {
 
   const resetHome = () => {
     restoreController.current?.abort(); booted.current = true;
+    setRestoring(false); setRestoreError(false);
     setBuild({}); setCat("cpu"); setTab("catalog"); setQ(""); setFilters({});
     setSort("rel"); setMuseum(false); setShowFilters(false); setBuy(null);
     setShopping(false); setSummary(false);
-    window.history.replaceState(null, "", window.location.pathname);
+    window.history.replaceState(null, "", "?empty=1");
   };
 
   const tabs: Tab[] = ["build", "catalog", "status"];
@@ -270,45 +288,25 @@ export default function Configurator() {
     setCat(target); setTab("catalog");
   };
 
+  const openExperience = (next: "visual" | "dossier" | "technical") => {
+    setExperience(next);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
   const Bar = (
-    <div className="forge-topbar" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-      borderBottom: "1px solid var(--border)", background: "var(--bg-panel)", position: "sticky", top: 0, zIndex: 30, flexWrap: "wrap" }}>
-      <button type="button" onClick={resetHome} aria-label="Reiniciar montaje y volver a CPU" className="forge-home">
-        <div style={{ width: 26, height: 26, border: "1px solid var(--accent)", display: "grid", placeItems: "center" }}>
-          <CircuitBoard size={14} color="var(--accent)" />
-        </div>
-        <div className="forge-wordmark">
-          <div className="dsp" style={{ fontSize: 17, letterSpacing: ".02em" }}>Forge</div>
-          <div className="eyebrow" style={{ fontSize: 8.5, marginTop: -2 }}>Configurador de PC</div>
-        </div>
-        <span className="forge-build-name">{one(build, "case") ? `${one(build, "case")?.brand} ${one(build, "case")?.name}` : "TU PRÓXIMO PC"}</span>
+    <header className="studio-header">
+      <button className="studio-brand" onClick={() => openExperience("visual")} aria-label="FORGE NEXUS · Configurador">
+        <span className="studio-brand-icon"><CircuitBoard size={22} /></span>
+        <span><strong>FORGE <i>×</i> NEXUS</strong><small>PC BUILD STUDIO</small></span>
       </button>
-      <div className="experience-switch" role="group" aria-label="Experiencia del configurador">
-        <button aria-pressed={experience === "visual"} onClick={() => setExperience("visual")}><Box size={14} /> Personalizar</button>
-        <button aria-pressed={experience === "technical"} onClick={() => { setExperience("technical"); setTab("catalog"); }}><SlidersHorizontal size={14} /> Vista técnica</button>
-      </div>
-      <div className="forge-spacer" style={{ flex: 1 }} />
-      <label className="forge-region" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <Globe size={13} color="var(--text-secondary)" />
-        <select value={region} onChange={(e) => setRegion(e.target.value as RegionId)} aria-label="Región"
-          style={{ width: "auto", minWidth: 150 }}>
-          {Object.entries(REGIONS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-      </label>
-      <div style={{ minWidth: 190, display: "none" }} className="wide-gauge" />
-      <button className="btn btn-gold forge-purchase" disabled={!Object.keys(build).length}
-        onClick={() => setShopping(true)}
-        style={{ display: "flex", alignItems: "center", gap: 6,
-          cursor: Object.keys(build).length ? "pointer" : "not-allowed" }}>
-        <ShoppingCart size={12} /> Dónde comprar
-      </button>
-      <div className="forge-total" style={{ textAlign: "right" }}>
-        <div className="eyebrow" style={{ fontSize: 8.5 }}>Total orientativo</div>
-        <div className="mono" style={{ fontSize: 17, color: "var(--accent)", fontWeight: 600, lineHeight: 1.1 }}>
-          {total > 0 ? `${eur(total)} ${cur}` : "—"}
-        </div>
-      </div>
-    </div>
+      <nav className="studio-navigation" aria-label="Vistas del configurador">
+        <button aria-current={experience === "visual" ? "page" : undefined} onClick={() => openExperience("visual")}><Box size={15} /> Configurador</button>
+        <button aria-current={experience === "dossier" ? "page" : undefined} onClick={() => openExperience("dossier")}><ClipboardList size={15} /> Ficha técnica</button>
+        <button aria-current={experience === "technical" ? "page" : undefined} onClick={() => { openExperience("technical"); setTab("status"); }}><SlidersHorizontal size={15} /> Taller avanzado</button>
+      </nav>
+      <label className="studio-region"><Globe size={14} /><select value={region} onChange={(e) => setRegion(e.target.value as RegionId)} aria-label="Región">{Object.entries(REGIONS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
+      <button className="studio-shop" aria-label="Ver tiendas" disabled={!selectedCount} onClick={() => setShopping(true)}><ShoppingCart size={15} /><span>Ver tiendas</span></button>
+    </header>
   );
 
   const BuildPane = (
@@ -464,7 +462,7 @@ export default function Configurator() {
               {" · "}{catalog.poolSize} en catálogo
             </> : "Cargando catálogo…"}
           </div>
-          {catalog && catalog.total === 0 ? (
+          {catalogError ? <div className="studio-notice" role="alert">No se pudo cargar el catálogo. <button onClick={() => setCatalogRetry(n => n + 1)}>Reintentar catálogo</button></div> : catalog && catalog.total === 0 ? (
             <div className="panel" style={{ padding: 24, textAlign: "center" }}>
               <div className="dsp" style={{ fontSize: 15, marginBottom: 6 }}>Nada encaja</div>
               <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginBottom: 12 }}>
@@ -495,13 +493,15 @@ export default function Configurator() {
   );
 
   return (
-    <div className={`fg experience-${experience}`}>
+    <div className={`fg nexus-studio experience-${experience === "technical" ? "technical" : "visual"}`}>
       {Bar}
+      {restoreError && <div className="studio-notice" role="alert">No se ha podido recuperar el montaje. <button onClick={() => window.location.reload()}>Reintentar</button></div>}
 
       {experience === "visual" ? <main className="cinematic-workspace">
+        <div className="studio-intro"><div><span className="studio-kicker">DISEÑA. EXPLORA. HAZLO TUYO.</span><h1>Tu próximo PC, <em>pieza a pieza.</em></h1><p>Visualiza el montaje, compara componentes y conoce tu equipo antes de construirlo.</p></div><button className="studio-reset" onClick={resetHome}><RotateCcw size={14} /> Empezar de cero</button></div>
         <div className="cinematic-hero">
           <nav className="component-rail" aria-label="Configurar componentes" data-horizontal-scroll-zone>
-            <div className="rail-heading"><span className="eyebrow">Tu configuración</span><strong>{coreDone}<span> / {requiredCore.length}</span></strong></div>
+            <div className="rail-heading"><span className="eyebrow">Componentes</span><strong>{coreDone}<span> / {requiredCore.length}</span></strong></div>
             {GROUPS.filter((group) => group.id === "core" || showAccessories || CAT[cat].group !== "core").map((group) => <div className="rail-group" key={group.id}>
               <span className="rail-group-label">{group.label}</span>
               {CATS.filter((category) => category.group === group.id).map((category) => {
@@ -517,12 +517,25 @@ export default function Configurator() {
             </div>)}
             <button className="rail-more" aria-expanded={showAccessories || CAT[cat].group !== "core"} onClick={() => { setShowAccessories(!(showAccessories || CAT[cat].group !== "core")); if (CAT[cat].group !== "core") setCat("cpu"); }}>Accesorios y periféricos <ChevronDown size={14} /></button>
           </nav>
-          <div className="cinematic-stage"><VisualBuild presentation model={visualBuild} onOpenCategory={(id) => setCat(id)} /></div>
+          <div className="cinematic-stage">
+            <div className="studio-stage-caption"><span className="studio-kicker">VISTA DEL MONTAJE</span><strong>{one(build, "case") ? one(build, "case")?.name : "Tu lienzo en 3D"}</strong><span>{restoring ? "Cargando tu equipo…" : selectedCount ? "Arrastra para girar · pulsa una pieza para explorar" : "Elige componentes para dar forma a tu PC"}</span></div>
+            <VisualBuild presentation model={visualBuild} onOpenCategory={(id) => setCat(id)} />
+          </div>
+          <aside className="studio-overview" aria-label="Resumen del equipo">
+            <span className="studio-kicker">TU EQUIPO, DE UN VISTAZO</span>
+            <div className="studio-spec"><Cpu size={18} /><div><small>Procesador</small><strong>{one(build, "cpu")?.name || "Por elegir"}</strong></div></div>
+            <div className="studio-spec"><Monitor size={18} /><div><small>Gráfica</small><strong>{one(build, "gpu")?.name || (one(build, "cpu")?.igpu ? "Gráficos integrados" : "Por elegir")}</strong></div></div>
+            <div className="studio-mini-specs"><div><span>Memoria</span><strong>{(build.ram || []).reduce((n, p) => n + p.capGB * (p.qty || 1), 0) || "—"}<small> GB</small></strong></div><div><span>Almacenamiento</span><strong>{(build.storage || []).reduce((n, p) => n + p.capGB * (p.qty || 1), 0) || "—"}<small> GB</small></strong></div></div>
+            <div className={`studio-readiness ${fails ? "has-error" : warns ? "has-warning" : ""}`}><ShieldCheck size={18} /><div><strong>{!selectedCount ? "Listo para empezar" : fails ? "Revisa la compatibilidad" : coreDone < requiredCore.length ? "Montaje en progreso" : "Componentes seleccionados"}</strong><span>{coreDone} de {requiredCore.length} esenciales · {fails ? `${fails} conflictos` : warns ? `${warns} aviso${warns === 1 ? "" : "s"} a revisar` : "sin conflictos detectados"}</span></div></div>
+            <div className="studio-power"><Zap size={14} /><span>Consumo estimado en juego</span><strong>{power.total ? `${Math.round(power.gaming)} W` : "—"}</strong></div>
+            <div className="studio-price"><span>Total orientativo</span><strong>{total ? eur(total) : "—"}<small> {cur}</small></strong><p>Precios de referencia. Consulta disponibilidad y precio final en cada tienda.</p></div>
+            <button className="studio-primary" onClick={() => openExperience("dossier")}><ClipboardList size={16} /> Ver ficha del equipo <ArrowRight size={16} /></button>
+          </aside>
         </div>
         <section className="cinematic-deck" aria-labelledby="deck-title">
           <header className="deck-heading">
-            <div className="deck-step">Elige tu componente</div>
-            <h1 id="deck-title">{cat === "cpu" ? "Procesador" : CAT[cat].label}</h1>
+            <div className="deck-step">PERSONALIZA TU MONTAJE</div>
+            <h2 id="deck-title">{cat === "cpu" ? "Procesador" : CAT[cat].label}</h2>
             <p>{CATEGORY_HELP[cat] || "Completa tu equipo con los accesorios y periféricos que mejor se adapten a ti."}</p>
             {continuar && <button className="deck-continue" onClick={() => setCat(continuar)}>Continuar a {CAT[continuar].label} <ArrowRight size={14} /></button>}
           </header>
@@ -533,13 +546,18 @@ export default function Configurator() {
           </div>
           <div className="cinematic-catalog">{CatalogPane}</div>
         </section>
+        <section className="studio-installed" aria-labelledby="installed-title">
+          <div className="studio-section-heading"><div><span className="studio-kicker">CADA PIEZA CUENTA</span><h2 id="installed-title">Dentro de tu PC</h2></div><button onClick={() => openExperience("dossier")}>Descripciones y especificaciones <ArrowRight size={15} /></button></div>
+          <div className="studio-installed-grid">{CATS.filter(c => c.group === "core").map(category => { const parts = (build[category.id] || []) as Picked[]; const Icon = category.icon; return <button key={category.id} onClick={() => { setCat(category.id); document.getElementById("deck-title")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" }); }}><span className="studio-installed-icon"><Icon size={23} /></span><small>{category.label}</small><strong>{parts.length ? parts.map(p => p.name + ((p.qty || 1) > 1 ? ` ×${p.qty}` : "")).join(" + ") : "Añadir componente"}</strong><span>{parts.length ? parts[0].brand : <Plus size={14} />}<ArrowRight size={13} /></span></button>; })}</div>
+        </section>
+        <div className="studio-games"><GamingPanel build={build} preferences={gamingPreferences} onPreferencesChange={setGamingPreferences} /></div>
         <div className="build-telemetry" aria-label="Estado de tu configuración">
           <div><span>Montaje</span><strong>{coreDone} de {requiredCore.length} esenciales</strong></div>
           <div><span>Consumo en juego estimado</span><strong>{power.total > 0 ? `${Math.round(power.gaming)} W` : "Pendiente"}</strong></div>
           <div><span>Compatibilidad</span><strong className={fails ? "telemetry-error" : warns ? "telemetry-warning" : ""}>{!selectedCount ? "Elige tu primera pieza" : fails ? `${fails} conflicto${fails === 1 ? "" : "s"}` : warns ? `${warns} aviso${warns === 1 ? "" : "s"}` : "Sin conflictos detectados"}</strong></div>
-          <button onClick={() => { setExperience("technical"); setTab("build"); }}><ClipboardList size={15} /><span>Revisar montaje</span><ArrowRight size={14} /></button>
+          <button onClick={() => { openExperience("dossier"); }}><ClipboardList size={15} /><span>Revisar montaje</span><ArrowRight size={14} /></button>
         </div>
-      </main> : <>
+      </main> : experience === "dossier" ? <main className="studio-dossier"><BuildDossier build={build} region={region} onEdit={(id) => { setCat(id); openExperience("visual"); }} onRemove={remove} onQty={qty} onShop={() => setShopping(true)} /></main> : <>
       <div className="mtabs">
         {([["build", "Montaje"], ["catalog", "Catálogo"], ["status", "Consumo y POST"]] as const).map(([k, l]) =>
           <button key={k} className={`chip ${tab === k ? "sel" : ""}`} style={{ border: "none" }}

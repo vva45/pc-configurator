@@ -1,0 +1,1100 @@
+/* Unified FORGE × NEXUS studio. All layout rules stay scoped to this shell. */
+.nexus-studio {
+  --accent:#9de8dc;
+  --accent-strong:#bcf7ee;
+  --accent-hover:#b8f6ed;
+  --accent-soft:#9de8dc14;
+  --bg-canvas:#090b10;
+  --bg-panel:#10131b;
+  --bg-raised:#151a24;
+  --bg-hover:#1c2430;
+  --border:#ffffff19;
+  --border-soft:#ffffff0e;
+  --text:#f0f2f7;
+  --text-secondary:#a4adbc;
+  --text-muted:#8992a4;
+  background:#090b10;
+}
+.studio-header {
+  min-height:84px;
+  padding:16px 32px;
+  display:flex;
+  align-items:center;
+  gap:22px;
+  border-bottom:1px solid var(--border);
+  background:#0b0d13;
+}
+.studio-brand {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  flex-shrink:0;
+  background:none;
+  border:0;
+  color:var(--text);
+  text-align:left;
+  cursor:pointer;
+}
+.studio-brand-icon {
+  width:36px;
+  height:40px;
+  display:grid;
+  place-items:center;
+  background:#a6ece215;
+  color:#a5e8de;
+  border:1px solid #a6ece238;
+  border-radius:9px;
+}
+.studio-brand strong {
+  font:700 16px 'Inter Tight',sans-serif;
+  letter-spacing:.06em;
+}
+.studio-brand i {
+  color:#789082;
+  font-style:normal;
+  font-weight:400;
+}
+.studio-brand small {
+  display:block;
+  font:8px 'IBM Plex Mono',monospace;
+  letter-spacing:.25em;
+  color:#909baa;
+  margin-top:4px;
+}
+.studio-navigation {
+  display:flex;
+  align-self:stretch;
+  align-items:center;
+  gap:6px;
+  margin:auto;
+}
+.studio-navigation button {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border:1px solid transparent;
+  border-radius:7px;
+  background:none;
+  color:var(--text-secondary);
+  font:500 12px 'Inter Tight',sans-serif;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.studio-navigation button[aria-current=page] {
+  background:#ffffff08;
+  border-color:#ffffff13;
+  color:var(--accent);
+}
+.studio-region {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:#a4adbc;
+}
+.studio-region select {
+  width:110px;
+  border:0;
+  background:transparent;
+  font-size:12px;
+}
+.studio-shop {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border:1px solid #9de8dc4a;
+  border-radius:7px;
+  padding:10px 15px;
+  background:#9de8dc;
+  color:#102721;
+  font:600 12px 'Inter Tight',sans-serif;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.studio-shop:disabled {
+  opacity:.4;
+  cursor:default;
+}
+.nexus-studio button:focus-visible,.nexus-studio select:focus-visible,.nexus-studio input:focus-visible,.nexus-studio summary:focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:4px;
+}
+.nexus-studio .cinematic-workspace {
+  max-width:1800px;
+}
+.studio-intro {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  padding:33px 36px 27px;
+}
+.studio-kicker {
+  display:block;
+  color:#91a1ad;
+  font:9px 'IBM Plex Mono',monospace;
+  letter-spacing:.13em;
+  line-height:1.6;
+}
+.studio-intro h1 {
+  font:500 clamp(25px,2.5vw,38px)/1.2 'Inter Tight',sans-serif;
+  letter-spacing:-.045em;
+  margin:8px 0;
+}
+.studio-intro em {
+  color:#9de8dc;
+  font-style:normal;
+}
+.studio-intro p {
+  margin:0;
+  color:var(--text-secondary);
+  font-size:12px;
+}
+.studio-reset {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--border);
+  padding:9px 12px;
+  border-radius:7px;
+  background:none;
+  color:var(--text-secondary);
+  font-size:11px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.nexus-studio .cinematic-hero {
+  grid-template-columns:218px minmax(0,1fr) 290px;
+  height:580px;
+  padding:0 28px;
+  gap:0;
+  background:none;
+}
+.nexus-studio .component-rail {
+  padding:16px 15px 10px 0;
+  border-right:1px solid var(--border);
+}
+.nexus-studio .rail-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 9px 18px;
+}
+.nexus-studio .rail-heading .eyebrow {
+  color:#a7b2bf;
+  font-size:9px;
+  letter-spacing:.12em;
+}
+.nexus-studio .rail-heading strong {
+  font:11px 'IBM Plex Mono',monospace;
+  color:var(--accent);
+}
+.nexus-studio .rail-heading strong span {
+  color:var(--text-muted);
+}
+.nexus-studio .rail-category {
+  gap:11px;
+  padding:10px 9px;
+  margin:2px 0;
+  min-height:53px;
+  border-radius:7px;
+}
+.nexus-studio .rail-icon {
+  border:0;
+  border-radius:0;
+  width:24px;
+  height:26px;
+  box-shadow:none!important;
+}
+.nexus-studio .rail-icon svg {
+  width:18px;
+  height:18px;
+}
+.nexus-studio .rail-category-copy strong {
+  text-transform:none;
+  font-size:12px;
+}
+.nexus-studio .rail-category-copy small {
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:133px;
+  color:#778597;
+  font-size:9px;
+  margin-top:3px;
+}
+.nexus-studio .rail-category.is-active {
+  background:#9de8dc10;
+  color:var(--accent);
+  box-shadow:inset 2px 0 #9de8dc;
+}
+.nexus-studio .rail-category:hover {
+  background:#ffffff07;
+}
+.nexus-studio .rail-check {
+  color:#9de8dc;
+}
+.nexus-studio .rail-more {
+  font-size:10px;
+  padding-left:9px;
+}
+.nexus-studio .rail-group-label {
+  margin-left:10px;
+}
+.nexus-studio .cinematic-stage {
+  position:relative;
+  margin:0 16px;
+  border-radius:12px;
+  overflow:hidden;
+  background:radial-gradient(ellipse at 55% 60%,#29465150,transparent 68%),radial-gradient(ellipse at 70% 75%,#35294c35,transparent 65%),#0c1018;
+  border:1px solid #ffffff0d;
+  padding-top:82px;
+}
+.studio-stage-caption {
+  position:absolute;
+  top:20px;
+  left:22px;
+  right:65px;
+  pointer-events:none;
+  z-index:3;
+  display:grid;
+  gap:4px;
+}
+.studio-stage-caption strong {
+  font:500 18px 'Inter Tight',sans-serif;
+  letter-spacing:-.025em;
+  color:#e9ecf2;
+}
+.studio-stage-caption > span:last-child {
+  color:#7e8b9e;
+  font-size:10px;
+}
+.nexus-studio .stage-visual-build {
+  position:relative;
+}
+.nexus-studio .stage-visual-content {
+  padding-bottom:52px;
+}
+.nexus-studio .stage-visual-header .visual-modal-actions > .visual-expand {
+  right:14px;
+  top:8px;
+}
+.nexus-studio .stage-visual-content .three-tools {
+  right:14px;
+  top:57px;
+  gap:7px;
+}
+.nexus-studio .three-tool {
+  width:34px;
+  height:34px;
+  background:#111824ce;
+  border-color:#ffffff20;
+}
+.nexus-studio .stage-visual-header .visual-expand {
+  width:34px!important;
+  height:34px!important;
+  background:#111824ce;
+}
+.nexus-studio .stage-visual-content .three-orbit {
+  opacity:.4;
+}
+.nexus-studio .three-orbit span {
+  background:#203a3a;
+  color:#b3e9df;
+}
+.nexus-studio .stage-visual-build > footer {
+  right:15px;
+  bottom:5px;
+  max-width:57%;
+  font-size:8px;
+}
+.nexus-studio .stage-visual-header .visual-modal-actions > .btn:not(.visual-expand) {
+  bottom:4px;
+}
+.nexus-studio .stage-visual-content .visual-inspector {
+  background:#101620f5;
+  border-color:#506567;
+}
+.studio-overview {
+  padding:22px 20px;
+  background:#10141c;
+  border:1px solid #ffffff12;
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+.studio-overview > .studio-kicker {
+  color:#adbdc7;
+  margin-bottom:22px;
+  font-size:9px;
+}
+.studio-spec {
+  display:flex;
+  gap:11px;
+  margin-bottom:20px;
+  align-items:flex-start;
+}
+.studio-spec > svg {
+  color:#7d94a2;
+  margin-top:4px;
+  flex-shrink:0;
+}
+.studio-spec small {
+  display:block;
+  color:#8795a7;
+  font-size:10px;
+  margin-bottom:3px;
+}
+.studio-spec strong {
+  font-size:13px;
+  font-weight:500;
+  line-height:1.45;
+  display:block;
+}
+.studio-mini-specs {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  padding-bottom:20px;
+  border-bottom:1px solid var(--border);
+}
+.studio-mini-specs span {
+  display:block;
+  color:#8795a7;
+  font-size:10px;
+  margin-bottom:5px;
+}
+.studio-mini-specs strong {
+  font:500 22px 'Inter Tight',sans-serif;
+}
+.studio-mini-specs small {
+  font-size:11px;
+  color:#8e9bac;
+}
+.studio-readiness {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:#9de8dc;
+  margin:18px 0 12px;
+}
+.studio-readiness.has-warning {
+  color:#e0bd7d;
+}
+.studio-readiness.has-error {
+  color:#f5a1a1;
+}
+.studio-readiness strong {
+  display:block;
+  font-size:11px;
+  font-weight:500;
+}
+.studio-readiness span {
+  display:block;
+  font-size:9px;
+  color:#8f9bad;
+  margin-top:4px;
+}
+.studio-power {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  font-size:9px;
+  color:#8f9bad;
+}
+.studio-power strong {
+  margin-left:auto;
+  color:#dce6ea;
+  font:11px 'IBM Plex Mono',monospace;
+}
+.studio-price {
+  margin-top:auto;
+  padding-top:20px;
+}
+.studio-price > span {
+  font-size:10px;
+  color:#99a5b5;
+}
+.studio-price > strong {
+  display:block;
+  font:500 40px/1.1 'Inter Tight',sans-serif;
+  letter-spacing:-.04em;
+  margin-top:6px;
+}
+.studio-price small {
+  font-size:22px;
+  color:#a7b5c4;
+}
+.studio-price p {
+  color:#79879a;
+  font-size:9px;
+  line-height:1.6;
+  margin:10px 0 15px;
+}
+.studio-primary {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  border:1px solid #9de8dc4a;
+  border-radius:6px;
+  background:#9de8dc12;
+  color:#b6ede5;
+  padding:11px;
+  font-size:11px;
+  cursor:pointer;
+}
+.studio-primary svg:last-child {
+  margin-left:auto;
+}
+.nexus-studio .cinematic-deck {
+  grid-template-columns:215px minmax(0,1fr);
+  margin:24px 28px 0;
+  padding:22px 0;
+  gap:0 20px;
+  background:#0e121a;
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.nexus-studio .deck-heading {
+  padding:9px 20px;
+}
+.nexus-studio .deck-step {
+  display:block;
+  color:#89a4a9;
+  font:8px 'IBM Plex Mono',monospace;
+  letter-spacing:.08em;
+  margin-bottom:10px;
+}
+.nexus-studio .deck-heading h2 {
+  font:500 22px 'Inter Tight',sans-serif;
+  letter-spacing:-.04em;
+  margin:0 0 10px;
+}
+.nexus-studio .deck-heading p {
+  font-size:11px;
+  line-height:1.7;
+  color:#8c9aab;
+}
+.nexus-studio .deck-controls {
+  padding-right:22px;
+}
+.nexus-studio .deck-controls button {
+  font-size:11px;
+  color:#b4becc;
+  min-height:30px;
+}
+.nexus-studio .cinematic-catalog {
+  padding-right:20px;
+}
+.nexus-studio .cinematic-catalog .part-grid {
+  grid-auto-columns:175px;
+  gap:10px!important;
+  padding-top:6px;
+}
+.nexus-studio .visual-option {
+  background:#141b25;
+  border:1px solid #ffffff15;
+  border-radius:8px;
+  min-height:183px;
+}
+.nexus-studio .visual-option-select {
+  min-height:183px;
+  padding:16px 12px;
+  align-items:flex-start;
+  text-align:left;
+}
+.nexus-studio .visual-option-select > svg:first-child {
+  width:25px;
+  height:25px;
+  color:#89a6b6;
+  margin:0 0 12px;
+}
+.nexus-studio .visual-option-brand {
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#8798ab;
+}
+.nexus-studio .visual-option strong {
+  font-size:12px;
+  line-height:1.35;
+  font-weight:500;
+  margin-top:3px;
+}
+.nexus-studio .visual-option-price {
+  font:500 14px 'Inter Tight',sans-serif;
+  margin-top:auto;
+  padding-top:12px;
+  color:#d5e5eb;
+}
+.nexus-studio .visual-option.is-selected {
+  border-color:#82bfb6;
+  background:linear-gradient(140deg,#1c3034,#141b25);
+  box-shadow:none;
+}
+.nexus-studio .visual-option.is-selected .visual-option-check {
+  color:#9de8dc;
+}
+.nexus-studio .visual-option:hover {
+  border-color:#627a84;
+}
+.nexus-studio .visual-option-buy {
+  color:#a2b4c4;
+}
+.nexus-studio .visual-option.is-blocked {
+  opacity:.65;
+}
+.nexus-studio .catalog-count {
+  font-size:10px!important;
+  margin-top:12px!important;
+}
+.nexus-studio .tools-open .catalog-results {
+  align-items:flex-start;
+}
+.studio-installed {
+  margin:36px 28px 0;
+}
+.studio-section-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:18px;
+}
+.studio-section-heading h2 {
+  font:500 26px 'Inter Tight',sans-serif;
+  letter-spacing:-.04em;
+  margin:6px 0 0;
+}
+.studio-section-heading button {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:#a3c5c6;
+  border:0;
+  background:none;
+  font-size:11px;
+  cursor:pointer;
+}
+.studio-installed-grid {
+  display:grid;
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  gap:9px;
+}
+.studio-installed-grid > button {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  min-width:0;
+  padding:15px 12px 12px;
+  background:#111720;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text);
+  text-align:left;
+  cursor:pointer;
+}
+.studio-installed-grid > button:hover {
+  border-color:#699b97;
+  background:#142026;
+}
+.studio-installed-icon {
+  color:#94abb8;
+  height:38px;
+}
+.studio-installed-grid small {
+  font-size:9px;
+  color:#8294a4;
+  margin-bottom:6px;
+}
+.studio-installed-grid strong {
+  font-size:11px;
+  font-weight:500;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+.studio-installed-grid button > span:last-child {
+  margin-top:auto;
+  padding-top:14px;
+  color:#85aaa8;
+  display:flex;
+  justify-content:space-between;
+  width:100%;
+  font-size:9px;
+}
+.studio-games {
+  margin:35px 28px 0;
+}
+.nexus-studio .build-telemetry {
+  margin:24px 28px 28px;
+  padding:20px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#0e131a;
+}
+.nexus-studio .build-telemetry strong {
+  color:#c3d1dd;
+}
+.studio-dossier {
+  padding:26px 28px 50px;
+  max-width:1500px;
+  margin:auto;
+  width:100%;
+}
+.studio-loading {
+  padding:30px;
+  color:#a4b5c0;
+}
+.studio-notice {
+  padding:12px 28px;
+  color:#f0bb88;
+  background:#30221c;
+  font-size:12px;
+}
+.studio-notice button {
+  color:inherit;
+  background:none;
+  border:0;
+  text-decoration:underline;
+  cursor:pointer;
+}
+@media(min-width:1600px) {
+  .nexus-studio .cinematic-hero {
+    grid-template-columns:245px minmax(0,1fr) 325px;
+    height:630px;
+  }
+  .studio-overview {
+    padding:28px;
+  }
+}
+@media(max-width:1180px) {
+  .studio-header {
+    gap:12px;
+    padding:15px 22px;
+  }
+  .studio-navigation {
+    gap:0;
+  }
+  .studio-navigation button {
+    padding:9px;
+    font-size:11px;
+  }
+  .studio-navigation svg {
+    display:none;
+  }
+  .studio-region select {
+    width:90px;
+  }
+  .nexus-studio .cinematic-hero {
+    grid-template-columns:185px minmax(0,1fr) 250px;
+    padding:0 20px;
+    height:580px;
+  }
+  .nexus-studio .cinematic-stage {
+    margin:0 12px;
+  }
+  .nexus-studio .rail-category-copy small {
+    max-width:108px;
+  }
+  .studio-overview {
+    padding:19px 15px;
+  }
+  .studio-installed-grid {
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+  .studio-intro {
+    padding:26px;
+  }
+  .nexus-studio .cinematic-deck {
+    grid-template-columns:190px minmax(0,1fr);
+    margin:20px 20px 0;
+  }
+  .studio-installed,.studio-games {
+    margin-left:20px;
+    margin-right:20px;
+  }
+}
+@media(max-width:960px) {
+  .studio-header {
+    flex-wrap:wrap;
+  }
+  .studio-brand {
+    flex:1;
+  }
+  .studio-navigation {
+    order:4;
+    width:100%;
+    justify-content:center;
+    border-top:1px solid var(--border-soft);
+    padding-top:10px;
+  }
+  .studio-navigation button {
+    padding:8px 18px;
+    font-size:12px;
+  }
+  .nexus-studio .cinematic-hero {
+    height:auto;
+    min-height:0;
+    grid-template-columns:190px minmax(0,1fr);
+    grid-template-rows:560px auto;
+  }
+  .studio-overview {
+    grid-column:1/-1;
+    margin-top:16px;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px 22px;
+  }
+  .studio-overview > .studio-kicker {
+    grid-column:1/-1;
+    margin-bottom:4px;
+  }
+  .studio-spec {
+    margin:0;
+  }
+  .studio-mini-specs {
+    padding:0;
+    border:0;
+  }
+  .studio-readiness {
+    margin:6px 0;
+    grid-column:1/3;
+  }
+  .studio-power {
+    grid-column:1/3;
+  }
+  .studio-price {
+    grid-column:3;
+    grid-row:3/6;
+    padding:0;
+    margin:0;
+  }
+  .studio-price > strong {
+    font-size:31px;
+  }
+  .studio-primary {
+    grid-column:1/3;
+  }
+  .nexus-studio .cinematic-deck {
+    grid-template-columns:185px minmax(0,1fr);
+  }
+  .nexus-studio .stage-visual-content .three-stage {
+    min-height:0;
+    height:100%;
+  }
+  .nexus-studio .stage-visual-content {
+    padding-bottom:55px;
+  }
+  .nexus-studio .component-rail {
+    display:block;
+  }
+}
+@media(max-width:760px) {
+  .studio-header {
+    padding:13px 16px 9px;
+    gap:10px;
+  }
+  .studio-brand strong {
+    font-size:14px;
+  }
+  .studio-brand small {
+    font-size:7px;
+  }
+  .studio-brand-icon {
+    width:31px;
+    height:35px;
+  }
+  .studio-region {
+    gap:0;
+  }
+  .studio-region select {
+    width:75px;
+    font-size:11px;
+    padding:6px 3px;
+  }
+  .studio-region svg {
+    display:none;
+  }
+  .studio-shop {
+    padding:9px;
+  }
+  .studio-shop span {
+    display:none;
+  }
+  .studio-navigation {
+    gap:4px;
+    padding-top:8px;
+  }
+  .studio-navigation button {
+    padding:9px 10px;
+    flex:1;
+    justify-content:center;
+    font-size:11px;
+  }
+  .studio-intro {
+    padding:24px 18px 20px;
+    display:block;
+  }
+  .studio-intro h1 {
+    font-size:27px;
+  }
+  .studio-intro p {
+    font-size:11px;
+    line-height:1.7;
+    max-width:330px;
+  }
+  .studio-reset {
+    margin-top:14px;
+    padding:7px 10px;
+    font-size:10px;
+  }
+  .nexus-studio .cinematic-hero {
+    display:flex;
+    flex-direction:column;
+    padding:0 12px;
+    height:auto;
+  }
+  .nexus-studio .component-rail {
+    display:flex;
+    flex-direction:row;
+    padding:0 0 12px;
+    overflow:auto;
+    border:0;
+    max-width:100%;
+  }
+  .nexus-studio .rail-heading {
+    display:none;
+  }
+  .nexus-studio .rail-group {
+    display:flex;
+    gap:5px;
+    flex-shrink:0;
+  }
+  .nexus-studio .rail-group-label {
+    display:none;
+  }
+  .nexus-studio .rail-category {
+    width:auto;
+    min-height:38px;
+    gap:6px;
+    padding:7px 9px;
+    white-space:nowrap;
+    border:1px solid var(--border);
+  }
+  .nexus-studio .rail-category-copy strong {
+    font-size:10px;
+  }
+  .nexus-studio .rail-category-copy small {
+    display:none;
+  }
+  .nexus-studio .rail-icon {
+    width:18px;
+    height:18px;
+  }
+  .nexus-studio .rail-icon svg {
+    width:14px;
+    height:14px;
+  }
+  .nexus-studio .rail-check {
+    display:none;
+  }
+  .nexus-studio .rail-more {
+    width:auto;
+    flex-shrink:0;
+    padding:0 12px;
+    font-size:10px;
+  }
+  .nexus-studio .cinematic-stage {
+    height:490px;
+    margin:0;
+    padding-top:77px;
+    flex:none;
+  }
+  .studio-stage-caption {
+    left:16px;
+    top:16px;
+  }
+  .studio-stage-caption strong {
+    font-size:17px;
+  }
+  .studio-stage-caption > span:last-child {
+    font-size:9px;
+  }
+  .nexus-studio .stage-visual-content {
+    padding-bottom:52px;
+  }
+  .nexus-studio .stage-visual-content .three-tools {
+    right:10px;
+  }
+  .nexus-studio .stage-visual-header .visual-modal-actions > .visual-expand {
+    right:10px;
+  }
+  .nexus-studio .stage-visual-build > footer {
+    font-size:7px;
+    max-width:53%;
+  }
+  .studio-overview {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px 12px;
+    margin-top:12px;
+    padding:20px 17px;
+  }
+  .studio-overview > .studio-kicker {
+    margin:0;
+  }
+  .studio-spec {
+    gap:7px;
+  }
+  .studio-spec svg {
+    width:15px;
+  }
+  .studio-spec strong {
+    font-size:11px;
+  }
+  .studio-mini-specs {
+    grid-column:1/-1;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--border);
+  }
+  .studio-readiness {
+    grid-column:1/-1;
+    margin:0;
+  }
+  .studio-power {
+    grid-column:1/-1;
+  }
+  .studio-price {
+    grid-column:1;
+    grid-row:auto;
+  }
+  .studio-price > strong {
+    font-size:32px;
+  }
+  .studio-price p {
+    font-size:8px;
+    margin-bottom:0;
+  }
+  .studio-primary {
+    grid-column:2;
+    align-self:center;
+    font-size:10px;
+  }
+  .studio-primary svg:first-child {
+    display:none;
+  }
+  .nexus-studio .cinematic-deck {
+    display:grid;
+    grid-template-columns:1fr;
+    gap:12px;
+    margin:18px 12px 0;
+    padding:20px 16px;
+  }
+  .nexus-studio .deck-heading {
+    grid-column:1;
+    grid-row:1;
+    padding:0;
+    border:0;
+  }
+  .nexus-studio .deck-heading h2 {
+    font-size:23px;
+    margin:0 0 6px;
+  }
+  .nexus-studio .deck-heading p {
+    max-width:none;
+    font-size:11px;
+  }
+  .nexus-studio .deck-step {
+    font-size:8px;
+  }
+  .nexus-studio .deck-controls {
+    grid-column:1;
+    grid-row:2;
+    height:auto;
+    margin:0;
+    padding:0;
+    justify-content:flex-start;
+  }
+  .nexus-studio .deck-controls .deck-search {
+    margin-left:auto;
+  }
+  .nexus-studio .cinematic-catalog {
+    grid-column:1;
+    grid-row:3;
+    padding:0;
+  }
+  .nexus-studio .cinematic-catalog .part-grid {
+    grid-auto-columns:170px;
+  }
+  .nexus-studio .cinematic-catalog .tools-open .filt-col.open {
+    width:100%!important;
+    max-height:250px;
+    margin-bottom:16px;
+  }
+  .nexus-studio .tools-open .catalog-results {
+    flex-direction:column;
+  }
+  .nexus-studio .catalog-results > .scroll {
+    width:100%;
+  }
+  .studio-installed,.studio-games {
+    margin:28px 12px 0;
+  }
+  .studio-section-heading {
+    align-items:flex-start;
+  }
+  .studio-section-heading h2 {
+    font-size:25px;
+  }
+  .studio-section-heading button {
+    font-size:9px;
+    max-width:135px;
+    line-height:1.5;
+    text-align:right;
+  }
+  .studio-installed-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .studio-installed-grid > button {
+    padding:15px;
+  }
+  .studio-installed-grid strong {
+    font-size:12px;
+  }
+  .nexus-studio .build-telemetry {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+    margin:20px 12px;
+    padding:18px;
+  }
+  .nexus-studio .build-telemetry > div {
+    min-width:0;
+    padding:0;
+    border:0;
+  }
+  .nexus-studio .build-telemetry strong {
+    font-size:11px;
+  }
+  .nexus-studio .build-telemetry > button {
+    justify-content:flex-start;
+    margin:0;
+    font-size:10px;
+  }
+  .studio-dossier {
+    padding:18px 12px 35px;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  .nexus-studio *, .nexus-studio *::before, .nexus-studio *::after {
+    scroll-behavior:auto!important;
+    transition:none!important;
+  }
+}
+.nexus-studio .mtabs {
+  top:0!important;
+}

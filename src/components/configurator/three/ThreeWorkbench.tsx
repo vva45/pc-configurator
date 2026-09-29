@@ -1,13 +1,20 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
-import { Info, Layers, PanelLeftClose, PanelLeftOpen, RotateCcw, X } from "lucide-react";
+import { Info, Layers, PanelLeftClose, PanelLeftOpen, RotateCcw, Ruler, X, ZoomIn, ZoomOut } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ACESFilmicToneMapping } from "three";
 import type { CatId } from "@/data/parts/types";
 import { createVisual3DScene, type Visual3DPart } from "@/lib/visual-3d";
 import { getInitialVisualPart, type VisualBuildModel, type VisualCategory } from "@/lib/visual-build";
-import ForgeScene from "./ForgeScene";
+import { parseCaseDimensions } from "@/lib/visual-hardware-profile";
+import ForgeScene, { type CameraView } from "./ForgeScene";
 import { visualPartDetails, visualPartLabel, visualStateLabel } from "../visual-labels";
+import styles from "./WorkbenchControls.module.css";
+
+const CAMERA_VIEWS: { id: CameraView; label: string }[] = [
+  { id: "principal", label: "Principal" }, { id: "interior", label: "Interior" },
+  { id: "front", label: "Frente" }, { id: "rear", label: "Trasera" },
+];
 
 export default function ThreeWorkbench({ model, onOpenCategory }: { model: VisualBuildModel; onOpenCategory: (category: CatId) => void }) {
   const scene = useMemo(() => createVisual3DScene(model), [model]);
@@ -15,27 +22,47 @@ export default function ThreeWorkbench({ model, onOpenCategory }: { model: Visua
   const active = selection.navigation === model.nextCategory ? selection.category : getInitialVisualPart(model).category;
   const [hovered, setHovered] = useState<Visual3DPart>();
   const [resetSignal, setResetSignal] = useState(0);
+  const [view, setView] = useState<CameraView>("principal");
+  const [freeView, setFreeView] = useState(false);
+  const [zoomRequest, setZoomRequest] = useState({ id: 0, factor: 1 });
   const [explode, setExplode] = useState(0);
   const [cutaway, setCutaway] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
   const [showExplode, setShowExplode] = useState(false);
   const part = (hovered && model.parts[hovered.category]) || model.parts[active] || getInitialVisualPart(model);
   const scenePart = scene.parts.find((p) => p.category === part.category);
+  const dimensions = parseCaseDimensions(model.parts.case?.metadata.dimensions);
+  const dimensionLabel = (dimensions ? [dimensions.width, dimensions.height, dimensions.depth] : scene.layout.size)
+    .map((value) => new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1 }).format(value)).join(" × ");
+  const chooseView = (next: CameraView) => {
+    setView(next); setFreeView(false); setResetSignal((value) => value + 1);
+    setCutaway(next === "interior");
+  };
+  const zoom = (factor: number) => setZoomRequest((request) => ({ id: request.id + 1, factor }));
   return <div className={`three-workbench${showDetails ? " details-open" : ""}`}>
     <div className="three-stage" role="group" aria-label="Vista 3D interactiva del PC" data-no-tab-swipe>
       <Canvas data-testid="forge-3d-canvas" frameloop="demand" dpr={[1, 1.5]} shadows camera={{ fov: scene.camera.fov, near: 0.05, far: 60 }}
         gl={{ antialias: true, powerPreference: "high-performance", alpha: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.05 }}>
-        <ForgeScene scene={scene} active={hovered?.category || active} resetSignal={resetSignal} explode={explode} cutaway={cutaway} onHover={setHovered} onSelect={(selected) => { setSelection({ category: selected.category, navigation: model.nextCategory }); setShowDetails(true); }} />
+        <ForgeScene scene={scene} active={hovered?.category || active} resetSignal={resetSignal} view={view} zoomRequest={zoomRequest} onCameraInteract={() => setFreeView(true)} explode={explode} cutaway={cutaway} onHover={setHovered} onSelect={(selected) => { setSelection({ category: selected.category, navigation: model.nextCategory }); setShowDetails(true); }} />
       </Canvas>
-      <div className="three-orbit" aria-hidden="true"><span>360°</span></div>
+      <div className={styles.dimensions}>
+        <Ruler size={15} aria-hidden="true" />
+        <div><strong>{dimensions ? "" : "≈ "}{dimensionLabel} mm</strong><span>Ancho × alto × fondo{dimensions ? " · catálogo" : " · referencia"}</span>
+          <small>Modelo aproximado · conserva las medidas disponibles</small></div>
+      </div>
+      <div className={styles.views} role="group" aria-label="Ángulo del PC">
+        {CAMERA_VIEWS.map(({ id, label }) => <button key={id} type="button" aria-pressed={!freeView && view === id} onClick={() => chooseView(id)}>{label}</button>)}
+      </div>
       <div className="three-stage-label">Arrastra para girar · Desplaza para acercar</div>
       <div className="three-tools">
         <button className="btn three-tool" title={cutaway ? "Cerrar lateral" : "Ver interior"} aria-label={cutaway ? "Cerrar lateral" : "Ver interior"} aria-pressed={cutaway} onClick={() => setCutaway((value) => !value)}>{cutaway ? <PanelLeftClose size={19} /> : <PanelLeftOpen size={19} />}</button>
+        <button className="btn three-tool" title="Acercar" aria-label="Acercar PC" onClick={() => zoom(0.85)}><ZoomIn size={19} /></button>
+        <button className="btn three-tool" title="Alejar" aria-label="Alejar PC" onClick={() => zoom(1 / 0.85)}><ZoomOut size={19} /></button>
         <div className="three-explode-control">
           <button className="btn three-tool" title="Separar las piezas" aria-label="Vista explosionada" aria-expanded={showExplode} onClick={() => setShowExplode((value) => !value)}><Layers size={19} /></button>
           {showExplode && <label className="three-explode"><span>Separar piezas</span><input type="range" min={0} max={1} step={0.01} value={explode} onChange={(e) => setExplode(Number(e.target.value))} aria-label="Separar las piezas" /></label>}
         </div>
-        <button className="btn three-tool" title="Restablecer vista" aria-label="Restablecer vista 3D" onClick={() => { setResetSignal((v) => v + 1); setExplode(0); }}><RotateCcw size={19} /></button>
+        <button className="btn three-tool" title="Restablecer vista" aria-label="Restablecer vista 3D" onClick={() => { chooseView("principal"); setExplode(0); }}><RotateCcw size={19} /></button>
         <button className="btn three-tool" title="Detalles de la pieza" aria-label="Detalles de la pieza" aria-expanded={showDetails} onClick={() => setShowDetails((value) => !value)}><Info size={19} /></button>
       </div>
     </div>
