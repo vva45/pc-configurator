@@ -70,20 +70,63 @@ function Cyl({ r, h, axis = "y", at = [0, 0, 0], mat, part, active, seg = 28 }: 
   return <mesh position={at} rotation={AXIS[axis]} castShadow receiveShadow><cylinderGeometry args={[r, r, h, seg]} />{part ? <Skin part={part} active={active} base={mat} /> : <meshStandardMaterial {...mat} />}</mesh>;
 }
 
-/** Ventilador: marco cuadrado, aro, siete palas y buje. `axis` es la dirección en la que sopla. */
+/** Ventilador de 25 mm: marco perforado, rotor, soportes y tornillos.
+    Se conserva el mismo centro, diámetro y eje de montaje de la escena. */
 function Fan({ size, axis, at = [0, 0, 0], part, active, light }: { size: number; axis: "x" | "y" | "z"; at?: V3; part?: Visual3DPart; active?: boolean; light?: boolean }) {
-  const r = size / 2 - 0.05, blades = 7;
-  const rot = AXIS[axis];
+  const opening = size / 2 - 0.05, rotor = opening * 0.94, blades = 7;
   const frame = light ? M.plasticLight : M.fanFrame;
-  return <group position={at} rotation={rot}>
-    <mesh castShadow receiveShadow><boxGeometry args={[size, 0.25, size]} />{part ? <Skin part={part} active={active} base={frame} /> : <meshStandardMaterial {...frame} />}</mesh>
-    <mesh position={[0, 0.13, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[r - 0.02, 0.018, 8, 40]} /><meshStandardMaterial {...M.aluDark} /></mesh>
-    <mesh position={[0, 0.02, 0]}><cylinderGeometry args={[r, r, 0.03, 40]} /><meshStandardMaterial color="#080b0a" metalness={0.2} roughness={0.7} transparent opacity={0.55} /></mesh>
-    {Array.from({ length: blades }, (_, i) => <mesh key={i} rotation={[0, (i / blades) * Math.PI * 2, 0]} position={[0, 0.07, 0]}><mesh position={[r * 0.55, 0, 0]} rotation={[0.55, 0, 0]}><boxGeometry args={[r * 0.75, 0.012, r * 0.42]} /><meshStandardMaterial {...M.blade} /></mesh></mesh>)}
-    <mesh position={[0, 0.1, 0]}><cylinderGeometry args={[r * 0.3, r * 0.3, 0.12, 24]} /><meshStandardMaterial {...M.plastic} /></mesh>
+  const shapes = useMemo(() => {
+    const half = size / 2, corner = Math.min(0.04, size * 0.035);
+    const housing = new THREE.Shape();
+    housing.moveTo(-half + corner, -half);
+    housing.lineTo(half - corner, -half); housing.quadraticCurveTo(half, -half, half, -half + corner);
+    housing.lineTo(half, half - corner); housing.quadraticCurveTo(half, half, half - corner, half);
+    housing.lineTo(-half + corner, half); housing.quadraticCurveTo(-half, half, -half, half - corner);
+    housing.lineTo(-half, -half + corner); housing.quadraticCurveTo(-half, -half, -half + corner, -half);
+    const aperture = new THREE.Path();
+    aperture.absarc(0, 0, opening, 0, Math.PI * 2, true);
+    housing.holes.push(aperture);
+    // A swept blade with clear gaps between adjacent blades; no opaque disc behind it.
+    const blade = new THREE.Shape();
+    blade.moveTo(rotor * 0.2, -rotor * 0.18);
+    blade.bezierCurveTo(rotor * 0.47, -rotor * 0.34, rotor * 0.81, -rotor * 0.29, rotor * 0.985, -rotor * 0.08);
+    blade.quadraticCurveTo(rotor, rotor * 0.11, rotor * 0.9, rotor * 0.26);
+    blade.bezierCurveTo(rotor * 0.7, rotor * 0.37, rotor * 0.38, rotor * 0.32, rotor * 0.18, rotor * 0.12);
+    blade.closePath();
+    return { housing, blade };
+  }, [size, opening, rotor]);
+  const bladeMaterial: Mat = { color: light ? "#b7c0c9" : "#414b57", metalness: 0.18, roughness: 0.46 };
+  const hubMaterial: Mat = { color: light ? "#dfe4e9" : "#252c35", metalness: 0.24, roughness: 0.4 };
+  const screwOffset = size / 2 - 0.072;
+  return <group position={at} rotation={AXIS[axis]}>
+    {/* Extrusion normal maps to local Y: the 25 mm envelope is unchanged. */}
+    <mesh position={[0, -0.125, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
+      <extrudeGeometry args={[shapes.housing, { depth: 0.25, bevelEnabled: false, curveSegments: 40 }]} />
+      {part ? <Skin part={part} active={active} base={frame} /> : <meshStandardMaterial {...frame} />}
+    </mesh>
+    {[-1, 1].map((face) => <mesh key={face} position={[0, face * 0.115, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <torusGeometry args={[opening + 0.008, 0.008, 6, 48]} /><meshStandardMaterial {...(light ? M.steelLight : M.aluDark)} />
+    </mesh>)}
+    {Array.from({ length: 4 }, (_, i) => <group key={i} rotation={[0, Math.PI / 4 + i * Math.PI / 2, 0]}>
+      <Box size={[rotor * 0.76, 0.018, 0.035]} at={[rotor * 0.62, -0.095, 0]} mat={frame} shadow={false} />
+    </group>)}
+    {Array.from({ length: blades }, (_, i) => <group key={i} rotation={[0, (i / blades) * Math.PI * 2, 0]}>
+      <mesh position={[0, -0.014, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <extrudeGeometry args={[shapes.blade, { depth: 0.028, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 1, curveSegments: 8 }]} />
+        <meshStandardMaterial {...bladeMaterial} />
+      </mesh>
+    </group>)}
+    <Cyl r={rotor * 0.29} h={0.17} mat={hubMaterial} />
+    {[-1, 1].map((face) => <group key={face}>
+      <Cyl r={rotor * 0.22} h={0.012} at={[0, face * 0.091, 0]} mat={light ? M.plasticLight : M.aluDark} />
+      {[-1, 1].flatMap((x) => [-1, 1].map((z) => <group key={`${x}-${z}`} position={[x * screwOffset, face * 0.119, z * screwOffset]}>
+        <Cyl r={0.026} h={0.009} mat={M.aluMid} seg={12} />
+        <Box size={[0.027, 0.002, 0.005]} at={[0, face * 0.005, 0]} mat={M.black} shadow={false} />
+        <Box size={[0.005, 0.002, 0.027]} at={[0, face * 0.005, 0]} mat={M.black} shadow={false} />
+      </group>))}
+    </group>)}
   </group>;
 }
-
 /* ── Rótulos: marca y modelo reales, dibujados en una textura de canvas ──
    Sin fuentes que descargar: usa la del sitio si ya está cargada y, si no,
    la del sistema. Las texturas se guardan por texto para no repetirlas. */
@@ -124,16 +167,71 @@ const isWhite = (name?: string) => /\bwhite\b|\bblanc|\bsnow\b|\bspectral\b/i.te
 const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 const rel = (part: Visual3DPart, u: { position: V3 }): V3 => [u.position[0] - part.position[0], u.position[1] - part.position[1], u.position[2] - part.position[2]];
 
-function Motherboard({ part, active }: { part: Visual3DPart; active: boolean }) {
+type RearPortKind = "USB-A" | "USB-C" | "LAN" | "DP" | "HDMI" | "DVI" | "VGA" | "Mini-DP";
+const PORT_SIZE: Record<RearPortKind, [number, number]> = { "USB-A": [.15, .075], "USB-C": [.105, .05], LAN: [.16, .14], DP: [.17, .085], HDMI: [.16, .075], DVI: [.34, .12], VGA: [.29, .12], "Mini-DP": [.10, .07] };
+// Only explicit multipliers are counts. USB generations, bandwidths and codec
+// model numbers must never become invented rear connectors.
+function explicitPortCount(value: unknown): number {
+  if (typeof value !== "string") return 0;
+  return Math.min(24, value.split(/[,;]/).reduce((sum, item) => {
+    const count = item.match(/[×x]\s*(\d+)\s*(?:\([^)]*\))?\s*$/i);
+    return sum + (count ? Number(count[1]) : 0);
+  }, 0));
+}
+function graphicsPorts(value: unknown): RearPortKind[] {
+  if (typeof value !== "string") return [];
+  const ports: RearPortKind[] = [];
+  for (const match of value.matchAll(/(\d+)\s*[×x]\s*(Mini[ -]?DP|DisplayPort|DP|HDMI|DVI(?:-[DI])?|VGA|USB-C)/gi)) {
+    const name = match[2].toUpperCase();
+    const kind: RearPortKind = name.startsWith("MINI") ? "Mini-DP" : name.startsWith("DVI") ? "DVI" : name === "DISPLAYPORT" ? "DP" : name as RearPortKind;
+    ports.push(...Array.from({ length: Math.min(12, Number(match[1])) }, () => kind));
+  }
+  return ports;
+}
+function placeRearPorts(ports: RearPortKind[], width: number, height: number) {
+  const placed: { kind: RearPortKind; x: number; y: number }[] = [];
+  let x = 0, y = 0, row = 0;
+  for (const kind of ports) {
+    const [w, h] = PORT_SIZE[kind];
+    if (x + w > width) { x = 0; y += row + .045; row = 0; }
+    if (y + h > height || w > width) break;
+    placed.push({ kind, x: -width / 2 + x + w / 2, y: height / 2 - y - h / 2 });
+    x += w + .035; row = Math.max(row, h);
+  }
+  return placed;
+}
+function RearPort({ kind, at }: { kind: RearPortKind; at: V3 }) {
+  const [w, h] = PORT_SIZE[kind];
+  return <group position={at} name={`Conector ${kind}`}>
+    <Box size={[w, h, .045]} mat={M.aluMid} shadow={false} />
+    <Box size={[w - .025, h - .025, .012]} at={[0, 0, .026]} mat={M.black} shadow={false} />
+    <Box size={[w - .045, .009, .005]} at={[0, -h * .12, .034]} mat={kind === "USB-A" ? M.plasticLight : M.gold} shadow={false} />
+  </group>;
+}
+
+function Motherboard({ part, active, rearZ }: { part: Visual3DPart; active: boolean; rearZ: number }) {
   const B = part.board!; const [t, h, d] = part.size;
   const light = part.profile.isLight;
   const ink = light ? "#2b302d" : "#b3b9b5";
+  const rear = rearZ - part.position[2];
+  const ioHeight = (B.ioV[1] - B.ioV[0]) / 100;
+  const portTypes: RearPortKind[] = [
+    ...Array.from({ length: explicitPortCount(part.metadata.usbA) }, () => "USB-A" as const),
+    ...Array.from({ length: explicitPortCount(part.metadata.usbC) }, () => "USB-C" as const),
+    ...Array.from({ length: explicitPortCount(part.metadata.lan) }, () => "LAN" as const),
+  ];
+  const ports = placeRearPorts(portTypes, .35, ioHeight - .2);
   /* (u, v, alt) de tablero → posición relativa al centro del PCB. */
   const on = (u: number, v: number, alt: number): V3 => [t / 2 + alt / 100, h / 2 - v / 100, d / 2 - u / 100];
   return <group>
     <Box size={[t, h, d]} mat={light ? M.pcbLight : M.pcb} part={part} active={active} />
     {/* bloque de puertos traseros, atravesando el escudo I/O */}
-    <Box size={[0.4, (B.ioV[1] - B.ioV[0]) / 100, 0.18]} at={on(9, (B.ioV[0] + B.ioV[1]) / 2, 20)} mat={M.aluDark} />
+    <Box size={[.4, ioHeight, rear - d / 2 + .18]} at={[t / 2 + .21, (h - (B.ioV[0] + B.ioV[1]) / 100) / 2, (rear + d / 2 - .18) / 2]} mat={M.aluDark} />
+    <group position={[t / 2 + .21, (h - (B.ioV[0] + B.ioV[1]) / 100) / 2, rear + .008]}>
+      <Box size={[.42, ioHeight + .02, .018]} mat={M.black} />
+      {ports.map((port, i) => <RearPort key={i} kind={port.kind} at={[port.x, port.y + .035, .012]} />)}
+      <Label text="I/O" at={[0, -ioHeight / 2 + .06, .023]} facing="z" w={.24} h={.065} fg="#9ca7b2" />
+    </group>
     {/* disipadores VRM: arriba del zócalo y a su lado trasero, con el modelo grabado */}
     <Box size={[0.3, 0.22, 0.72]} at={on(B.socket[0] + 10, 18, 15)} mat={light ? M.alu : M.aluMid} />
     <Label text={shortModel(part.source.model)} at={on(B.socket[0] + 10, 18, 30.3)} facing="x" w={0.64} h={0.15} fg={ink} />
@@ -179,7 +277,7 @@ function Ram({ part, active }: { part: Visual3DPart; active: boolean }) {
 /** Gráfica: carcasa con tapa lateral rotulada, placa trasera con rejilla, ventiladores
     con aro, soporte con puertos y rejilla. En un sándwich va girada: ventiladores al
     panel y conectores hacia abajo. */
-function Gpu({ part, active }: { part: Visual3DPart; active: boolean }) {
+function Gpu({ part, active, rearZ }: { part: Visual3DPart; active: boolean; rearZ: number }) {
   const sandwich = Boolean(part.detail.sandwich);
   const [H, T, L]: V3 = sandwich ? [part.size[1], part.size[0], part.size[2]] : part.size;
   const fans = num(part.detail.fans, 2);
@@ -190,6 +288,8 @@ function Gpu({ part, active }: { part: Visual3DPart; active: boolean }) {
   const shroudMat = light ? M.plasticLight : M.plastic; const plateMat = light ? M.steelLight : M.aluDark;
   const brand = part.source.brand || ""; const chip = String(part.metadata.chip || "");
   const labelW = Math.min(1.1, Math.max(0.5, L - 1.0));
+  const rear = rearZ - part.position[2];
+  const ports = placeRearPorts(graphicsPorts(part.metadata.outputs), .98, Math.max(.12, T - .08));
   return <group rotation={sandwich ? [0, 0, -Math.PI / 2] : [0, 0, 0]}>
     {/* carcasa del disipador: la tapa, 2 mm más estrecha que el grosor total */}
     <Box size={[H - 0.02, T - 0.04, L - 0.03]} at={[0, -0.01, 0]} mat={shroudMat} part={part} active={active} />
@@ -203,12 +303,12 @@ function Gpu({ part, active }: { part: Visual3DPart; active: boolean }) {
       <Fan size={fanD} axis="y" at={[0.02, -T / 2 - 0.02, z]} part={part} active={active} light={light} />
       <mesh position={[0.02, -T / 2 - 0.02, z]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[fanD / 2 + 0.02, 0.014, 8, 40]} /><meshStandardMaterial {...(light ? M.alu : M.aluMid)} /></mesh>
     </group>; })}
-    {/* soporte de chapa en la trasera: pestañas, puertos de vídeo en la primera fila y rejilla en la segunda */}
-    <Box size={[1.12, T + 0.06, 0.02]} at={[-H / 2 + 0.58, 0, L / 2 + 0.01]} mat={M.alu} />
-    <Box size={[0.16, 0.05, 0.03]} at={[-H / 2 + 1.12 + 0.02, T / 2 + 0.05, L / 2 + 0.01]} mat={M.alu} />
-    {[0, 1, 2, 3].map((i) => <Box key={i} size={[i === 3 ? 0.14 : 0.16, 0.06, 0.014]} at={[-H / 2 + 0.16 + i * 0.22, T / 2 - 0.08, L / 2 + 0.024]} mat={M.black} shadow={false} />)}
-    {Array.from({ length: Math.max(0, Math.floor((T - 0.3) / 0.045)) }, (_, i) => <Box key={i} size={[0.94, 0.012, 0.012]} at={[-H / 2 + 0.56, T / 2 - 0.24 - i * 0.045, L / 2 + 0.024]} mat={M.black} shadow={false} />)}
-    {/* dedos del conector PCIe, dorados */}
+    {/* Pletina de la GPU en el plano trasero, unida al cuerpo por su pestaña. */}
+    <Box size={[1.12, T + .06, .02]} at={[-H / 2 + .58, 0, rear]} mat={M.alu} />
+    <Box size={[1.12, .035, Math.max(.03, rear - L / 2 + .02)]} at={[-H / 2 + .58, T / 2 + .015, (rear + L / 2) / 2]} mat={M.alu} />
+    {ports.map((port, i) => <RearPort key={i} kind={port.kind} at={[-H / 2 + .58 + port.x, port.y, rear + .035]} />)}
+    {!ports.length && <Label text="GPU" at={[-H / 2 + .58, 0, rear + .012]} facing="z" w={.42} h={.1} fg="#303942" />}
+    {Array.from({ length: 6 }, (_, i) => <Box key={i} size={[.10, .012, .004]} at={[-H / 2 + .12 + i * .16, -T / 2 + .025, rear + .012]} mat={M.black} shadow={false} />)}    {/* dedos del conector PCIe, dorados */}
     <Box size={[0.025, 0.016, 0.89]} at={[-H / 2 + 0.05, T / 2 - 0.045, L / 2 - 0.5 - 0.445]} mat={M.gold} shadow={false} />
     {/* conectores de alimentación en el canto que mira al cristal */}
     {Array.from({ length: plugs }, (_, i) => <Box key={i} size={[0.09, 0.085, hpwr ? 0.26 : 0.19]} at={[H / 2 + 0.04, T / 2 - 0.07, L / 2 - 0.6 - i * 0.22]} mat={M.black} />)}
@@ -279,7 +379,7 @@ function Aio({ part, active }: { part: Visual3DPart; active: boolean }) {
   </group>;
 }
 
-function Psu({ part, active }: { part: Visual3DPart; active: boolean }) {
+function Psu({ part, active, rearZ }: { part: Visual3DPart; active: boolean; rearZ: number }) {
   const [sx, sy, sz] = part.size; const vertical = Boolean(part.detail.vertical); const top = Boolean(part.detail.top); const front = Boolean(part.detail.front);
   const light = part.profile.isLight;
   /* El ventilador mira al suelo (o al techo) en las horizontales y al cristal en las verticales. */
@@ -288,8 +388,23 @@ function Psu({ part, active }: { part: Visual3DPart; active: boolean }) {
   const watt = num(part.detail.watt, 0);
   /* Los conectores modulares miran a la placa: al frontal si la fuente está atrás, atrás si está delante. */
   const plugZ = front ? sz / 2 + 0.015 : -sz / 2 - 0.015;
+  const bracketDepth = Math.max(.015, rearZ - part.position[2] - sz / 2);
   return <group>
     <Box size={[sx, sy, sz]} mat={light ? M.steelLight : M.steel} part={part} active={active} />
+    {/* Entrada de red sobre la cara real de la fuente; el hueco del chasis la deja visible. */}
+    <group position={[0, 0, front ? -sz / 2 - .006 : sz / 2 + .006]} rotation={front ? [0, Math.PI, 0] : [0, 0, 0]}>
+      <Box size={[.34, .26, .028]} at={[0, -sy * .21, .008]} mat={M.plastic} />
+      <Box size={[.25, .18, .012]} at={[0, -sy * .21, .027]} mat={M.black} />
+      {[[-.065, -.03], [.065, -.03], [0, .055]].map(([x, y], i) => <Box key={i} size={[.025, .045, .013]} at={[x, -sy * .21 + y, .037]} mat={M.alu} shadow={false} />)}
+      <Label text="AC" at={[0, -sy * .21 - .18, .013]} facing="z" w={.2} h={.065} fg="#a9b2bc" />
+      {Array.from({ length: 8 }, (_, i) => <Box key={i} size={[sx - .16, .016, .004]} at={[0, sy / 2 - .09 - i * .032, .008]} mat={M.black} shadow={false} />)}
+    </group>
+    {!front && <group position={[0, 0, sz / 2 + bracketDepth / 2]}>
+      {[-1, 1].map(side => <group key={side}>
+        <Box size={[.025, sy, bracketDepth]} at={[side * (sx / 2 - .0125), 0, 0]} mat={M.aluDark} />
+        <Box size={[sx, .025, bracketDepth]} at={[0, side * (sy / 2 - .0125), 0]} mat={M.aluDark} />
+      </group>)}
+    </group>}
     <group position={fanAt} rotation={fanAxis === "x" ? AXIS.x : top ? [Math.PI, 0, 0] : AXIS.y}>
       <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[fanD / 2 - 0.04, 0.02, 8, 48]} /><meshStandardMaterial {...M.aluDark} /></mesh>
       {[0, 1, 2, 3].map((i) => <mesh key={i} rotation={[0, (i / 4) * Math.PI, 0]}><boxGeometry args={[fanD - 0.08, 0.012, 0.03]} /><meshStandardMaterial {...M.aluDark} /></mesh>)}
@@ -349,17 +464,17 @@ function Cables({ cables, explode, light }: { cables: Visual3DCable[]; explode: 
   return <group>{strands.map((s, i) => <mesh key={i} castShadow><tubeGeometry args={[s.curve, 40, s.radius, 8, false]} /><meshStandardMaterial color={light ? "#d9dcd6" : "#121513"} roughness={0.82} metalness={0.05} transparent={opacity < 1} opacity={opacity} /></mesh>)}</group>;
 }
 
-function Component({ part, active }: { part: Visual3DPart; active: boolean }) {
+function Component({ part, active, rearZ }: { part: Visual3DPart; active: boolean; rearZ: number }) {
   /* Una pieza que falta se insinúa con su volumen; el detalle es para las que están. */
   if (part.state === "next" || part.state === "empty") return <Box size={part.size} mat={M.plastic} part={part} active={active} />;
   switch (part.kind) {
-    case "motherboard": return <Motherboard part={part} active={active} />;
+    case "motherboard": return <Motherboard part={part} active={active} rearZ={rearZ} />;
     case "cpu": return <Cpu part={part} active={active} />;
     case "ram": return <Ram part={part} active={active} />;
-    case "gpu": return <Gpu part={part} active={active} />;
+    case "gpu": return <Gpu part={part} active={active} rearZ={rearZ} />;
     case "air-cooler": return <AirCooler part={part} active={active} />;
     case "aio": return <Aio part={part} active={active} />;
-    case "psu": return <Psu part={part} active={active} />;
+    case "psu": return <Psu part={part} active={active} rearZ={rearZ} />;
     case "m2": return <M2 part={part} active={active} />;
     case "drive-25": case "drive-35": return <Drives part={part} active={active} />;
     case "fan": return <CaseFans part={part} active={active} />;
@@ -369,6 +484,66 @@ function Component({ part, active }: { part: Visual3DPart; active: boolean }) {
   }
 }
 
+type RearOpening = { x: number; y: number; w: number; h: number };
+const overlapsRear = (a: RearOpening, b: RearOpening) => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
+function rearPanelDetails(scene: Visual3DScene) {
+  const L = scene.layout, B = L.board, [minX, minY] = scene.bounds.min, [maxX, maxY] = scene.bounds.max;
+  const selected = (kind: Visual3DPart["kind"]) => scene.parts.find(p => p.kind === kind && p.source.quantity > 0);
+  const openings: RearOpening[] = [], occupied: RearOpening[] = [];
+  if (selected("motherboard")) openings.push({ x: L.boardFaceX * .01 + .21, y: (L.boardTopY - (B.ioV[0] + B.ioV[1]) / 2) * .01, w: .43, h: (B.ioV[1] - B.ioV[0]) * .01 + .03 });
+  const gpu = selected("gpu");
+  if (gpu) {
+    const sandwich = Boolean(gpu.detail.sandwich), [a, b] = gpu.size;
+    const opening = sandwich
+      ? { x: gpu.position[0], y: gpu.position[1] + b / 2 - .58, w: a + .08, h: 1.14 }
+      : { x: gpu.position[0] - a / 2 + .58, y: gpu.position[1], w: 1.14, h: b + .08 };
+    openings.push(opening); occupied.push(opening);
+  }
+  const expansion = selected("expansion");
+  if (expansion) for (const unit of expansion.units) {
+    const opening = { x: unit.position[0] - expansion.size[0] / 2 + .56, y: unit.position[1] + .06, w: 1.14, h: .22 };
+    openings.push(opening); occupied.push(opening);
+  }
+  const psu = selected("psu");
+  if (psu && !psu.detail.front) openings.push({ x: psu.position[0], y: psu.position[1], w: psu.size[0] - .01, h: psu.size[1] - .01 });
+  const holes: RearOpening[] = [];
+  // Trim apertures to the rear sheet. Merge touching apertures to avoid
+  // overlapping Shape holes when an incompatible build has intersecting parts.
+  for (const opening of openings) {
+    const left = Math.max(minX + .025, opening.x - opening.w / 2), right = Math.min(maxX - .025, opening.x + opening.w / 2);
+    const bottom = Math.max(minY + .025, opening.y - opening.h / 2), top = Math.min(maxY - .025, opening.y + opening.h / 2);
+    if (right <= left || top <= bottom) continue;
+    let merged = { x: (left + right) / 2, y: (bottom + top) / 2, w: right - left, h: top - bottom };
+    let index = holes.findIndex(hole => overlapsRear(hole, merged));
+    while (index >= 0) {
+      const hole = holes.splice(index, 1)[0];
+      const x0 = Math.min(hole.x - hole.w / 2, merged.x - merged.w / 2), x1 = Math.max(hole.x + hole.w / 2, merged.x + merged.w / 2);
+      const y0 = Math.min(hole.y - hole.h / 2, merged.y - merged.h / 2), y1 = Math.max(hole.y + hole.h / 2, merged.y + merged.h / 2);
+      merged = { x: (x0 + x1) / 2, y: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0 };
+      index = holes.findIndex(other => overlapsRear(other, merged));
+    }
+    holes.push(merged);
+  }
+  const shape = new THREE.Shape();
+  shape.moveTo(minX, minY + .01); shape.lineTo(maxX, minY + .01); shape.lineTo(maxX, maxY - .01); shape.lineTo(minX, maxY - .01); shape.closePath();
+  for (const hole of holes) {
+    const path = new THREE.Path();
+    path.moveTo(hole.x - hole.w / 2, hole.y - hole.h / 2); path.lineTo(hole.x - hole.w / 2, hole.y + hole.h / 2);
+    path.lineTo(hole.x + hole.w / 2, hole.y + hole.h / 2); path.lineTo(hole.x + hole.w / 2, hole.y - hole.h / 2); path.closePath();
+    shape.holes.push(path);
+  }
+  const fan = L.rearFan;
+  if (fan) {
+    const x = fan.center[0] * .01, y = fan.center[1] * .01, r = fan.size * .005 - .04;
+    const envelope = { x, y, w: r * 2, h: r * 2 };
+    if (x - r > minX + .025 && x + r < maxX - .025 && y - r > minY + .025 && y + r < maxY - .025 && !holes.some(hole => overlapsRear(hole, envelope))) {
+      const path = new THREE.Path(); path.absarc(x, y, r, 0, Math.PI * 2, true); shape.holes.push(path);
+    }
+  }
+  const freeSlots = Array.from({ length: B.slots }, (_, i) => ({ x: L.boardFaceX * .01 + .62, y: (L.boardTopY - (B.slot0V + i * 20.32)) * .01, w: 1.12, h: .18, slot: i }))
+    .filter(slot => !occupied.some(part => overlapsRear(slot, part)));
+  return { shape, holes, freeSlots };
+}
 /* ── Chasis ──────────────────────────────────────────────────────────── */
 function Chassis({ scene, explode, cutaway }: { scene: Visual3DScene; explode: number; cutaway: boolean }) {
   const L = scene.layout; const U = 0.01;
@@ -378,8 +553,8 @@ function Chassis({ scene, explode, cutaway }: { scene: Visual3DScene; explode: n
   const cx = (sh.min[0] + sh.max[0]) / 2, cy = (sh.min[1] + sh.max[1]) / 2, cz = (sh.min[2] + sh.max[2]) / 2;
   const light = scene.chassis.profile.isLight;
   const steel = light ? M.steelLight : M.steel;
-  const trayX = L.trayX * U; const B = L.board;
-  const ioTop = (L.boardTopY - B.ioV[0]) * U, ioBot = (L.boardTopY - B.ioV[1]) * U;
+  const trayX = L.trayX * U;
+  const rear = useMemo(() => rearPanelDetails(scene), [scene]);
   const front = L.panels.front; const window = L.panels.window;
   const glassMat = <meshPhysicalMaterial color="#c9d6e2" metalness={0} roughness={0.05} transparent opacity={0.09} clearcoat={1} clearcoatRoughness={0.05} depthWrite={false} side={THREE.DoubleSide} />;
   const meshMat = <meshStandardMaterial color="#141917" metalness={0.3} roughness={0.7} transparent opacity={0.62} depthWrite={false} side={THREE.DoubleSide} />;
@@ -396,9 +571,13 @@ function Chassis({ scene, explode, cutaway }: { scene: Visual3DScene; explode: n
     <Box size={[0.02, 0.06, 0.24]} at={[trayX - 0.002, G.top[1] * U, G.top[2] * U]} mat={M.rubber} shadow={false} />
     {/* panel trasero con el escudo I/O, las pestañas de expansión y la rejilla del ventilador trasero, al lado del I/O */}
     <group position={[0, 0, e * 0.6]}>
-      <Box size={[W, H - 0.02, 0.012]} at={[cx, cy, sh.max[2] - 0.006]} mat={steel} />
-      <Box size={[0.42, ioTop - ioBot + 0.02, 0.014]} at={[L.boardFaceX * U + 0.21, (ioTop + ioBot) / 2, sh.max[2] + 0.002]} mat={M.black} shadow={false} />
-      {Array.from({ length: B.slots }, (_, i) => <Box key={i} size={[1.12, 0.18, 0.014]} at={[L.boardFaceX * U + 0.06 + 0.56, (L.boardTopY - (B.slot0V + i * 20.32)) * U, sh.max[2] + 0.002]} mat={light ? M.steelLight : M.aluDark} shadow={false} />)}
+      <mesh position={[0, 0, sh.max[2] - .012]} castShadow receiveShadow name="Chapa trasera con aberturas de montaje">
+        <extrudeGeometry args={[rear.shape, { depth: .012, bevelEnabled: false, curveSegments: 40 }]} /><meshStandardMaterial {...steel} />
+      </mesh>
+      {rear.freeSlots.map(slot => <group key={slot.slot} position={[slot.x, slot.y, sh.max[2] + .002]}>
+        <Box size={[1.12, .18, .014]} mat={light ? M.steelLight : M.aluDark} shadow={false} />
+        {[-1, 0, 1].map(row => <Box key={row} size={[.88, .012, .004]} at={[0, row * .045, .01]} mat={M.black} shadow={false} />)}
+      </group>)}
       {rf && <mesh position={[rf.center[0] * U, rf.center[1] * U, sh.max[2] + 0.004]}><torusGeometry args={[rf.size * U / 2 - 0.04, 0.015, 8, 48]} /><meshStandardMaterial {...M.aluDark} /></mesh>}
       {rf && [0, 1, 2, 3].map((i) => <mesh key={i} position={[rf.center[0] * U, rf.center[1] * U, sh.max[2] + 0.004]} rotation={[0, 0, (i / 4) * Math.PI]}><boxGeometry args={[rf.size * U - 0.1, 0.01, 0.006]} /><meshStandardMaterial {...M.aluDark} /></mesh>)}
     </group>
@@ -434,7 +613,7 @@ function Chassis({ scene, explode, cutaway }: { scene: Visual3DScene; explode: n
 }
 
 /* ── Entorno e iluminación ───────────────────────────────────────────── */
-const setEnvironment = (target: THREE.Scene, env: THREE.Texture | null) => { target.environment = env; target.environmentIntensity = 0.62; };
+const setEnvironment = (target: THREE.Scene, env: THREE.Texture | null) => { target.environment = env; target.environmentIntensity = 0.75; };
 function Studio() {
   const { gl, scene } = useThree();
   useEffect(() => {
@@ -453,10 +632,14 @@ function Interactive({ part, explode, children, onSelect, onHover }: { part: Vis
   return <group position={pos} onClick={(e) => { e.stopPropagation(); onSelect(part); }} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; onHover(part); }} onPointerOut={() => { document.body.style.cursor = ""; onHover(); }}>{children}</group>;
 }
 
-export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal, explode = 0, cutaway = false }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number; explode?: number; cutaway?: boolean }) {
+export type CameraView = "principal" | "interior" | "front" | "rear";
+type ZoomRequest = { id: number; factor: number };
+
+export default function ForgeScene({ scene, active, onSelect, onHover, resetSignal, view = "principal", zoomRequest, onCameraInteract, explode = 0, cutaway = false }: { scene: Visual3DScene; active?: VisualCategory; onSelect: (p: Visual3DPart) => void; onHover: (p?: Visual3DPart) => void; resetSignal: number; view?: CameraView; zoomRequest?: ZoomRequest; onCameraInteract?: () => void; explode?: number; cutaway?: boolean }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, size, invalidate } = useThree();
   const cameraRef = useRef(camera);
+  const appliedZoom = useRef(0);
   const visible = scene.parts.filter((p) => p.state !== "empty");
   const radius = scene.camera.radius;
   const cableLight = Boolean(scene.parts.find((p) => p.category === "psu")?.profile.isLight);
@@ -465,12 +648,16 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
   const framing = useMemo(() => {
     const target = new THREE.Vector3(...scene.focusTarget);
     const [x, y, z] = scene.camera.direction;
-    const direction = new THREE.Vector3(x, y * 0.55, z * 0.75).normalize();
+    // +X faces the removable side panel. The front is -Z and the rear +Z.
+    // Presets move the camera only; hardware stays in its mounting position.
+    const preset: V3 = view === "interior" ? [1, 0.12, -0.08]
+      : view === "front" ? [0, 0.05, -1] : view === "rear" ? [0, 0.05, 1] : [x, y * 0.55, z * 0.75];
+    const direction = new THREE.Vector3(...preset).normalize();
     const right = new THREE.Vector3(0, 1, 0).cross(direction).normalize();
     const up = direction.clone().cross(right).normalize();
     const vertical = Math.tan(THREE.MathUtils.degToRad(scene.camera.fov) / 2);
     const horizontal = vertical * (size.width / Math.max(1, size.height));
-    const fill = 0.84;
+    const fill = 0.78;
     let distance = scene.camera.minDistance;
     for (const px of [scene.bounds.min[0], scene.bounds.max[0]]) {
       for (const py of [scene.bounds.min[1], scene.bounds.max[1]]) {
@@ -484,17 +671,27 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
       }
     }
     return { target, direction, distance };
-  }, [scene, size.width, size.height]);
+  }, [scene, size.width, size.height, view]);
+  const maxDistance = Math.max(scene.camera.maxDistance, framing.distance * 1.5);
   useEffect(() => {
     const cam = cameraRef.current; if (!(cam instanceof THREE.PerspectiveCamera)) return;
     cam.position.copy(framing.target).addScaledVector(framing.direction, framing.distance);
     cam.near = 0.05; cam.far = Math.max(framing.distance * 2, radius * 12); cam.updateProjectionMatrix();
     controls.current?.target.copy(framing.target); controls.current?.update(); invalidate();
   }, [invalidate, resetSignal, framing, radius]);
+  useEffect(() => {
+    if (!zoomRequest || zoomRequest.id === appliedZoom.current) return;
+    appliedZoom.current = zoomRequest.id;
+    const orbit = controls.current;
+    if (!orbit) return;
+    const offset = camera.position.clone().sub(orbit.target);
+    offset.setLength(THREE.MathUtils.clamp(offset.length() * zoomRequest.factor, scene.camera.minDistance, maxDistance));
+    camera.position.copy(orbit.target).add(offset); orbit.update(); invalidate();
+  }, [camera, invalidate, maxDistance, scene.camera.minDistance, zoomRequest]);
   const shadowSize = radius * 1.4;
   return <>
     <Studio />
-    <hemisphereLight args={["#c9d5ec", "#080811", 0.42]} />
+    <hemisphereLight args={["#dce3ef", "#17151f", 0.62]} />
     <directionalLight position={[radius * 1.4, radius * 2.2, -radius * 1.6]} intensity={2.8} color="#edf2ff" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0003} shadow-normalBias={0.02}
       shadow-camera-left={-shadowSize} shadow-camera-right={shadowSize} shadow-camera-top={shadowSize} shadow-camera-bottom={-shadowSize} shadow-camera-near={0.2} shadow-camera-far={radius * 8} />
     <directionalLight position={[-radius * 1.5, radius * 0.9, radius * 1.2]} intensity={1.6} color="#ac8bff" />
@@ -503,9 +700,9 @@ export default function ForgeScene({ scene, active, onSelect, onHover, resetSign
     <group>
       <Chassis scene={scene} explode={explode} cutaway={cutaway} />
       <Cables cables={scene.cables} explode={explode} light={cableLight} />
-      {visible.map((part) => <Interactive key={part.id} part={part} explode={explode} onSelect={onSelect} onHover={onHover}><Component part={part} active={active === part.category} /></Interactive>)}
+      {visible.map((part) => <Interactive key={part.id} part={part} explode={explode} onSelect={onSelect} onHover={onHover}><Component part={part} active={active === part.category} rearZ={scene.bounds.max[2]} /></Interactive>)}
     </group>
     <ContactShadows position={[0, scene.bounds.min[1] - 0.01, 0]} opacity={0.68} scale={radius * 4} blur={2.8} far={radius * 2} frames={1} />
-    <OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} maxDistance={Math.max(scene.camera.maxDistance, framing.distance * 1.5)} minPolarAngle={0.2} maxPolarAngle={1.55} enablePan={false} onChange={() => invalidate()} />
+    <OrbitControls ref={controls} makeDefault minDistance={scene.camera.minDistance} maxDistance={maxDistance} minPolarAngle={0.2} maxPolarAngle={1.55} enablePan={false} onStart={onCameraInteract} onChange={() => invalidate()} />
   </>;
 }

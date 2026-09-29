@@ -65,7 +65,7 @@ export const radFits = (cs: PartOf<"case"> | undefined, size: number): boolean =
 
 export interface GateResult { blocked: boolean; reason?: string; }
 
-export function gate(part: Part, b: Build): GateResult {
+export function gate(part: BuildItem, b: Build): GateResult {
   const no = (r: string): GateResult => ({ blocked: true, reason: r });
   const cpu = one(b, "cpu"), mbo = one(b, "mbo"), cs = one(b, "case"),
         cool = one(b, "cooler"), gpu = one(b, "gpu"), psu = one(b, "psu");
@@ -145,12 +145,10 @@ export function gate(part: Part, b: Build): GateResult {
         const puestas = (pref: string) => list(b, "storage")
           .filter((s) => s.iface.startsWith(pref))
           .reduce((a, s) => a + (s.qty || 1), 0);
-        if (part.iface.startsWith("M.2") && puestas("M.2") >= mbo.m2)
-          return no(mbo.m2 === 1 ? "La única ranura M.2 de la placa ya está ocupada"
-            : `Las ${mbo.m2} ranuras M.2 de la placa ya están ocupadas`);
-        if (part.iface.startsWith("SATA") && puestas("SATA") >= mbo.sata)
-          return no(mbo.sata === 1 ? "El único puerto SATA de la placa ya está ocupado"
-            : `Los ${mbo.sata} puertos SATA de la placa ya están ocupados`);
+        if (part.iface.startsWith("M.2") && puestas("M.2") + (part.qty || 1) > mbo.m2)
+          return no(`${puestas("M.2") + (part.qty || 1)} unidades M.2 para ${mbo.m2} ranura(s)`);
+        if (part.iface.startsWith("SATA") && puestas("SATA") + (part.qty || 1) > mbo.sata)
+          return no(`${puestas("SATA") + (part.qty || 1)} unidades SATA para ${mbo.sata} puerto(s)`);
       }
       break;
     case "fan":
@@ -276,8 +274,8 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
     }
   }
   if (mbo && st.length) {
-    const m2 = st.filter((s) => s.iface.startsWith("M.2")).length;
-    const sata = st.filter((s) => s.iface.startsWith("SATA")).length;
+    const m2 = st.filter((s) => s.iface.startsWith("M.2")).reduce((sum, s) => sum + (s.qty || 1), 0);
+    const sata = st.filter((s) => s.iface.startsWith("SATA")).reduce((sum, s) => sum + (s.qty || 1), 0);
     if (m2) {
       if (m2 <= mbo.m2) push("ok", "M2_SLOTS", `${m2} de ${mbo.m2} ranuras M.2 usadas`);
       else push("fail", "M2_SLOTS", `${m2} unidades M.2 para ${mbo.m2} ranuras`);
@@ -287,7 +285,7 @@ export function runPost(b: Build, power: { total: number }): PostLine[] {
       else push("fail", "SATA_PORTS", `${sata} unidades SATA para ${mbo.sata} puertos`);
     }
     if (m2 >= 3 && mbo.sata <= 4) push("warn", "SATA_PORTS", "Muchas M.2 pobladas: en esta placa suelen deshabilitar puertos SATA");
-    const g5 = st.filter((s) => s.gen.includes("5.0")).length;
+    const g5 = st.filter((s) => s.gen.includes("5.0")).reduce((sum, s) => sum + (s.qty || 1), 0);
     if (g5 > (mbo.m2gen5 || 0)) push("warn", "M2_SLOTS", `${g5} SSD PCIe 5.0 pero solo ${mbo.m2gen5 || 0} ranura(s) Gen5: irán a Gen4`);
   }
   if (cs && fans.length) {
