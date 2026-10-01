@@ -80,8 +80,10 @@ export function boardSpec(form: unknown, dimm?: unknown): BoardSpec {
     socket: [125, 72], ramU0: 183, ramPitch: 10, ramLen: 133, ramV0: 12,
     pcieV: 160 + 1.5 * 20.32, pcieU0: 50, pcieLen: 89,
     m2: micro ? [[110, 128]] : [[110, 128], [110, 250]],
-    /* El escudo I/O acaba 5 mm antes de la primera tapa de ranura (161): no se tocan. */
-    ioV: [10, 156], slot0V: 160 + 10.16, chipset: [205, h - 70],
+    /* El bloque I/O acaba en 150 mm y la primera tapa de ranura empieza en 161: entre
+       ambos quedan unos 10 mm de chapa del chasis, como en una caja real, y a cualquier
+       zoom se ve que no se tocan. */
+    ioV: [10, 150], slot0V: 160 + 10.16, chipset: [205, h - 70],
     atx24: [d - 9, 112], eps: [45, 8], sata: [d - 6, micro ? 190 : 200], fp: [d - 20, h - 8],
   };
 }
