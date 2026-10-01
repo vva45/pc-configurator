@@ -180,7 +180,7 @@ for (const [label, candidate] of [['air', atx3d], ['aio-240', aio240], ['aio-360
 }
 
 /* Las tapas de las ranuras de expansión no tocan el escudo I/O, y siguen la ranura ×16 de cada placa. */
-for(const [nombre,s3] of [['ATX',atx3d],['ITX',itx3d]]){ const Bd=s3.layout.board; ok(Bd.slot0V-9.16>=Bd.ioV[1]+4,`${nombre}: la primera tapa de ranura toca el escudo I/O`); const paso=(((Bd.pcieV-Bd.slot0V)%20.32)+20.32)%20.32; ok(paso<.01||20.32-paso<.01,`${nombre}: las tapas no siguen el paso de las ranuras`); }
+for(const [nombre,s3] of [['ATX',atx3d],['ITX',itx3d]]){ const Bd=s3.layout.board; ok(Bd.slot0V-9-(Bd.ioV[1]+1.5)>=8,`${nombre}: entre el hueco I/O y la primera tapa de ranura no quedan 8 mm de chapa visibles`); const paso=(((Bd.pcieV-Bd.slot0V)%20.32)+20.32)%20.32; ok(paso<.01||20.32-paso<.01,`${nombre}: las tapas no siguen el paso de las ranuras`); }
 /* RAM como un montador: dos módulos en los zócalos 2 y 4 (doble canal), uno en el más lejano de la CPU. */
 {
   const idx=(s3)=>{const Bd=s3.layout.board; return s3.parts.find(x=>x.category==='ram').units.map(u=>Math.round(((s3.layout.boardRearZ-u.position[2]*100)-Bd.ramU0)/Bd.ramPitch)).sort();};
